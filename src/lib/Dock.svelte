@@ -8,12 +8,15 @@
     settings,
     media = null,
     interactive = true,
+    received = null,
   }: {
     apps: AppEntry[];
     settings: Settings;
     media?: MediaInfo | null;
     /** false for the previews in the settings window: nothing is clickable, the window is not resized. */
     interactive?: boolean;
+    /** The group that just got an app (its dot blinks once). */
+    received?: { group: number; at: number } | null;
   } = $props();
 
   const en = $derived(settings.language === "en");
@@ -87,7 +90,7 @@
 
   // ---- actions -------------------------------------------------------------
   function click(app: AppEntry) {
-    if (!interactive) return;
+    if (!interactive || justDragged) return;
     if (app.windows.length === 0 && app.exe) {
       invoke("launch_app", { path: app.exe }).catch((err) => console.error("launch_app failed", err));
       return;
@@ -103,6 +106,53 @@
     invoke("show_app_menu", { key: app.key }).catch((err) => console.error("show_app_menu failed", err));
   }
 
+  // ---- groups: click a dot to switch, drag an icon onto a dot to move it ------
+  function showGroup(i: number) {
+    if (!interactive || i === settings.activeGroup) return;
+    invoke("update_settings", { settings: { ...settings, activeGroup: i } }).catch((err) =>
+      console.error("update_settings failed", err),
+    );
+  }
+
+  let pressed: { key: string; x: number; y: number } | null = null;
+  let drag = $state<{ key: string; dx: number; dy: number; over: number | null } | null>(null);
+  let justDragged = false;
+
+  function press(event: PointerEvent, app: AppEntry) {
+    if (!interactive || !settings.groupsEnabled || event.button !== 0 || !app.exe) return;
+    pressed = { key: app.key, x: event.clientX, y: event.clientY };
+  }
+
+  function groupUnder(x: number, y: number): number | null {
+    const dot = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-group]");
+    return dot ? Number(dot.dataset.group) : null;
+  }
+
+  function pointerMove(event: PointerEvent) {
+    if (!pressed) return;
+    if (event.buttons === 0) return pointerEnd(null);
+    const dx = event.clientX - pressed.x;
+    const dy = event.clientY - pressed.y;
+    if (!drag && Math.hypot(dx, dy) < 8) return;
+    drag = { key: pressed.key, dx, dy, over: groupUnder(event.clientX, event.clientY) };
+  }
+
+  function pointerEnd(event: PointerEvent | null) {
+    if (drag) {
+      const target = event ? groupUnder(event.clientX, event.clientY) : null;
+      if (target != null && target !== settings.activeGroup) {
+        invoke("move_app_to_group", { key: drag.key, group: target }).catch((err) =>
+          console.error("move_app_to_group failed", err),
+        );
+      }
+      // The click that follows a drag must not open the app.
+      justDragged = true;
+      setTimeout(() => (justDragged = false), 0);
+    }
+    pressed = null;
+    drag = null;
+  }
+
   function mediaControl(command: "toggle" | "next" | "previous") {
     if (!interactive) return;
     invoke("media_control", { command }).catch((err) => console.error("media_control failed", err));
@@ -116,9 +166,12 @@
     class:is-running={app.windows.length > 0}
     class:is-active={app.active}
     class:is-pinned={app.pinned}
+    class:is-dragged={drag?.key === app.key}
+    style:translate={drag?.key === app.key ? `${drag.dx}px ${drag.dy}px` : undefined}
     aria-label={app.name}
     tabindex={interactive ? 0 : -1}
     onclick={() => click(app)}
+    onpointerdown={(e) => press(e, app)}
     oncontextmenu={(e) => menu(e, app)}
   >
     {#if icon}
@@ -131,8 +184,11 @@
   </button>
 {/snippet}
 
+<svelte:window onpointermove={pointerMove} onpointerup={pointerEnd} onpointercancel={() => pointerEnd(null)} />
+
 <div
   class="df-dock"
+  class:is-dragging={drag != null}
   data-position={settings.position}
   data-layout={settings.layout}
   bind:this={dockEl}
@@ -145,9 +201,23 @@
     : undefined}
 >
   {#if settings.groupsEnabled}
-    <span class="df-group" title="{settings.groupNames[settings.activeGroup]} (Alt+{settings.activeGroup + 1})">
-      {#each settings.groupNames as _, i (i)}
-        <span class="df-group-dot" class:is-current={i === settings.activeGroup}></span>
+    <span class="df-group" role="group" aria-label={en ? "Groups" : "Grupos"}>
+      {#each settings.groupNames as name, i (i)}
+        {#key received?.group === i ? received.at : 0}
+          <button
+            class="df-group-dot"
+            class:is-current={i === settings.activeGroup}
+            class:is-over={drag?.over === i}
+            class:is-received={received?.group === i}
+            data-group={i}
+            data-n={i + 1}
+            title="{name} (Alt+{i + 1})"
+            aria-label="{name} (Alt+{i + 1})"
+            aria-pressed={i === settings.activeGroup}
+            tabindex={interactive ? 0 : -1}
+            onclick={() => showGroup(i)}
+          ></button>
+        {/key}
       {/each}
     </span>
   {/if}
@@ -162,7 +232,14 @@
     {@render item(app)}
   {/each}
   {#if apps.length === 0}
-    <span class="df-empty">{en ? "Nothing open or pinned" : "Nada aberto ou fixado"}</span>
+    <span class="df-empty">
+      {#if settings.groupsEnabled && settings.activeGroup > 0}
+        {en ? "Empty group · Alt+Shift+" : "Grupo vazio · Alt+Shift+"}{settings.activeGroup + 1}
+        {en ? "brings the app in front here" : "traz o app em foco para cá"}
+      {:else}
+        {en ? "Nothing open or pinned" : "Nada aberto ou fixado"}
+      {/if}
+    </span>
   {/if}
 
   <span class="df-spacer"></span>
