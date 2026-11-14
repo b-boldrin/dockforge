@@ -10,7 +10,7 @@
   let tab = $state<Tab>("store");
   const tabs: Array<[Tab, string]> = [
     ["store", "Loja"],
-    ["pins", "Apps fixados"],
+    ["pins", "Favoritos e grupos"],
     ["system", "Sistema"],
   ];
 
