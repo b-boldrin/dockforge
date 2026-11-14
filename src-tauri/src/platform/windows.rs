@@ -38,7 +38,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     WINEVENT_SKIPOWNPROCESS, WM_CLOSE, WS_EX_APPWINDOW, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
 };
 
-use crate::model::{AppEntry, MediaInfo, WindowInfo};
+use crate::model::{AppEntry, MediaInfo, SystemStats, WindowInfo};
 
 /// The last window of another app that was in front. Clicking the dock brings the dock
 /// itself to the front, so this is how we know what the user was looking at before.
@@ -667,4 +667,54 @@ pub fn media_command(command: &str) -> Result<(), String> {
         _ => return Err("unknown media command".into()),
     };
     op.map_err(|e| e.to_string())?.join().map(|_| ()).map_err(|e| e.to_string())
+}
+
+// ---------------------------------------------------------------------------
+// System widget: processor, memory, battery
+// ---------------------------------------------------------------------------
+
+use windows::Win32::Foundation::FILETIME;
+use windows::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
+use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
+use windows::Win32::System::Threading::GetSystemTimes;
+
+/// Idle and total processor time at the previous call: usage is the change between two calls.
+static CPU_LAST: Mutex<Option<(u64, u64)>> = Mutex::new(None);
+
+fn ticks(t: FILETIME) -> u64 {
+    ((t.dwHighDateTime as u64) << 32) | t.dwLowDateTime as u64
+}
+
+fn cpu_percent() -> u8 {
+    let (mut idle, mut kernel, mut user) = (FILETIME::default(), FILETIME::default(), FILETIME::default());
+    if unsafe { GetSystemTimes(Some(&mut idle), Some(&mut kernel), Some(&mut user)) }.is_err() {
+        return 0;
+    }
+    // Kernel time already includes idle time.
+    let (idle, total) = (ticks(idle), ticks(kernel) + ticks(user));
+    let Ok(mut last) = CPU_LAST.lock() else { return 0 };
+    let percent = match *last {
+        Some((last_idle, last_total)) if total > last_total => {
+            let span = total - last_total;
+            let idle_span = idle.saturating_sub(last_idle).min(span);
+            100 - idle_span * 100 / span
+        }
+        // First call: nothing to compare with yet.
+        _ => 0,
+    };
+    *last = Some((idle, total));
+    percent.min(100) as u8
+}
+
+pub fn system_stats() -> SystemStats {
+    let mut memory = MEMORYSTATUSEX { dwLength: std::mem::size_of::<MEMORYSTATUSEX>() as u32, ..Default::default() };
+    let memory_load = if unsafe { GlobalMemoryStatusEx(&mut memory) }.is_ok() { memory.dwMemoryLoad.min(100) as u8 } else { 0 };
+
+    let mut power = SYSTEM_POWER_STATUS::default();
+    let has_power = unsafe { GetSystemPowerStatus(&mut power) }.is_ok();
+    // BatteryFlag 128 = no battery; 255 = unknown. BatteryLifePercent 255 = unknown.
+    let battery = (has_power && power.BatteryFlag & 128 == 0 && power.BatteryFlag != 255 && power.BatteryLifePercent <= 100)
+        .then_some(power.BatteryLifePercent);
+
+    SystemStats { cpu: cpu_percent(), memory: memory_load, battery, charging: has_power && power.ACLineStatus == 1 }
 }

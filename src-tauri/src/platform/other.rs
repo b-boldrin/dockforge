@@ -1,6 +1,6 @@
 //! Stand-in for non-Windows systems: fake apps so the dock can be styled anywhere.
 
-use crate::model::{AppEntry, MediaInfo, WindowInfo};
+use crate::model::{AppEntry, MediaInfo, SystemStats, WindowInfo};
 
 fn sample(key: &str, name: &str, windows: usize, active: bool) -> AppEntry {
     AppEntry {
@@ -50,4 +50,9 @@ pub fn media_now() -> Option<MediaInfo> {
 
 pub fn media_command(_command: &str) -> Result<(), String> {
     Ok(())
+}
+
+/// Fixed sample numbers so the system widget can be styled on any system.
+pub fn system_stats() -> SystemStats {
+    SystemStats { cpu: 18, memory: 54, battery: Some(82), charging: false }
 }

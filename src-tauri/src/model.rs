@@ -49,3 +49,13 @@ pub struct MediaInfo {
     /// Cover art as a data: URL, when the player provides one.
     pub thumbnail: Option<String>,
 }
+
+/// Numbers for the system widget. All percentages are 0–100.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct SystemStats {
+    pub cpu: u8,
+    pub memory: u8,
+    /// `None` on a computer without a battery.
+    pub battery: Option<u8>,
+    pub charging: bool,
+}
