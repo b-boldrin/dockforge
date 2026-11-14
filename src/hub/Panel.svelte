@@ -77,8 +77,8 @@
   <div class="prow">
     <label for="shw">Mostrar</label>
     <select id="shw" value={s.showMode} onchange={(e) => patch({ showMode: val(e) as Settings["showMode"] })}>
-      <option value="both">Fixados e abertos</option>
-      <option value="pinned">Só fixados</option>
+      <option value="both">Favoritos e abertos</option>
+      <option value="pinned">Só favoritos</option>
       <option value="open">Só abertos</option>
     </select>
   </div>
@@ -91,22 +91,30 @@
     </select>
   </div>
   <div class="prow">
-    <span>Separar fixados e abertos</span>
-    <button class="tg" aria-label="Separar fixados e abertos" aria-pressed={s.separator} onclick={() => patch({ separator: !s.separator })}></button>
+    <span>Separar favoritos e abertos</span>
+    <button class="tg" aria-label="Separar favoritos e abertos" aria-pressed={s.separator} onclick={() => patch({ separator: !s.separator })}></button>
   </div>
 
-  <h3 class="ph">Grupos</h3>
+  <h3 class="ph">Favoritos e grupos</h3>
+  <div class="prow">
+    <span class="stack"><span>Mostrar favoritos</span><span class="sub">Apps que ficam na dock mesmo fechados</span></span>
+    <button class="tg" aria-label="Mostrar favoritos" aria-pressed={s.favoritesEnabled} onclick={() => patch({ favoritesEnabled: !s.favoritesEnabled })}></button>
+  </div>
   <div class="prow">
     <span>Quatro grupos de apps</span>
     <button class="tg" aria-label="Usar grupos" aria-pressed={s.groupsEnabled} onclick={() => patch({ groupsEnabled: !s.groupsEnabled })}></button>
   </div>
   {#if s.groupsEnabled}
-    <p class="hint">Troque de grupo com Alt+1 a Alt+4, de qualquer programa. Cada grupo tem os seus apps fixados.</p>
+    <p class="hint">
+      O grupo 1 tem os favoritos e tudo que está aberto. Os outros começam vazios: mande o app em foco para um
+      deles com Alt+Shift+número, ou arraste o ícone até a bolinha do grupo.
+    </p>
     <ol class="groups">
       {#each s.groupNames as name, i (i)}
         <li class:current={i === s.activeGroup}>
           <button class="key" aria-label="Mostrar o grupo {name}" onclick={() => patch({ activeGroup: i })}>Alt+{i + 1}</button>
           <input aria-label="Nome do grupo {i + 1}" value={name} maxlength="24" onchange={(e) => renameGroup(i, val(e))} />
+          <span class="count" title="Apps neste grupo">{i === 0 ? s.pins.filter((p) => p.group === 0).length : s.pins.filter((p) => p.group === i).length}</span>
         </li>
       {/each}
     </ol>
