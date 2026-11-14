@@ -71,6 +71,7 @@ export interface Settings {
   opacity: number | null;
   pins: Pin[];
   startWithWindows: boolean;
+  hideTaskbar: boolean;
   language: "pt" | "en";
   layout: "float" | "bar" | "island";
   align: "start" | "center" | "end";

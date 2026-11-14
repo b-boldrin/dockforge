@@ -45,6 +45,8 @@ pub struct Settings {
     pub opacity: Option<u32>,
     pub pins: Vec<Pin>,
     pub start_with_windows: bool,
+    /// Hide the Windows taskbar while DockForge is running. It comes back when DockForge closes.
+    pub hide_taskbar: bool,
     /// "pt" | "en"
     pub language: String,
     /// "float": a dock sized to its icons. "bar": edge to edge, with the clock at the end.
@@ -83,6 +85,7 @@ impl Default for Settings {
             opacity: None,
             pins: Vec::new(),
             start_with_windows: false,
+            hide_taskbar: false,
             language: "pt".into(),
             layout: "float".into(),
             align: "center".into(),
@@ -148,6 +151,7 @@ impl Settings {
             opacity: self.opacity.map(|o| o.clamp(30, 100)),
             pins,
             start_with_windows: self.start_with_windows,
+            hide_taskbar: self.hide_taskbar,
             language: one_of(&self.language, &["pt", "en"], "pt"),
             layout,
             align: one_of(&self.align, &["start", "center", "end"], "center"),
