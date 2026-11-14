@@ -2,24 +2,26 @@
 
 An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, but for docks*: the community makes the themes, and installing one takes a click.
 
-> **Status: v0.2 preview.** A working dock with pinned apps, groups, widgets and a settings window. It does not replace the Windows taskbar yet.
+> **Status: v0.3 preview.** A working dock with favorites, groups, widgets, ready-made docks and a settings window. It has only been compiled and screenshot-tested so far; it does not replace the Windows taskbar yet.
 
 ## What works today
 
 **The dock**
-- Two layouts: *floating* (sized to its icons) or *edge to edge* (like the Windows 10 taskbar, clock at the end)
-- Any screen edge: bottom, top, left or right
-- Pinned apps that stay when closed (click to start them), then the other open apps, with an optional line between them
-- Groups: four sets of pinned apps, switched from anywhere with **Alt+1 … Alt+4**
+- Three layouts: *floating* (sized to its icons), *edge to edge* (like the Windows 10 taskbar) or *island* (a small pill with the app in front and the widgets; the other apps appear when the pointer is over it)
+- Any screen edge, and for floating docks and islands the start, middle or end of that edge (so a dock can live in a corner)
+- Favorites that stay when closed (click to start them), then the other open apps, with an optional line between them. Favorites can be imported from the Windows taskbar, or turned off
+- Groups, switched from anywhere with **Alt+1 … Alt+4**. Group 1 has the favorites and everything open; groups 2 to 4 start empty. Move the app in front to a group with **Alt+Shift+1 … Alt+Shift+4**, drag its icon onto a group dot, or use the right-click menu
 - Click: bring to front / minimize, cycle through the app's windows, or only bring to front (your choice)
-- Right-click menu: the app's windows, new window, pin/unpin, close, close all
+- Right-click menu: the app's windows, new window, add to / remove from favorites, move to group, close, close all
 - Auto-hide that slides through the screen edge and comes back when the mouse touches it
-- Click-through: the empty space around the dock (room for the hover zoom and the tooltips) no longer blocks clicks
-- Widgets: **now playing** (anything in Windows' media controls: Spotify, YouTube Music in a browser, most players) with cover and buttons, and a clock
+- Click-through: the empty space around the dock (room for the hover zoom and the tooltips) does not block clicks
+- Widgets: **now playing** (anything in Windows' media controls: Spotify, YouTube Music in a browser, most players), **system** (processor, memory, battery) and a clock
+- Motion: icons pop in when they appear, a starting app bounces, the group that receives an app blinks. All of it is off when Windows is set to reduce motion
 
 **The settings window** (tray icon → *Abrir o DockForge…*, or start DockForge again)
-- Store with live previews of every installed theme, settings for your dock on the left, pinned apps per group, start with Windows, language
-- Four built-in themes: Forge Glass, Midnight Pill, Natal Cristal and Noite de Natal; any theme dropped in `%APPDATA%\DockForge\themes\`
+- Ready-made docks: seven combinations of theme, place on screen and widgets, applied with one click and still fully editable
+- Store with live previews of every installed theme, settings for your dock on the left, favorites and groups, start with Windows, language
+- Six built-in themes: Forge Glass, Midnight Pill, Natal Cristal, Noite de Natal, Papel (light) and Âmbar CRT (retro); any theme dropped in `%APPDATA%\DockForge\themes\`
 - Live reload: save a theme's `styles.css` and the dock updates within a second
 
 ## Run it (Windows)
@@ -59,8 +61,8 @@ Themes live in a separate repository: **[dockforge-themes](https://github.com/do
 ## Roadmap
 
 1. ~~Technical prototype~~
-2. **Dock MVP** (now): ~~pinned apps, groups, auto-hide, layouts, widgets, settings window~~; still to do: multi-monitor, optional hiding of the Windows taskbar, window previews
-3. **Community**: in-app gallery from the themes repository, agent usage widget (Claude Code, OpenCode, Codex), island, sandboxed JS widgets
+2. **Dock MVP** (now): ~~favorites, groups, auto-hide, layouts, island, widgets, settings window~~; still to do: multi-monitor, optional hiding of the Windows taskbar, window previews
+3. **Community**: in-app gallery from the themes repository, agent usage widget (Claude Code, OpenCode, Codex), sandboxed JS widgets
 4. **v1.0**: signed installer, winget, website
 5. **Ecosystem**: visual theme editor, publish themes from the app (optional GitHub sign-in)
 
@@ -68,7 +70,9 @@ Themes live in a separate repository: **[dockforge-themes](https://github.com/do
 
 - Store (UWP) apps show a letter instead of their icon, each window is its own entry, and they cannot be pinned yet.
 - Only the monitor the dock is on is used.
-- Alt+1 … Alt+4 are taken from other programs while groups are on (turn groups off to give them back).
+- Alt+1 … Alt+4 and Alt+Shift+1 … Alt+Shift+4 are taken from other programs while groups are on (turn groups off to give them back).
+- Importing favorites reads the shortcuts Windows keeps for the taskbar: Store apps and File Explorer have no program path there and are skipped, and the order is alphabetical.
+- The island only lives on the top or bottom edge.
 - The settings window is only in Portuguese for now; the language option changes the dock and the menus.
 - Desktop blur behind the dock (acrylic) is not implemented; `backdrop-filter` in themes only blurs the dock's own content.
 
