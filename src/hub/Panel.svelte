@@ -17,7 +17,14 @@
   const layouts: Array<[Settings["layout"], string]> = [
     ["float", "Flutuante"],
     ["bar", "Barra inteira"],
+    ["island", "Ilha"],
   ];
+  const aligns: Array<[Settings["align"], string, string]> = [
+    ["start", "Início", "Topo"],
+    ["center", "Meio", "Meio"],
+    ["end", "Fim", "Base"],
+  ];
+  const vertical = $derived(s.position === "left" || s.position === "right");
   const accents: Array<[string, string]> = [
     ["#6fe3dc", "Ciano"],
     ["#e2524f", "Vermelho"],
@@ -51,9 +58,26 @@
   </div>
   <div class="seg-group" role="group" aria-label="Posição">
     {#each positions as [id, label] (id)}
-      <button class="seg" class:on={s.position === id} aria-pressed={s.position === id} onclick={() => patch({ position: id })}>{label}</button>
+      <button
+        class="seg"
+        class:on={s.position === id}
+        aria-pressed={s.position === id}
+        disabled={s.layout === "island" && (id === "left" || id === "right")}
+        onclick={() => patch({ position: id })}>{label}</button>
     {/each}
   </div>
+  {#if s.layout !== "bar"}
+    <div class="seg-group" role="group" aria-label="Alinhamento">
+      {#each aligns as [id, horizontal, upright] (id)}
+        <button class="seg" class:on={s.align === id} aria-pressed={s.align === id} onclick={() => patch({ align: id })}>
+          {vertical ? upright : id === "start" ? "Canto esq." : id === "end" ? "Canto dir." : horizontal}
+        </button>
+      {/each}
+    </div>
+  {/if}
+  {#if s.layout === "island"}
+    <p class="hint">A ilha mostra o app em foco e os widgets. Aponte para ela e os outros apps aparecem.</p>
+  {/if}
   <div class="prow">
     <label for="isz">Tamanho</label>
     <span class="range"><input id="isz" type="range" min="32" max="72" step="4" value={s.iconSize} onchange={(e) => patch({ iconSize: num(e) })} /><span class="rv">{s.iconSize} px</span></span>
@@ -128,6 +152,11 @@
   <div class="prow">
     <span>Relógio</span>
     <button class="tg" aria-label="Relógio" aria-pressed={s.widgetClock} onclick={() => patch({ widgetClock: !s.widgetClock })}></button>
+  </div>
+
+  <div class="prow">
+    <span class="stack"><span>Sistema</span><span class="sub">Processador, memória e bateria</span></span>
+    <button class="tg" aria-label="Sistema" aria-pressed={s.widgetSystem} onclick={() => patch({ widgetSystem: !s.widgetSystem })}></button>
   </div>
 
   <h3 class="ph">Ajustes do tema</h3>
