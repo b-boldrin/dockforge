@@ -40,13 +40,17 @@
     <div class="body">
       <Panel />
       <main class="main">
-        {#if tab === "store"}
-          <Store />
-        {:else if tab === "pins"}
-          <Pins />
-        {:else}
-          <System />
-        {/if}
+        {#key tab}
+          <div class="view">
+            {#if tab === "store"}
+              <Store />
+            {:else if tab === "pins"}
+              <Pins />
+            {:else}
+              <System />
+            {/if}
+          </div>
+        {/key}
       </main>
     </div>
   </div>
