@@ -718,3 +718,79 @@ pub fn system_stats() -> SystemStats {
 
     SystemStats { cpu: cpu_percent(), memory: memory_load, battery, charging: has_power && power.ACLineStatus == 1 }
 }
+
+// ---------------------------------------------------------------------------
+// Hiding the Windows taskbar
+// ---------------------------------------------------------------------------
+//
+// Two steps, both undone by `show_taskbar`:
+// 1. switch the taskbar to auto-hide, so Windows gives its strip of screen back to the apps
+//    (otherwise maximized windows would leave an empty band where the taskbar was);
+// 2. hide its window, so it does not slide back in when the mouse touches the edge.
+// Nothing is injected into Explorer and no system file or policy is changed.
+
+use windows::Win32::UI::Shell::{SHAppBarMessage, ABM_GETSTATE, ABM_SETSTATE, ABS_AUTOHIDE, APPBARDATA};
+use windows::Win32::UI::WindowsAndMessaging::{FindWindowExW, FindWindowW, SW_HIDE, SW_SHOWNOACTIVATE};
+
+/// The main taskbar and the ones on the other monitors.
+fn taskbars() -> Vec<HWND> {
+    let mut found = Vec::new();
+    if let Ok(main) = unsafe { FindWindowW(w!("Shell_TrayWnd"), PCWSTR::null()) } {
+        if !main.is_invalid() {
+            found.push(main);
+        }
+    }
+    let mut after: Option<HWND> = None;
+    // Bounded: a computer does not have 16 monitors' worth of taskbars.
+    for _ in 0..16 {
+        match unsafe { FindWindowExW(None, after, w!("Shell_SecondaryTrayWnd"), PCWSTR::null()) } {
+            Ok(next) if !next.is_invalid() => {
+                found.push(next);
+                after = Some(next);
+            }
+            _ => break,
+        }
+    }
+    found
+}
+
+fn appbar_data() -> APPBARDATA {
+    APPBARDATA {
+        cbSize: std::mem::size_of::<APPBARDATA>() as u32,
+        hWnd: taskbars().first().copied().unwrap_or_default(),
+        ..Default::default()
+    }
+}
+
+/// The taskbar's current mode (auto-hide or not), to be given back to `show_taskbar` later.
+pub fn taskbar_state() -> u32 {
+    let mut data = appbar_data();
+    (unsafe { SHAppBarMessage(ABM_GETSTATE, &mut data) }) as u32
+}
+
+fn set_taskbar_state(state: u32) {
+    let mut data = appbar_data();
+    data.lParam = LPARAM(state as isize);
+    unsafe { SHAppBarMessage(ABM_SETSTATE, &mut data) };
+}
+
+/// Safe to call again and again: Explorer shows the taskbar again by itself now and then
+/// (when it restarts, for example), so the caller repeats this while the option is on.
+pub fn hide_taskbar() {
+    if taskbar_state() & ABS_AUTOHIDE == 0 {
+        set_taskbar_state(ABS_AUTOHIDE);
+    }
+    for bar in taskbars() {
+        if unsafe { IsWindowVisible(bar) }.as_bool() {
+            let _ = unsafe { ShowWindow(bar, SW_HIDE) };
+        }
+    }
+}
+
+/// Brings the taskbar back, in the mode it had before (`state` from `taskbar_state`).
+pub fn show_taskbar(state: u32) {
+    set_taskbar_state(state);
+    for bar in taskbars() {
+        let _ = unsafe { ShowWindow(bar, SW_SHOWNOACTIVATE) };
+    }
+}

@@ -56,3 +56,10 @@ pub fn media_command(_command: &str) -> Result<(), String> {
 pub fn system_stats() -> SystemStats {
     SystemStats { cpu: 18, memory: 54, battery: Some(82), charging: false }
 }
+
+// The Windows taskbar only exists on Windows.
+pub fn taskbar_state() -> u32 {
+    0
+}
+pub fn hide_taskbar() {}
+pub fn show_taskbar(_state: u32) {}
