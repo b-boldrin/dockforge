@@ -13,6 +13,7 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Groups, switched from anywhere with **Alt+1 … Alt+4**. Group 1 has the favorites and everything open; groups 2 to 4 start empty. Move the app in front to a group with **Alt+Shift+1 … Alt+Shift+4**, drag its icon onto a group dot, or use the right-click menu
 - Click: bring to front / minimize, cycle through the app's windows, or only bring to front (your choice)
 - Right-click menu: the app's windows, new window, add to / remove from favorites, move to group, close, close all
+- Optional: hide the Windows taskbar while DockForge is open (Sistema → *Esconder a barra de tarefas do Windows*). It comes back when DockForge closes, and on the next start if DockForge was killed
 - Auto-hide that slides through the screen edge and comes back when the mouse touches it
 - Click-through: the empty space around the dock (room for the hover zoom and the tooltips) does not block clicks
 - Widgets: **now playing** (anything in Windows' media controls: Spotify, YouTube Music in a browser, most players), **system** (processor, memory, battery) and a clock
@@ -61,7 +62,7 @@ Themes live in a separate repository: **[dockforge-themes](https://github.com/do
 ## Roadmap
 
 1. ~~Technical prototype~~
-2. **Dock MVP** (now): ~~favorites, groups, auto-hide, layouts, island, widgets, settings window~~; still to do: multi-monitor, optional hiding of the Windows taskbar, window previews
+2. **Dock MVP** (now): ~~favorites, groups, auto-hide, layouts, island, widgets, settings window~~; still to do: multi-monitor, window previews
 3. **Community**: in-app gallery from the themes repository, agent usage widget (Claude Code, OpenCode, Codex), sandboxed JS widgets
 4. **v1.0**: signed installer, winget, website
 5. **Ecosystem**: visual theme editor, publish themes from the app (optional GitHub sign-in)
