@@ -10,6 +10,7 @@
   let settings = $state<Settings | null>(null);
   let media = $state<MediaInfo | null>(null);
   let hidden = $state(false);
+  let received = $state<{ group: number; at: number } | null>(null);
 
   const themeSheet = createSheet();
   const applyTheme = (t: ThemePayload) => setSheet(themeSheet, t.css, t.id);
@@ -21,6 +22,7 @@
       unlisten.push(await listen<ThemePayload>("theme-changed", (e) => applyTheme(e.payload)));
       unlisten.push(await listen<Settings>("settings-changed", (e) => (settings = e.payload)));
       unlisten.push(await listen<MediaInfo | null>("media-changed", (e) => (media = e.payload)));
+      unlisten.push(await listen<number>("group-received", (e) => (received = { group: e.payload, at: Date.now() })));
       unlisten.push(await listen<boolean>("dock-hidden", (e) => (hidden = e.payload)));
       applyTheme(await invoke<ThemePayload>("get_theme"));
       settings = await invoke<Settings>("get_settings");
@@ -33,6 +35,6 @@
 
 {#if settings}
   <div class="stage" class:is-hidden={hidden} data-position={settings.position} data-layout={settings.layout}>
-    <Dock {apps} {settings} {media} />
+    <Dock {apps} {settings} {media} {received} />
   </div>
 {/if}
