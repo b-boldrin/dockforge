@@ -124,6 +124,6 @@
   </p>
   <div class="row-actions">
     <button class="btn" onclick={() => invoke("open_themes_folder")}>Abrir pasta de temas</button>
-    <button class="link" onclick={() => invoke("open_link", { url: "https://github.com/dockforge/dockforge-themes" })}>Como criar um tema</button>
+    <button class="link" onclick={() => invoke("open_link", { url: "https://github.com/b-boldrin/dockforge-themes" })}>Como criar um tema</button>
   </div>
 </section>

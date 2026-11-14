@@ -39,9 +39,9 @@
   <div class="srow">
     <div><div class="lbl">DockForge {version}</div><div class="sub">Código aberto, licença MIT.</div></div>
   </div>
-  <div class="srow"><button class="link" onclick={() => open("https://github.com/dockforge/dockforge")}>Código no GitHub</button></div>
-  <div class="srow"><button class="link" onclick={() => open("https://github.com/dockforge/dockforge-themes")}>Como criar e publicar um tema</button></div>
-  <div class="srow"><button class="link" onclick={() => open("https://github.com/dockforge/dockforge/issues/new")}>Relatar um problema</button></div>
+  <div class="srow"><button class="link" onclick={() => open("https://github.com/b-boldrin/dockforge")}>Código no GitHub</button></div>
+  <div class="srow"><button class="link" onclick={() => open("https://github.com/b-boldrin/dockforge-themes")}>Como criar e publicar um tema</button></div>
+  <div class="srow"><button class="link" onclick={() => open("https://github.com/b-boldrin/dockforge/issues/new")}>Relatar um problema</button></div>
   <div class="row-actions">
     <button class="btn" onclick={() => invoke("open_themes_folder")}>Abrir pasta de temas</button>
     <button class="btn danger" onclick={reset}>Restaurar configurações padrão</button>
