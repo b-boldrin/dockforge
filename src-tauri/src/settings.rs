@@ -16,7 +16,7 @@ pub const MAX_PINS: usize = 40;
 pub struct Pin {
     pub name: String,
     pub path: String,
-    /// Which of the 4 groups this pin belongs to (0..=3). Only used when groups are on.
+    /// 0 = a favorite (always in group 1). 1..=3 = an app the user moved to group 2, 3 or 4.
     pub group: u8,
 }
 
@@ -49,7 +49,10 @@ pub struct Settings {
     pub language: String,
     /// "float": a dock sized to its icons. "bar": edge to edge, with the clock at the end.
     pub layout: String,
-    /// Four sets of pinned apps, switched with Alt+1 … Alt+4.
+    /// Show the favorites (pins of group 0). Off = the dock only shows what is open.
+    pub favorites_enabled: bool,
+    /// Four groups, switched with Alt+1 … Alt+4. Group 1 has the favorites and everything
+    /// open; the others start empty and get the apps the user moves there.
     pub groups_enabled: bool,
     pub active_group: u8,
     pub group_names: Vec<String>,
@@ -76,6 +79,7 @@ impl Default for Settings {
             start_with_windows: false,
             language: "pt".into(),
             layout: "float".into(),
+            favorites_enabled: true,
             groups_enabled: false,
             active_group: 0,
             group_names: default_group_names(),
@@ -86,7 +90,7 @@ impl Default for Settings {
 }
 
 fn default_group_names() -> Vec<String> {
-    vec!["Trabalho".into(), "Estudo".into(), "Jogos".into(), "Criação".into()]
+    vec!["Principal".into(), "Estudo".into(), "Jogos".into(), "Criação".into()]
 }
 
 fn one_of(value: &str, allowed: &[&str], fallback: &str) -> String {
@@ -105,7 +109,8 @@ impl Settings {
         for pin in &self.pins {
             let name = pin.name.trim();
             let path = pin.path.trim();
-            let duplicate = pins.iter().any(|p: &Pin| p.path.eq_ignore_ascii_case(path) && p.group == pin.group);
+            // An app lives in one place only: a favorite, or a member of one group.
+            let duplicate = pins.iter().any(|p: &Pin| p.path.eq_ignore_ascii_case(path));
             if name.is_empty() || path.is_empty() || name.len() > 120 || path.len() > 520 || duplicate {
                 continue;
             }
@@ -131,6 +136,7 @@ impl Settings {
             start_with_windows: self.start_with_windows,
             language: one_of(&self.language, &["pt", "en"], "pt"),
             layout: one_of(&self.layout, &["float", "bar"], "float"),
+            favorites_enabled: self.favorites_enabled,
             groups_enabled: self.groups_enabled,
             active_group: self.active_group.min(GROUPS as u8 - 1),
             group_names: (0..GROUPS)
@@ -142,6 +148,21 @@ impl Settings {
             widget_media: self.widget_media,
             widget_clock: self.widget_clock,
         }
+    }
+}
+
+impl Settings {
+    /// Puts an app in a group. Group 0 means "back to group 1": the app leaves whatever
+    /// group it was in (a favorite stays a favorite). Returns false if nothing changed.
+    pub fn move_to_group(&mut self, name: &str, path: &str, group: u8) -> bool {
+        let before = self.pins.clone();
+        if group == 0 {
+            self.pins.retain(|p| !(p.group > 0 && p.path.eq_ignore_ascii_case(path)));
+        } else {
+            self.pins.retain(|p| !p.path.eq_ignore_ascii_case(path));
+            self.pins.push(Pin { name: name.to_string(), path: path.to_string(), group: group.min(GROUPS as u8 - 1) });
+        }
+        self.pins != before
     }
 }
 
@@ -205,10 +226,26 @@ mod tests {
         }
         .sanitized();
         assert_eq!(s.active_group, 3);
-        assert_eq!(s.group_names, ["Trabalho", "Música", "Jogos", "Criação"]);
-        // The same app may be pinned in two different groups.
-        assert_eq!(s.pins.len(), 2);
+        assert_eq!(s.group_names, ["Principal", "Música", "Jogos", "Criação"]);
+        // An app is in one place only: the first entry wins.
+        assert_eq!(s.pins.len(), 1);
         assert_eq!(s.pins[0].group, 3);
+    }
+
+    #[test]
+    fn moving_an_app_between_groups() {
+        let mut s = Settings { pins: vec![Pin { name: "Fav".into(), path: "f.exe".into(), group: 0 }], ..Settings::default() };
+        assert!(s.move_to_group("Code", "C:\\code.exe", 2));
+        assert_eq!(s.pins[1].group, 2);
+        // Moving again replaces the old place instead of duplicating.
+        assert!(s.move_to_group("Code", "c:\\CODE.exe", 3));
+        assert_eq!(s.pins.iter().filter(|p| p.group > 0).count(), 1);
+        // Back to group 1: the app is simply no longer assigned.
+        assert!(s.move_to_group("Code", "C:\\code.exe", 0));
+        assert_eq!(s.pins.len(), 1);
+        // A favorite sent to group 1 stays a favorite.
+        assert!(!s.move_to_group("Fav", "f.exe", 0));
+        assert_eq!(s.pins[0].group, 0);
     }
 
     #[test]
