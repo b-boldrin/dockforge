@@ -28,6 +28,13 @@
     <button class="tg" aria-label="Iniciar com o Windows" aria-pressed={s.startWithWindows} onclick={() => patch({ startWithWindows: !s.startWithWindows })}></button>
   </div>
   <div class="srow">
+    <div>
+      <div class="lbl">Esconder a barra de tarefas do Windows</div>
+      <div class="sub">Some enquanto o DockForge está aberto e volta quando ele fecha. A tecla Windows continua abrindo o menu Iniciar.</div>
+    </div>
+    <button class="tg" aria-label="Esconder a barra de tarefas do Windows" aria-pressed={s.hideTaskbar} onclick={() => patch({ hideTaskbar: !s.hideTaskbar })}></button>
+  </div>
+  <div class="srow">
     <div><label class="lbl" for="lang">Idioma</label><div class="sub">Vale para a dock e para os menus. Esta janela ainda está só em português.</div></div>
     <select id="lang" value={s.language} onchange={(e) => patch({ language: (e.currentTarget as HTMLSelectElement).value as Settings["language"] })}>
       <option value="pt">Português (Brasil)</option>
