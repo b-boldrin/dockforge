@@ -162,6 +162,9 @@ fn update_settings(app: AppHandle, state: State<'_, AppState>, settings: Setting
     if next.start_with_windows != previous.start_with_windows {
         system::set_autostart(next.start_with_windows)?;
     }
+    if next.hide_taskbar != previous.hide_taskbar {
+        apply_taskbar(&state.data_dir, next.hide_taskbar);
+    }
     if let Ok(mut current) = state.settings.lock() {
         *current = next.clone();
     }
@@ -755,6 +758,51 @@ fn start_media_watcher(app: AppHandle) {
         .expect("failed to start the media thread");
 }
 
+// ---------------------------------------------------------------------------
+// Hiding the Windows taskbar while DockForge runs
+// ---------------------------------------------------------------------------
+
+/// While the taskbar is hidden, this file holds the mode it was in before. It is what lets
+/// the next start put the taskbar back if DockForge was killed without the chance to do it.
+fn taskbar_note(data_dir: &std::path::Path) -> PathBuf {
+    data_dir.join("taskbar-hidden")
+}
+
+/// Hides the Windows taskbar, or puts it back exactly as it was. Safe to repeat.
+fn apply_taskbar(data_dir: &std::path::Path, hide: bool) {
+    let note = taskbar_note(data_dir);
+    if hide {
+        if !note.exists() {
+            // Remember the original mode before touching anything. Without the note the
+            // taskbar could not be restored, so do not hide it if the note cannot be written.
+            if let Err(err) = std::fs::write(&note, platform::taskbar_state().to_string()) {
+                eprintln!("[dockforge] taskbar left alone, could not write {}: {err}", note.display());
+                return;
+            }
+        }
+        platform::hide_taskbar();
+    } else if note.exists() {
+        let before = std::fs::read_to_string(&note).ok().and_then(|s| s.trim().parse::<u32>().ok()).unwrap_or(0);
+        platform::show_taskbar(before);
+        let _ = std::fs::remove_file(&note);
+    }
+}
+
+/// Explorer shows the taskbar again on its own sometimes (after it restarts, for example),
+/// so while the option is on it is hidden again every 1.5 s.
+fn start_taskbar_keeper(app: AppHandle) {
+    std::thread::Builder::new()
+        .name("dockforge-taskbar".into())
+        .spawn(move || loop {
+            std::thread::sleep(Duration::from_millis(1500));
+            let state = app.state::<AppState>();
+            if state.settings().hide_taskbar && taskbar_note(&state.data_dir).exists() {
+                platform::hide_taskbar();
+            }
+        })
+        .expect("failed to start the taskbar thread");
+}
+
 /// Reads processor, memory and battery every 2 s while the system widget is on.
 fn start_system_watcher(app: AppHandle) {
     std::thread::Builder::new()
@@ -794,6 +842,9 @@ pub fn run() {
             }
             let first_run = !data_dir.join("settings.json").exists();
             let settings = settings::load(&data_dir);
+            // Hides the taskbar if the option is on. If it is off but the last run was killed
+            // with the taskbar hidden, this is what brings it back.
+            apply_taskbar(&data_dir, settings.hide_taskbar);
             app.manage(AppState {
                 data_dir,
                 settings: Mutex::new(settings),
@@ -809,6 +860,7 @@ pub fn run() {
             start_mouse_watcher(app.handle().clone());
             start_media_watcher(app.handle().clone());
             start_system_watcher(app.handle().clone());
+            start_taskbar_keeper(app.handle().clone());
             sync_shortcuts(app.handle(), app.state::<AppState>().settings().groups_enabled);
             if first_run {
                 open_hub(app.handle())?;
@@ -838,6 +890,12 @@ pub fn run() {
             import_taskbar_pins,
             move_app_to_group
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running DockForge");
+        .build(tauri::generate_context!())
+        .expect("error while running DockForge")
+        .run(|app, event| {
+            // Whatever way DockForge closes, the Windows taskbar comes back first.
+            if let tauri::RunEvent::Exit = event {
+                apply_taskbar(&app.state::<AppState>().data_dir, false);
+            }
+        });
 }
