@@ -42,6 +42,7 @@ export interface MediaInfo {
 export interface Pin {
   name: string;
   path: string;
+  /** 0 = favorite (always in group 1). 1–3 = moved to group 2, 3 or 4. */
   group: number;
 }
 
@@ -64,6 +65,7 @@ export interface Settings {
   startWithWindows: boolean;
   language: "pt" | "en";
   layout: "float" | "bar";
+  favoritesEnabled: boolean;
   groupsEnabled: boolean;
   activeGroup: number;
   groupNames: string[];
