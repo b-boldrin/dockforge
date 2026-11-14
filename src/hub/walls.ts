@@ -14,6 +14,8 @@ const WALLS: Record<string, Wall> = {
   "natal-cristal": { sky: ["#0d2f3a", "#2a6a72"], hill: "#123b37", ground: "#dfeeee", trees: true, snow: true, moon: true },
   "noite-de-natal": { sky: ["#1a0f24", "#4d1d2c"], hill: "#2a1220", ground: "#e9dccf", trees: true, snow: true, moon: true },
   "forge-glass": { sky: ["#1c2230", "#3c4a66"], hill: "#232a3a", ground: "#151a24", moon: true },
+  papel: { sky: ["#f1d9b8", "#f7ecd9"], hill: "#c9b08a", ground: "#a98f6b" },
+  "ambar-crt": { sky: ["#0d0802", "#2a1a04"], hill: "#1c1103", ground: "#0a0601", moon: true },
   "midnight-pill": { sky: ["#120c22", "#3a1d5c"], hill: "#1d1236", ground: "#0f0a1c", moon: true },
 };
 

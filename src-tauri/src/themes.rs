@@ -40,6 +40,16 @@ pub const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../themes/noite-de-natal/theme.json"),
         include_str!("../themes/noite-de-natal/styles.css"),
     ),
+    (
+        "papel",
+        include_str!("../themes/papel/theme.json"),
+        include_str!("../themes/papel/styles.css"),
+    ),
+    (
+        "ambar-crt",
+        include_str!("../themes/ambar-crt/theme.json"),
+        include_str!("../themes/ambar-crt/styles.css"),
+    ),
 ];
 
 #[derive(Debug, Clone, Default, Deserialize)]
