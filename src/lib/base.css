@@ -5,7 +5,9 @@
 
    The dock carries two attributes themes can use:
    - data-position: bottom | top | left | right   (the screen edge it is on)
-   - data-layout:   float | bar                     (sized to its icons, or edge to edge) */
+   - data-layout:   float | bar | island           (sized to its icons, edge to edge, or a
+                                                    small pill that opens when pointed at)
+   - data-align:    start | center | end           (where along the edge it sits) */
 
 .df-dock {
   --df-icon-size: 48px;
@@ -61,6 +63,61 @@
 .df-dock[data-layout="bar"][data-position="top"] { border-width: 0 0 1px; }
 .df-dock[data-layout="bar"][data-position="left"] { border-width: 0 1px 0 0; }
 .df-dock[data-layout="bar"][data-position="right"] { border-width: 0 0 0 1px; }
+
+/* The app icons sit in a wrapper that only matters for the island layout. */
+.df-apps {
+  display: contents;
+}
+
+/* Island: closed, it shows the app in front and the widgets. Pointing at it (or reaching it
+   with the keyboard) opens the app icons. */
+.df-dock[data-layout="island"] .df-apps {
+  display: flex;
+  align-items: center;
+  gap: var(--df-gap);
+  box-sizing: border-box;
+  max-width: 0;
+  padding: 0;
+  margin-inline: calc(var(--df-gap) * -0.5);
+  opacity: 0;
+  /* Clip sideways while it opens, but let the tooltips and the hover zoom out the top. */
+  overflow-x: clip;
+  overflow-y: visible;
+  transition: max-width 340ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 180ms ease, padding 340ms, margin 340ms;
+}
+.df-dock[data-layout="island"]:is(:hover, :focus-within, .is-dragging) .df-apps {
+  max-width: var(--df-apps-width, 1200px);
+  padding: 0 8px;
+  margin-inline: 0;
+  opacity: 1;
+}
+.df-island-now {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: calc(var(--df-icon-size) * 0.72);
+  height: var(--df-icon-size);
+  transition: width 340ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 180ms ease, margin 340ms;
+}
+.df-dock[data-layout="island"]:is(:hover, :focus-within, .is-dragging) .df-island-now {
+  width: 0;
+  margin-inline: calc(var(--df-gap) * -0.5);
+  opacity: 0;
+}
+.df-island-icon {
+  width: calc(var(--df-icon-size) * 0.72);
+  height: calc(var(--df-icon-size) * 0.72);
+  object-fit: contain;
+}
+.df-island-icon.df-icon--fallback {
+  font-size: calc(var(--df-icon-size) * 0.34);
+}
+.df-island-glyph {
+  width: 18px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--df-indicator-active-color);
+}
 
 .df-spacer {
   display: none;
@@ -300,6 +357,49 @@
   padding: 8px 0;
 }
 
+/* System widget: one small ring per number. */
+.df-system {
+  gap: 12px;
+}
+.df-meter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.df-meter-ring {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: conic-gradient(var(--df-indicator-active-color) calc(var(--df-meter, 0) * 1%), var(--df-separator-color) 0);
+  /* Punch the middle out so only the ring is left. */
+  mask: radial-gradient(circle, transparent 6px, #000 6.5px);
+}
+.df-meter.is-low .df-meter-ring {
+  background: conic-gradient(#ff6b5e calc(var(--df-meter, 0) * 1%), var(--df-separator-color) 0);
+}
+.df-meter-text {
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+.df-meter-label {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.df-meter-value {
+  font-size: 12px;
+  font-weight: 600;
+}
+.df-dock[data-position="left"] .df-system,
+.df-dock[data-position="right"] .df-system {
+  gap: 8px;
+}
+.df-dock[data-position="left"] .df-meter-text,
+.df-dock[data-position="right"] .df-meter-text {
+  display: none;
+}
+
 .df-clock {
   flex-direction: column;
   align-items: flex-end;
@@ -392,6 +492,49 @@
   white-space: nowrap;
 }
 
+/* ---- motion ---------------------------------------------------------------
+   Icons pop in one after the other when they appear (a new app, or a group switch),
+   and a just-clicked closed app bounces while it starts. */
+.df-item {
+  animation: df-pop-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation-delay: calc(min(var(--df-i, 0), 12) * 22ms);
+}
+@keyframes df-pop-in {
+  from { opacity: 0; scale: 0.6; }
+  to { opacity: 1; scale: 1; }
+}
+.df-item.is-launching .df-icon {
+  animation: df-launch 700ms cubic-bezier(0.3, 0, 0.3, 1) 2;
+}
+@keyframes df-launch {
+  0%, 100% { translate: 0 0; }
+  40% { translate: 0 calc(var(--df-icon-size) * -0.28); }
+}
+.df-dock[data-position="top"] .df-item.is-launching .df-icon { animation-name: df-launch-down; }
+.df-dock[data-position="left"] .df-item.is-launching .df-icon { animation-name: df-launch-right; }
+.df-dock[data-position="right"] .df-item.is-launching .df-icon { animation-name: df-launch-left; }
+@keyframes df-launch-down {
+  0%, 100% { translate: 0 0; }
+  40% { translate: 0 calc(var(--df-icon-size) * 0.28); }
+}
+@keyframes df-launch-right {
+  0%, 100% { translate: 0 0; }
+  40% { translate: calc(var(--df-icon-size) * 0.28) 0; }
+}
+@keyframes df-launch-left {
+  0%, 100% { translate: 0 0; }
+  40% { translate: calc(var(--df-icon-size) * -0.28) 0; }
+}
+.df-widget {
+  animation: df-fade-in 240ms ease both;
+}
+@keyframes df-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .df-item, .df-widget, .df-item.is-launching .df-icon { animation: none; }
+  .df-dock[data-layout="island"] .df-apps, .df-island-now { transition: none; }
   .df-group-dot.is-received { animation: none; }
 }
