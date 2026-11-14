@@ -22,6 +22,11 @@ body {
 .stage[data-position="top"] { align-items: flex-start; justify-content: center; padding-top: 6px; }
 .stage[data-position="left"] { align-items: center; justify-content: flex-start; padding-left: 6px; }
 .stage[data-position="right"] { align-items: center; justify-content: flex-end; padding-right: 6px; }
+/* Along the edge: start, middle (the default above) or end. */
+.stage:is([data-position="bottom"], [data-position="top"])[data-align="start"] { justify-content: flex-start; padding-left: 8px; }
+.stage:is([data-position="bottom"], [data-position="top"])[data-align="end"] { justify-content: flex-end; padding-right: 8px; }
+.stage:is([data-position="left"], [data-position="right"])[data-align="start"] { align-items: flex-start; padding-top: 8px; }
+.stage:is([data-position="left"], [data-position="right"])[data-align="end"] { align-items: flex-end; padding-bottom: 8px; }
 .stage[data-layout="bar"] { padding: 0; }
 
 /* Auto-hide: slide out through the screen edge. */
