@@ -1,0 +1,352 @@
+/* DockForge base styles.
+   Every --df-* variable and .df-* class here is part of the public theme contract
+   (see THEMING.md in dockforge-themes). Themes are applied on top of this file and usually
+   only override variables.
+
+   The dock carries two attributes themes can use:
+   - data-position: bottom | top | left | right   (the screen edge it is on)
+   - data-layout:   float | bar                     (sized to its icons, or edge to edge) */
+
+.df-dock {
+  --df-icon-size: 48px;
+  --df-gap: 8px;
+  --df-padding: 10px;
+  --df-radius: 22px;
+  --df-bg: rgba(22, 22, 28, 0.72);
+  --df-border: 1px solid rgba(255, 255, 255, 0.12);
+  --df-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  --df-hover-scale: 1.3;
+  --df-hover-lift: -8px;
+  --df-transition: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --df-indicator-color: rgba(255, 255, 255, 0.55);
+  --df-indicator-active-color: #7cc4ff;
+  --df-indicator-offset: -7px;
+  --df-tooltip-bg: rgba(20, 20, 26, 0.92);
+  --df-tooltip-color: #f2f2f5;
+  --df-separator-color: rgba(255, 255, 255, 0.18);
+  --df-widget-bg: rgba(255, 255, 255, 0.07);
+  --df-widget-color: var(--df-tooltip-color);
+  --df-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+
+  display: flex;
+  align-items: center;
+  gap: var(--df-gap);
+  padding: var(--df-padding);
+  border-radius: var(--df-radius);
+  background: var(--df-bg);
+  border: var(--df-border);
+  box-shadow: var(--df-shadow);
+  font-family: var(--df-font);
+  box-sizing: border-box;
+}
+
+.df-dock[data-position="left"],
+.df-dock[data-position="right"] {
+  flex-direction: column;
+}
+
+/* Edge to edge: icons start at the beginning, widgets go to the end. */
+.df-dock[data-layout="bar"] {
+  border-radius: 0;
+}
+.df-dock[data-layout="bar"][data-position="bottom"],
+.df-dock[data-layout="bar"][data-position="top"] {
+  flex: 1;
+}
+.df-dock[data-layout="bar"][data-position="left"],
+.df-dock[data-layout="bar"][data-position="right"] {
+  align-self: stretch;
+}
+.df-dock[data-layout="bar"][data-position="bottom"] { border-width: 1px 0 0; }
+.df-dock[data-layout="bar"][data-position="top"] { border-width: 0 0 1px; }
+.df-dock[data-layout="bar"][data-position="left"] { border-width: 0 1px 0 0; }
+.df-dock[data-layout="bar"][data-position="right"] { border-width: 0 0 0 1px; }
+
+.df-spacer {
+  display: none;
+}
+.df-dock[data-layout="bar"] .df-spacer {
+  display: block;
+  flex: 1;
+}
+
+.df-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--df-icon-size);
+  height: var(--df-icon-size);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: default;
+  outline: none;
+  flex: none;
+}
+
+.df-icon {
+  width: var(--df-icon-size);
+  height: var(--df-icon-size);
+  object-fit: contain;
+  transform-origin: 50% 100%;
+  transition: transform var(--df-transition), filter var(--df-transition);
+  pointer-events: none;
+}
+
+.df-dock[data-position="top"] .df-icon { transform-origin: 50% 0; }
+.df-dock[data-position="left"] .df-icon { transform-origin: 0 50%; }
+.df-dock[data-position="right"] .df-icon { transform-origin: 100% 50%; }
+
+.df-icon--fallback {
+  display: grid;
+  place-items: center;
+  border-radius: 24%;
+  background: linear-gradient(160deg, hsl(var(--df-fallback-hue, 240) 75% 62%), hsl(calc(var(--df-fallback-hue, 240) + 30) 70% 50%));
+  color: #fff;
+  font: 600 calc(var(--df-icon-size) * 0.45) / 1 var(--df-font);
+}
+
+/* A pinned app that is not running is a little quieter. */
+.df-item:not(.is-running) .df-icon {
+  opacity: 0.88;
+}
+
+.df-item:hover .df-icon,
+.df-item:focus-visible .df-icon {
+  transform: translateY(var(--df-hover-lift)) scale(var(--df-hover-scale));
+}
+.df-dock[data-position="top"] .df-item:hover .df-icon,
+.df-dock[data-position="top"] .df-item:focus-visible .df-icon {
+  transform: translateY(calc(var(--df-hover-lift) * -1)) scale(var(--df-hover-scale));
+}
+.df-dock[data-position="left"] .df-item:hover .df-icon,
+.df-dock[data-position="left"] .df-item:focus-visible .df-icon {
+  transform: translateX(calc(var(--df-hover-lift) * -1)) scale(var(--df-hover-scale));
+}
+.df-dock[data-position="right"] .df-item:hover .df-icon,
+.df-dock[data-position="right"] .df-item:focus-visible .df-icon {
+  transform: translateX(var(--df-hover-lift)) scale(var(--df-hover-scale));
+}
+
+.df-item:active .df-icon {
+  filter: brightness(0.8);
+}
+
+.df-indicator {
+  position: absolute;
+  bottom: var(--df-indicator-offset);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all var(--df-transition);
+}
+.df-dock[data-position="top"] .df-indicator { bottom: auto; top: var(--df-indicator-offset); }
+.df-dock[data-position="left"] .df-indicator { bottom: auto; left: var(--df-indicator-offset); }
+.df-dock[data-position="right"] .df-indicator { bottom: auto; right: var(--df-indicator-offset); }
+
+.df-item.is-running .df-indicator {
+  background: var(--df-indicator-color);
+}
+
+.df-item.is-active .df-indicator {
+  background: var(--df-indicator-active-color);
+}
+
+.df-tooltip {
+  position: absolute;
+  bottom: calc(100% + var(--df-icon-size) * (var(--df-hover-scale) - 1) + 14px);
+  left: 50%;
+  translate: -50% 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--df-tooltip-bg);
+  color: var(--df-tooltip-color);
+  font-size: 12px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--df-transition), translate var(--df-transition);
+}
+.df-dock[data-position="top"] .df-tooltip {
+  bottom: auto;
+  top: calc(100% + var(--df-icon-size) * (var(--df-hover-scale) - 1) + 14px);
+  translate: -50% -4px;
+}
+.df-dock[data-position="left"] .df-tooltip,
+.df-dock[data-position="right"] .df-tooltip {
+  bottom: auto;
+  top: 50%;
+  translate: 0 -50%;
+}
+.df-dock[data-position="left"] .df-tooltip {
+  left: calc(100% + var(--df-icon-size) * (var(--df-hover-scale) - 1) + 14px);
+}
+.df-dock[data-position="right"] .df-tooltip {
+  left: auto;
+  right: calc(100% + var(--df-icon-size) * (var(--df-hover-scale) - 1) + 14px);
+}
+
+.df-item:hover .df-tooltip {
+  opacity: 1;
+  translate: -50% 0;
+}
+.df-dock[data-position="left"] .df-item:hover .df-tooltip,
+.df-dock[data-position="right"] .df-item:hover .df-tooltip {
+  translate: 0 -50%;
+}
+
+/* Line between pinned apps and the other open apps. */
+.df-separator {
+  flex: none;
+  width: 1px;
+  height: calc(var(--df-icon-size) * 0.7);
+  background: var(--df-separator-color);
+}
+.df-dock[data-position="left"] .df-separator,
+.df-dock[data-position="right"] .df-separator {
+  width: calc(var(--df-icon-size) * 0.7);
+  height: 1px;
+}
+
+/* Which group is on screen (Alt+1 … Alt+4). */
+.df-group {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  padding: 0 2px;
+}
+.df-dock[data-position="left"] .df-group,
+.df-dock[data-position="right"] .df-group {
+  flex-direction: column;
+}
+.df-group-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--df-separator-color);
+  transition: background var(--df-transition), transform var(--df-transition);
+}
+.df-group-dot.is-current {
+  background: var(--df-indicator-active-color);
+  transform: scale(1.3);
+}
+
+/* Widgets: small panels that live at the end of the dock. */
+.df-widget {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--df-icon-size);
+  padding: 0 10px;
+  border-radius: calc(var(--df-radius) * 0.5);
+  background: var(--df-widget-bg);
+  color: var(--df-widget-color);
+  font-size: 12px;
+  line-height: 1.25;
+  box-sizing: border-box;
+}
+.df-dock[data-position="left"] .df-widget,
+.df-dock[data-position="right"] .df-widget {
+  flex-direction: column;
+  justify-content: center;
+  width: var(--df-icon-size);
+  height: auto;
+  padding: 8px 0;
+}
+
+.df-clock {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  background: none;
+  font-variant-numeric: tabular-nums;
+}
+.df-clock-time {
+  font-size: 13px;
+  font-weight: 600;
+}
+.df-clock-date {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.df-dock[data-position="left"] .df-clock,
+.df-dock[data-position="right"] .df-clock {
+  align-items: center;
+}
+
+.df-media {
+  max-width: 260px;
+  padding-left: 4px;
+}
+.df-media-cover {
+  width: calc(var(--df-icon-size) - 8px);
+  height: calc(var(--df-icon-size) - 8px);
+  border-radius: calc(var(--df-radius) * 0.35);
+  object-fit: cover;
+  flex: none;
+  background: var(--df-separator-color);
+}
+.df-media-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.df-media-title,
+.df-media-artist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.df-media-title {
+  font-weight: 600;
+}
+.df-media-artist {
+  opacity: 0.7;
+}
+.df-media-buttons {
+  display: flex;
+  gap: 2px;
+}
+.df-media-button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: default;
+}
+.df-media-button:hover {
+  background: var(--df-widget-bg);
+}
+.df-media-button svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+/* On a side dock the song text does not fit: keep the cover and play/pause. */
+.df-dock[data-position="left"] .df-media-text,
+.df-dock[data-position="right"] .df-media-text,
+.df-dock[data-position="left"] .df-media-button:not(.is-toggle),
+.df-dock[data-position="right"] .df-media-button:not(.is-toggle) {
+  display: none;
+}
+
+.df-empty {
+  padding: 0 12px;
+  line-height: var(--df-icon-size);
+  color: var(--df-tooltip-color);
+  font-size: 13px;
+  opacity: 0.7;
+  white-space: nowrap;
+}

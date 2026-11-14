@@ -1,0 +1,38 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { invoke } from "@tauri-apps/api/core";
+  import { listen } from "@tauri-apps/api/event";
+  import Dock from "./lib/Dock.svelte";
+  import { createSheet, setSheet } from "./lib/themeSheet";
+  import type { AppEntry, MediaInfo, Settings, ThemePayload } from "./lib/types";
+
+  let apps = $state<AppEntry[]>([]);
+  let settings = $state<Settings | null>(null);
+  let media = $state<MediaInfo | null>(null);
+  let hidden = $state(false);
+
+  const themeSheet = createSheet();
+  const applyTheme = (t: ThemePayload) => setSheet(themeSheet, t.css, t.id);
+
+  onMount(() => {
+    const unlisten: Array<() => void> = [];
+    (async () => {
+      unlisten.push(await listen<AppEntry[]>("apps-changed", (e) => (apps = e.payload)));
+      unlisten.push(await listen<ThemePayload>("theme-changed", (e) => applyTheme(e.payload)));
+      unlisten.push(await listen<Settings>("settings-changed", (e) => (settings = e.payload)));
+      unlisten.push(await listen<MediaInfo | null>("media-changed", (e) => (media = e.payload)));
+      unlisten.push(await listen<boolean>("dock-hidden", (e) => (hidden = e.payload)));
+      applyTheme(await invoke<ThemePayload>("get_theme"));
+      settings = await invoke<Settings>("get_settings");
+      apps = await invoke<AppEntry[]>("list_apps");
+      media = await invoke<MediaInfo | null>("get_media");
+    })();
+    return () => unlisten.forEach((fn) => fn());
+  });
+</script>
+
+{#if settings}
+  <div class="stage" class:is-hidden={hidden} data-position={settings.position} data-layout={settings.layout}>
+    <Dock {apps} {settings} {media} />
+  </div>
+{/if}
