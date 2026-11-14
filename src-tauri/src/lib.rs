@@ -6,6 +6,7 @@
 //! - `themes`:   finding, loading and sanitizing themes
 //! - `settings`: the user's choices, saved as JSON
 //! - `system`:   start with Windows
+//! - `taskbar`:  reads the apps pinned to the Windows taskbar
 //! - this file:  Tauri commands, the windows, the tray menu and the background watchers
 
 mod dock;
@@ -13,6 +14,7 @@ mod model;
 mod platform;
 mod settings;
 mod system;
+mod taskbar;
 mod themes;
 
 use std::path::{Path, PathBuf};
