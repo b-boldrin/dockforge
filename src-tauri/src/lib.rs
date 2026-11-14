@@ -129,7 +129,7 @@ fn open_themes_folder(state: State<'_, AppState>) {
 /// pages are accepted, so the web side cannot open arbitrary addresses or programs.
 #[tauri::command]
 fn open_link(url: String) -> Result<(), String> {
-    let allowed = url.starts_with("https://github.com/dockforge/")
+    let allowed = url.starts_with("https://github.com/b-boldrin/dockforge")
         && url.chars().all(|c| c.is_ascii_alphanumeric() || "/:.-_".contains(c));
     if !allowed {
         return Err("link not allowed".into());
@@ -247,6 +247,45 @@ fn set_hit_rect(state: State<'_, AppState>, x: f64, y: f64, width: f64, height: 
     }
 }
 
+/// Adds the apps pinned to the Windows taskbar to the favorites and turns the favorites on.
+/// Returns how many were added (apps that already have a place are left alone).
+#[tauri::command]
+fn import_taskbar_pins(app: AppHandle, state: State<'_, AppState>) -> Result<usize, String> {
+    let mut next = state.settings();
+    let before = next.pins.len();
+    for pin in taskbar::pinned() {
+        if !next.pins.iter().any(|p| p.path.eq_ignore_ascii_case(&pin.path)) {
+            next.pins.push(pin);
+        }
+    }
+    next.favorites_enabled = true;
+    let saved = update_settings(app, state, next)?;
+    Ok(saved.pins.len().saturating_sub(before))
+}
+
+/// Moves one of the apps on the dock to a group (0 = back to group 1).
+#[tauri::command]
+fn move_app_to_group(app: AppHandle, state: State<'_, AppState>, key: String, group: u8) -> Result<(), String> {
+    let Some(entry) = state.apps().into_iter().find(|a| a.key == key) else { return Ok(()) };
+    move_entry(&app, &entry, group);
+    Ok(())
+}
+
+fn move_entry(app: &AppHandle, entry: &AppEntry, group: u8) {
+    let Some(exe) = &entry.exe else { return };
+    let mut next = app.state::<AppState>().settings();
+    if !next.groups_enabled || !next.move_to_group(&entry.name, exe, group) {
+        return;
+    }
+    match update_settings(app.clone(), app.state::<AppState>(), next) {
+        // Lets the dock blink the dot of the group that received the app.
+        Ok(_) => {
+            let _ = app.emit("group-received", group);
+        }
+        Err(err) => eprintln!("[dockforge] could not move the app: {err}"),
+    }
+}
+
 #[tauri::command]
 fn open_settings(app: AppHandle) -> Result<(), String> {
     open_hub(&app).map_err(|e| e.to_string())
@@ -256,7 +295,10 @@ fn open_settings(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn show_app_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppState>, key: String) -> Result<(), String> {
     let Some(entry) = state.apps().into_iter().find(|a| a.key == key) else { return Ok(()) };
-    let lang = state.settings().language;
+    let settings = state.settings();
+    let lang = settings.language.clone();
+    // Where the app lives now: None = not pinned, Some(0) = favorite, Some(n) = group n+1.
+    let place = entry.exe.as_deref().and_then(|e| settings.pins.iter().find(|p| p.path.eq_ignore_ascii_case(e))).map(|p| p.group);
 
     let mut items: Vec<Box<dyn IsMenuItem<Wry>>> = Vec::new();
     let mk = |id: String, label: &str| MenuItem::with_id(&app, id, label, true, None::<&str>);
@@ -272,10 +314,21 @@ fn show_app_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppStat
     if entry.exe.is_some() {
         let label = if entry.windows.is_empty() { tr(&lang, "Abrir", "Open") } else { tr(&lang, "Nova janela", "New window") };
         items.push(Box::new(mk("ctx-launch".into(), label).map_err(|e| e.to_string())?));
-        if entry.pinned {
-            items.push(Box::new(mk("ctx-unpin".into(), tr(&lang, "Desafixar da dock", "Unpin from dock")).map_err(|e| e.to_string())?));
-        } else {
-            items.push(Box::new(mk("ctx-pin".into(), tr(&lang, "Fixar na dock", "Pin to dock")).map_err(|e| e.to_string())?));
+        match place {
+            Some(0) => items.push(Box::new(mk("ctx-unpin".into(), tr(&lang, "Tirar dos favoritos", "Remove from favorites")).map_err(|e| e.to_string())?)),
+            None => items.push(Box::new(mk("ctx-pin".into(), tr(&lang, "Adicionar aos favoritos", "Add to favorites")).map_err(|e| e.to_string())?)),
+            Some(_) => {}
+        }
+        if settings.groups_enabled {
+            let mut targets: Vec<MenuItem<Wry>> = Vec::new();
+            for (i, name) in settings.group_names.iter().enumerate() {
+                let here = if i == 0 { !matches!(place, Some(g) if g > 0) } else { place == Some(i as u8) };
+                let label = format!("{}  ·  Alt+Shift+{}", name, i + 1);
+                targets.push(MenuItem::with_id(&app, format!("ctx-group:{i}"), label, !here, None::<&str>).map_err(|e| e.to_string())?);
+            }
+            let refs: Vec<&dyn IsMenuItem<Wry>> = targets.iter().map(|t| t as &dyn IsMenuItem<Wry>).collect();
+            let submenu = Submenu::with_items(&app, tr(&lang, "Mover para o grupo", "Move to group"), true, &refs).map_err(|e| e.to_string())?;
+            items.push(Box::new(submenu));
         }
     }
     if !entry.windows.is_empty() {
@@ -326,18 +379,20 @@ fn on_context_menu(app: &AppHandle, event: MenuEvent) {
         "ctx-close-all" => platform::close_windows(&hwnds),
         "ctx-pin" | "ctx-unpin" => {
             let mut next = state.settings();
-            // With groups on, pinning and unpinning only touch the group on screen.
-            let group = if next.groups_enabled { next.active_group } else { 0 };
-            let groups_on = next.groups_enabled;
             if let Some(exe) = &entry.exe {
-                next.pins.retain(|p| !(p.path.eq_ignore_ascii_case(exe) && (!groups_on || p.group == group)));
+                next.pins.retain(|p| !p.path.eq_ignore_ascii_case(exe));
                 if id == "ctx-pin" {
-                    next.pins.push(Pin { name: entry.name.clone(), path: exe.clone(), group });
+                    next.pins.push(Pin { name: entry.name.clone(), path: exe.clone(), group: 0 });
+                    next.favorites_enabled = true;
                 }
                 let _ = update_settings(app.clone(), app.state::<AppState>(), next);
             }
         }
         other => {
+            if let Some(group) = other.strip_prefix("ctx-group:").and_then(|g| g.parse::<u8>().ok()) {
+                move_entry(app, &entry, group);
+                return;
+            }
             if let Some(hwnd) = other.strip_prefix("ctx-win:").and_then(|h| h.parse::<i64>().ok()) {
                 let _ = platform::activate(&[hwnd], "focus");
             }
@@ -346,27 +401,31 @@ fn on_context_menu(app: &AppHandle, event: MenuEvent) {
 }
 
 // ---------------------------------------------------------------------------
-// Groups: Alt+1 … Alt+4
+// Groups: Alt+1 … Alt+4 switch, Alt+Shift+1 … Alt+Shift+4 move the app in front
 // ---------------------------------------------------------------------------
 
 const GROUP_KEYS: [Code; settings::GROUPS] = [Code::Digit1, Code::Digit2, Code::Digit3, Code::Digit4];
+const SWITCH: Modifiers = Modifiers::ALT;
+const MOVE: Modifiers = Modifiers::ALT.union(Modifiers::SHIFT);
 
-/// Registers Alt+1 … Alt+4 while groups are on, and releases them when they are off, so
+/// Registers the group keys while groups are on, and releases them when they are off, so
 /// other programs get those keys back.
 fn sync_shortcuts(app: &AppHandle, enabled: bool) {
     let shortcuts = app.global_shortcut();
     for code in GROUP_KEYS {
-        let shortcut = Shortcut::new(Some(Modifiers::ALT), code);
-        let result = if enabled {
-            if shortcuts.is_registered(shortcut) { Ok(()) } else { shortcuts.register(shortcut) }
-        } else if shortcuts.is_registered(shortcut) {
-            shortcuts.unregister(shortcut)
-        } else {
-            Ok(())
-        };
-        if let Err(err) = result {
-            // Usually another program already owns the key. The rest keep working.
-            eprintln!("[dockforge] Alt+{:?}: {err}", code);
+        for mods in [SWITCH, MOVE] {
+            let shortcut = Shortcut::new(Some(mods), code);
+            let result = if enabled {
+                if shortcuts.is_registered(shortcut) { Ok(()) } else { shortcuts.register(shortcut) }
+            } else if shortcuts.is_registered(shortcut) {
+                shortcuts.unregister(shortcut)
+            } else {
+                Ok(())
+            };
+            if let Err(err) = result {
+                // Usually another program already owns the key. The rest keep working.
+                eprintln!("[dockforge] {mods:?}+{code:?}: {err}");
+            }
         }
     }
 }
@@ -375,10 +434,23 @@ fn on_shortcut(app: &AppHandle, shortcut: &Shortcut, pressed: ShortcutState) {
     if pressed != ShortcutState::Pressed {
         return;
     }
-    let Some(index) = GROUP_KEYS.iter().position(|code| shortcut.matches(Modifiers::ALT, *code)) else { return };
     let state = app.state::<AppState>();
     let mut next = state.settings();
-    if !next.groups_enabled || next.active_group == index as u8 {
+    if !next.groups_enabled {
+        return;
+    }
+
+    if let Some(index) = GROUP_KEYS.iter().position(|code| shortcut.matches(MOVE, *code)) {
+        // The app whose window is in front goes to that group.
+        let front = platform::snapshot().into_iter().find(|a| a.active && a.exe.is_some());
+        if let Some(entry) = front {
+            move_entry(app, &entry, index as u8);
+        }
+        return;
+    }
+
+    let Some(index) = GROUP_KEYS.iter().position(|code| shortcut.matches(SWITCH, *code)) else { return };
+    if next.active_group == index as u8 {
         return;
     }
     next.active_group = index as u8;
@@ -730,7 +802,9 @@ pub fn run() {
             open_themes_folder,
             open_link,
             reset_settings,
-            set_hit_rect
+            set_hit_rect,
+            import_taskbar_pins,
+            move_app_to_group
         ])
         .run(tauri::generate_context!())
         .expect("error while running DockForge");
