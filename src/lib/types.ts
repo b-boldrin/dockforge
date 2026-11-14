@@ -39,6 +39,14 @@ export interface MediaInfo {
   thumbnail: string | null;
 }
 
+export interface SystemStats {
+  cpu: number;
+  memory: number;
+  /** null on a computer without a battery. */
+  battery: number | null;
+  charging: boolean;
+}
+
 export interface Pin {
   name: string;
   path: string;
@@ -64,11 +72,13 @@ export interface Settings {
   pins: Pin[];
   startWithWindows: boolean;
   language: "pt" | "en";
-  layout: "float" | "bar";
+  layout: "float" | "bar" | "island";
+  align: "start" | "center" | "end";
   favoritesEnabled: boolean;
   groupsEnabled: boolean;
   activeGroup: number;
   groupNames: string[];
   widgetMedia: boolean;
   widgetClock: boolean;
+  widgetSystem: boolean;
 }
