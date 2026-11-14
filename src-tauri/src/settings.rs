@@ -48,7 +48,11 @@ pub struct Settings {
     /// "pt" | "en"
     pub language: String,
     /// "float": a dock sized to its icons. "bar": edge to edge, with the clock at the end.
+    /// "island": a small pill (clock, music) that opens to show the apps when pointed at.
     pub layout: String,
+    /// Where along its edge a float or island dock sits: "start" | "center" | "end".
+    /// "start" is left for a horizontal dock and top for a vertical one.
+    pub align: String,
     /// Show the favorites (pins of group 0). Off = the dock only shows what is open.
     pub favorites_enabled: bool,
     /// Four groups, switched with Alt+1 … Alt+4. Group 1 has the favorites and everything
@@ -58,6 +62,8 @@ pub struct Settings {
     pub group_names: Vec<String>,
     pub widget_media: bool,
     pub widget_clock: bool,
+    /// Processor, memory and battery.
+    pub widget_system: bool,
 }
 
 impl Default for Settings {
@@ -79,12 +85,14 @@ impl Default for Settings {
             start_with_windows: false,
             language: "pt".into(),
             layout: "float".into(),
+            align: "center".into(),
             favorites_enabled: true,
             groups_enabled: false,
             active_group: 0,
             group_names: default_group_names(),
             widget_media: false,
             widget_clock: true,
+            widget_system: false,
         }
     }
 }
@@ -119,9 +127,15 @@ impl Settings {
                 break;
             }
         }
+        let layout = one_of(&self.layout, &["float", "bar", "island"], "float");
+        let mut position = one_of(&self.position, &["bottom", "top", "left", "right"], "bottom");
+        // The island opens sideways, so it only lives on the top or bottom edge.
+        if layout == "island" && matches!(position.as_str(), "left" | "right") {
+            position = "top".into();
+        }
         Settings {
             theme: if self.theme.is_empty() || self.theme.len() > 40 { defaults.theme } else { self.theme.clone() },
-            position: one_of(&self.position, &["bottom", "top", "left", "right"], "bottom"),
+            position,
             icon_size: self.icon_size.clamp(32, 72),
             magnify: if self.magnify.is_finite() { self.magnify.clamp(1.0, 1.6) } else { 1.3 },
             auto_hide: self.auto_hide,
@@ -135,7 +149,8 @@ impl Settings {
             pins,
             start_with_windows: self.start_with_windows,
             language: one_of(&self.language, &["pt", "en"], "pt"),
-            layout: one_of(&self.layout, &["float", "bar"], "float"),
+            layout,
+            align: one_of(&self.align, &["start", "center", "end"], "center"),
             favorites_enabled: self.favorites_enabled,
             groups_enabled: self.groups_enabled,
             active_group: self.active_group.min(GROUPS as u8 - 1),
@@ -147,6 +162,7 @@ impl Settings {
                 .collect(),
             widget_media: self.widget_media,
             widget_clock: self.widget_clock,
+            widget_system: self.widget_system,
         }
     }
 }
@@ -259,6 +275,12 @@ mod tests {
         .sanitized();
         assert_eq!(s.accent.as_deref(), Some("#5ee6e0"));
         assert_eq!(s.pins.len(), 2);
+    }
+
+    #[test]
+    fn the_island_stays_on_a_horizontal_edge() {
+        let s = Settings { layout: "island".into(), position: "left".into(), align: "diagonal".into(), ..Settings::default() }.sanitized();
+        assert_eq!((s.layout.as_str(), s.position.as_str(), s.align.as_str()), ("island", "top", "center"));
     }
 
     #[test]
