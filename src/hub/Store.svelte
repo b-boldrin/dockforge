@@ -1,7 +1,8 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import ThemePreview from "./ThemePreview.svelte";
-  import { hub, previewApps, useTheme } from "./store.svelte.js";
+  import { hub, previewApps, usePreset, useTheme } from "./store.svelte.js";
+  import { PRESETS, matches } from "./presets";
   import type { Settings } from "../lib/types";
 
   const s = $derived(hub.settings!);
@@ -46,6 +47,8 @@
     ...s,
     position: "bottom",
     layout: "float",
+    align: "center",
+    widgetSystem: false,
     accent: null,
     radius: null,
     opacity: null,
@@ -79,6 +82,29 @@
     </div>
   </section>
 {/if}
+
+<section class="presets" aria-labelledby="presets-title">
+  <div class="presets-head">
+    <h2 id="presets-title">Docks prontas</h2>
+    <p class="sub">Tema, lugar na tela e widgets já escolhidos. Um clique aplica tudo, e depois você muda o que quiser.</p>
+  </div>
+  <div class="preset-row">
+    {#each PRESETS as preset (preset.id)}
+      {@const on = matches(s, preset)}
+      <button class="preset" class:on aria-pressed={on} onclick={() => usePreset(preset)}>
+        <span class="preset-pic">
+          <ThemePreview
+            theme={preset.settings.theme ?? s.theme}
+            apps={previewApps(5)}
+            settings={{ ...s, ...preset.settings, activeGroup: 0, iconSize: Math.round((preset.settings.iconSize ?? 44) * 0.5) }}
+          />
+        </span>
+        <span class="preset-name">{preset.name}{#if on}<span class="in-use"> · em uso</span>{/if}</span>
+        <span class="preset-about">{preset.about}</span>
+      </button>
+    {/each}
+  </div>
+</section>
 
 <div class="list-head">
   <div class="list-title">
