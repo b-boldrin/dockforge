@@ -1,18 +1,20 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
-  import type { AppEntry, MediaInfo, Settings } from "./types";
+  import type { AppEntry, MediaInfo, Settings, SystemStats } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
   let {
     apps,
     settings,
     media = null,
+    system = null,
     interactive = true,
     received = null,
   }: {
     apps: AppEntry[];
     settings: Settings;
     media?: MediaInfo | null;
+    system?: SystemStats | null;
     /** false for the previews in the settings window: nothing is clickable, the window is not resized. */
     interactive?: boolean;
     /** The group that just got an app (its dot blinks once). */
@@ -23,6 +25,8 @@
   const vertical = $derived(settings.position === "left" || settings.position === "right");
   const pinned = $derived(apps.filter((a) => a.pinned));
   const others = $derived(apps.filter((a) => !a.pinned));
+  const island = $derived(settings.layout === "island");
+  const front = $derived(apps.find((a) => a.active) ?? null);
   const showSeparator = $derived(settings.separator && pinned.length > 0 && others.length > 0);
 
   $effect(() => {
@@ -42,6 +46,22 @@
 
   // ---- window size and click-through --------------------------------------
   let dockEl: HTMLDivElement;
+  let appsEl: HTMLDivElement;
+  /** Full width of the app icons: how far the island opens. */
+  let appsWidth = $state(0);
+  let lastFit = "";
+
+  $effect(() => {
+    void apps.length;
+    void settings.iconSize;
+    void settings.groupsEnabled;
+    void showSeparator;
+    if (!island || !appsEl) return;
+    // Sum of the children: the wrapper itself is squeezed shut while the island is closed.
+    const kids = [...appsEl.children] as HTMLElement[];
+    const gap = parseFloat(getComputedStyle(appsEl).columnGap) || 0;
+    appsWidth = kids.reduce((w, k) => w + k.offsetWidth, 0) + gap * Math.max(0, kids.length - 1) + 16;
+  });
 
   function fitWindow() {
     if (!interactive || !dockEl) return;
@@ -56,10 +76,16 @@
     const lift = Math.abs(num("--df-hover-lift", -8));
     const grow = Math.max(0, icon * (scale - 1));
     const side = Math.ceil(grow / 2 + 12);
+    // The island's window always has room for the open island, so opening it never has to
+    // resize the window in the middle of the animation.
+    const width = island && appsEl ? rect.width - appsEl.getBoundingClientRect().width + appsWidth + icon : rect.width;
     // Room for the hover zoom and the tooltip, on the side away from the screen edge.
     const size = vertical
       ? { width: Math.ceil(rect.width + grow + lift + 240), height: Math.ceil(rect.height) + side * 2 }
-      : { width: Math.ceil(rect.width) + side * 2, height: Math.ceil(rect.height + grow + lift + 44 + 8) };
+      : { width: Math.ceil(width) + side * 2, height: Math.ceil(rect.height + grow + lift + 44 + 8) };
+    const key = `${size.width}x${size.height}/${settings.position}/${settings.layout}/${settings.align}`;
+    if (key === lastFit) return;
+    lastFit = key;
     invoke("fit_dock", size).catch((err) => console.error("fit_dock failed", err));
   }
 
@@ -74,6 +100,8 @@
     // Re-fit when the layout or the edge changes, not only when the dock's size does.
     void settings.position;
     void settings.layout;
+    void settings.align;
+    void appsWidth;
     const observer = new ResizeObserver(() => {
       fitWindow();
       reportHitRect();
@@ -88,10 +116,15 @@
     };
   });
 
+  /** The app that was just started: its icon bounces until the window shows up. */
+  let launching = $state<string | null>(null);
+
   // ---- actions -------------------------------------------------------------
   function click(app: AppEntry) {
     if (!interactive || justDragged) return;
     if (app.windows.length === 0 && app.exe) {
+      launching = app.key;
+      setTimeout(() => launching === app.key && (launching = null), 1400);
       invoke("launch_app", { path: app.exe }).catch((err) => console.error("launch_app failed", err));
       return;
     }
@@ -159,7 +192,7 @@
   }
 </script>
 
-{#snippet item(app: AppEntry)}
+{#snippet item(app: AppEntry, index: number)}
   {@const icon = app.exe ? icons[app.exe] : null}
   <button
     class="df-item"
@@ -167,6 +200,8 @@
     class:is-active={app.active}
     class:is-pinned={app.pinned}
     class:is-dragged={drag?.key === app.key}
+    class:is-launching={launching === app.key && app.windows.length === 0}
+    style:--df-i={index}
     style:translate={drag?.key === app.key ? `${drag.dx}px ${drag.dy}px` : undefined}
     aria-label={app.name}
     tabindex={interactive ? 0 : -1}
@@ -191,6 +226,7 @@
   class:is-dragging={drag != null}
   data-position={settings.position}
   data-layout={settings.layout}
+  data-align={settings.align}
   bind:this={dockEl}
   style:--df-icon-size="{settings.iconSize}px"
   style:--df-hover-scale={settings.magnify}
@@ -200,47 +236,64 @@
     ? `color-mix(in srgb, var(--df-bg) ${settings.opacity}%, transparent)`
     : undefined}
 >
-  {#if settings.groupsEnabled}
-    <span class="df-group" role="group" aria-label={en ? "Groups" : "Grupos"}>
-      {#each settings.groupNames as name, i (i)}
-        {#key received?.group === i ? received.at : 0}
-          <button
-            class="df-group-dot"
-            class:is-current={i === settings.activeGroup}
-            class:is-over={drag?.over === i}
-            class:is-received={received?.group === i}
-            data-group={i}
-            data-n={i + 1}
-            title="{name} (Alt+{i + 1})"
-            aria-label="{name} (Alt+{i + 1})"
-            aria-pressed={i === settings.activeGroup}
-            tabindex={interactive ? 0 : -1}
-            onclick={() => showGroup(i)}
-          ></button>
-        {/key}
-      {/each}
-    </span>
-  {/if}
-
-  {#each pinned as app (app.key)}
-    {@render item(app)}
-  {/each}
-  {#if showSeparator}
-    <span class="df-separator" role="separator"></span>
-  {/if}
-  {#each others as app (app.key)}
-    {@render item(app)}
-  {/each}
-  {#if apps.length === 0}
-    <span class="df-empty">
-      {#if settings.groupsEnabled && settings.activeGroup > 0}
-        {en ? "Empty group · Alt+Shift+" : "Grupo vazio · Alt+Shift+"}{settings.activeGroup + 1}
-        {en ? "brings the app in front here" : "traz o app em foco para cá"}
+  {#if island}
+    {@const icon = front?.exe ? icons[front.exe] : null}
+    <span class="df-island-now" aria-hidden="true">
+      {#if icon}
+        <img class="df-island-icon" src={icon} alt="" draggable="false" />
+      {:else if front}
+        <span class="df-island-icon df-icon--fallback" style:--df-fallback-hue={hue(front.name)}>{initial(front.name)}</span>
       {:else}
-        {en ? "Nothing open or pinned" : "Nada aberto ou fixado"}
+        <span class="df-island-glyph"></span>
       {/if}
     </span>
   {/if}
+
+  <!-- The app icons. Outside the island layout this wrapper does not exist for the layout
+       (display: contents); in the island it is what opens and closes. -->
+  <div class="df-apps" bind:this={appsEl} style:--df-apps-width="{appsWidth}px">
+    {#if settings.groupsEnabled}
+      <span class="df-group" role="group" aria-label={en ? "Groups" : "Grupos"}>
+        {#each settings.groupNames as name, i (i)}
+          {#key received?.group === i ? received.at : 0}
+            <button
+              class="df-group-dot"
+              class:is-current={i === settings.activeGroup}
+              class:is-over={drag?.over === i}
+              class:is-received={received?.group === i}
+              data-group={i}
+              data-n={i + 1}
+              title="{name} (Alt+{i + 1})"
+              aria-label="{name} (Alt+{i + 1})"
+              aria-pressed={i === settings.activeGroup}
+              tabindex={interactive ? 0 : -1}
+              onclick={() => showGroup(i)}
+            ></button>
+          {/key}
+        {/each}
+      </span>
+    {/if}
+
+    {#each pinned as app, i (app.key)}
+      {@render item(app, i)}
+    {/each}
+    {#if showSeparator}
+      <span class="df-separator" role="separator"></span>
+    {/if}
+    {#each others as app, i (app.key)}
+      {@render item(app, pinned.length + i)}
+    {/each}
+    {#if apps.length === 0}
+      <span class="df-empty">
+        {#if settings.groupsEnabled && settings.activeGroup > 0}
+          {en ? "Empty group · Alt+Shift+" : "Grupo vazio · Alt+Shift+"}{settings.activeGroup + 1}
+          {en ? "brings the app in front here" : "traz o app em foco para cá"}
+        {:else}
+          {en ? "Nothing open or pinned" : "Nada aberto ou fixado"}
+        {/if}
+      </span>
+    {/if}
+  </div>
 
   <span class="df-spacer"></span>
 
@@ -270,6 +323,33 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6h2v12h-2zM14 12L5 18V6z" /></svg>
         </button>
       </span>
+    </div>
+  {/if}
+
+  {#if settings.widgetSystem && system}
+    <div
+      class="df-widget df-system"
+      title={en
+        ? `Processor ${system.cpu}% · Memory ${system.memory}%`
+        : `Processador ${system.cpu}% · Memória ${system.memory}%`}
+    >
+      <span class="df-meter" style:--df-meter={system.cpu}>
+        <span class="df-meter-ring"></span>
+        <span class="df-meter-text"><span class="df-meter-label">CPU</span><span class="df-meter-value">{system.cpu}%</span></span>
+      </span>
+      <span class="df-meter" style:--df-meter={system.memory}>
+        <span class="df-meter-ring"></span>
+        <span class="df-meter-text"><span class="df-meter-label">RAM</span><span class="df-meter-value">{system.memory}%</span></span>
+      </span>
+      {#if system.battery != null}
+        <span class="df-meter" class:is-low={system.battery <= 20 && !system.charging} style:--df-meter={system.battery}>
+          <span class="df-meter-ring"></span>
+          <span class="df-meter-text">
+            <span class="df-meter-label">{system.charging ? (en ? "Charging" : "Carregando") : en ? "Battery" : "Bateria"}</span>
+            <span class="df-meter-value">{system.battery}%</span>
+          </span>
+        </span>
+      {/if}
     </div>
   {/if}
 
