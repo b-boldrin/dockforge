@@ -50,6 +50,19 @@ export async function patch(changes: Partial<Settings>) {
   }
 }
 
+/** Brings the apps pinned to the Windows taskbar into the favorites. Returns how many came. */
+export async function importFavorites(): Promise<number> {
+  try {
+    const added = await invoke<number>("import_taskbar_pins");
+    hub.settings = await invoke<Settings>("get_settings");
+    hub.error = "";
+    return added ?? 0;
+  } catch (err) {
+    hub.error = String(err);
+    return 0;
+  }
+}
+
 export function useTheme(id: string) {
   // A new theme starts clean: tweaks made on the old one do not carry over.
   return patch({ theme: id, accent: null, radius: null, opacity: null });
