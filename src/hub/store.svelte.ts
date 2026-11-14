@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { AppEntry, Settings, ThemeSummary } from "../lib/types";
+import type { AppEntry, MediaInfo, Settings, SystemStats, ThemeSummary } from "../lib/types";
+import type { Preset } from "./presets";
 import { refreshPreviewTheme } from "./themes.svelte.js";
 
 /** Everything the settings window shows, kept in sync with the Rust side. */
@@ -67,6 +68,14 @@ export function useTheme(id: string) {
   // A new theme starts clean: tweaks made on the old one do not carry over.
   return patch({ theme: id, accent: null, radius: null, opacity: null });
 }
+
+export function usePreset(preset: Preset) {
+  return patch(preset.settings);
+}
+
+/** Sample widget contents for previews: the real ones only reach the dock window. */
+export const SAMPLE_MEDIA: MediaInfo = { title: "Noite Feliz", artist: "Coral de Sorocaba", source: "Spotify", playing: true, thumbnail: null };
+export const SAMPLE_SYSTEM: SystemStats = { cpu: 23, memory: 58, battery: 76, charging: false };
 
 /** Sample apps for previews when nothing is open yet. */
 export const SAMPLE_APPS: AppEntry[] = ["Explorador", "Navegador", "Código", "Música", "Chat", "Terminal"].map((name, i) => ({
