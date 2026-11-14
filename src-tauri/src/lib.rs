@@ -30,7 +30,7 @@ use tauri::{
     WebviewWindowBuilder, Wry,
 };
 
-use model::{AppEntry, MediaInfo, ThemePayload, ThemeSummary};
+use model::{AppEntry, MediaInfo, SystemStats, ThemePayload, ThemeSummary};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use settings::{Pin, Settings};
 
@@ -207,11 +207,17 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
         h = area_h;
     }
 
+    // Along its edge the dock sits at the start, the middle or the end.
+    let along = |room: i32| match settings.align.as_str() {
+        "start" => 0,
+        "end" => room,
+        _ => room / 2,
+    };
     let (x, y) = match settings.position.as_str() {
-        "top" => (area.position.x + (area_w - w) / 2, area.position.y),
-        "left" => (area.position.x, area.position.y + (area_h - h) / 2),
-        "right" => (area.position.x + area_w - w, area.position.y + (area_h - h) / 2),
-        _ => (area.position.x + (area_w - w) / 2, area.position.y + area_h - h),
+        "top" => (area.position.x + along(area_w - w), area.position.y),
+        "left" => (area.position.x, area.position.y + along(area_h - h)),
+        "right" => (area.position.x + area_w - w, area.position.y + along(area_h - h)),
+        _ => (area.position.x + along(area_w - w), area.position.y + area_h - h),
     };
 
     window.set_size(PhysicalSize::new(w as u32, h as u32)).map_err(|e| e.to_string())?;
@@ -228,6 +234,11 @@ async fn get_media(state: State<'_, AppState>) -> Result<Option<MediaInfo>, Stri
         return Ok(None);
     }
     tauri::async_runtime::spawn_blocking(platform::media_now).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_system(state: State<'_, AppState>) -> Option<SystemStats> {
+    state.settings().widget_system.then(platform::system_stats)
 }
 
 /// Play/pause, next, previous. Runs off the main thread: Windows answers asynchronously.
@@ -744,6 +755,25 @@ fn start_media_watcher(app: AppHandle) {
         .expect("failed to start the media thread");
 }
 
+/// Reads processor, memory and battery every 2 s while the system widget is on.
+fn start_system_watcher(app: AppHandle) {
+    std::thread::Builder::new()
+        .name("dockforge-system".into())
+        .spawn(move || {
+            let mut last: Option<SystemStats> = None;
+            loop {
+                std::thread::sleep(Duration::from_millis(2000));
+                let enabled = app.state::<AppState>().settings().widget_system;
+                let now = enabled.then(platform::system_stats);
+                if now != last {
+                    let _ = app.emit("system-changed", now);
+                    last = now;
+                }
+            }
+        })
+        .expect("failed to start the system thread");
+}
+
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
@@ -778,6 +808,7 @@ pub fn run() {
             start_theme_watcher(app.handle().clone());
             start_mouse_watcher(app.handle().clone());
             start_media_watcher(app.handle().clone());
+            start_system_watcher(app.handle().clone());
             sync_shortcuts(app.handle(), app.state::<AppState>().settings().groups_enabled);
             if first_run {
                 open_hub(app.handle())?;
@@ -797,6 +828,7 @@ pub fn run() {
             open_settings,
             show_app_menu,
             get_media,
+            get_system,
             media_control,
             load_theme,
             open_themes_folder,
