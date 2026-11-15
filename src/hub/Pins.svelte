@@ -1,6 +1,8 @@
 <script lang="ts">
   import { hub, importFavorites, patch } from "./store.svelte.js";
   import { hue, icons, initial, requestIcon } from "../lib/icons.svelte.js";
+  import { flip } from "svelte/animate";
+  import { motionOff } from "../lib/motion";
   import type { Pin } from "../lib/types";
 
   const s = $derived(hub.settings!);
@@ -126,7 +128,7 @@
   <div class="pin-list">
     {#each rows as { pin, index }, row (pin.path)}
       {@const icon = icons[pin.path]}
-      <div class="pin-row">
+      <div class="pin-row" animate:flip={{ duration: motionOff() ? 0 : 220 }}>
         {#if icon}<img class="pin-icon" src={icon} alt="" />{:else}<span class="pin-icon fallback" style:--h={hue(pin.name)}>{initial(pin.name)}</span>{/if}
         <div class="pin-text"><div class="pin-name">{pin.name}</div><div class="sub ellipsis">{pin.path}</div></div>
         {#if s.groupsEnabled}
