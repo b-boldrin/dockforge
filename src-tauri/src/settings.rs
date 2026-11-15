@@ -23,9 +23,15 @@ pub struct Pin {
 
 pub const GROUPS: usize = 4;
 
+/// Bumped when a saved settings file needs a one-time change on load (see `migrated`).
+pub const VERSION: u32 = 1;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Settings {
+    /// Which `VERSION` wrote the file. Files from before versions existed load as 0.
+    #[serde(default)]
+    pub version: u32,
     pub theme: String,
     /// "bottom" | "top" | "left" | "right"
     pub position: String,
@@ -45,7 +51,8 @@ pub struct Settings {
     pub opacity: Option<u32>,
     pub pins: Vec<Pin>,
     pub start_with_windows: bool,
-    /// Hide the Windows taskbar while DockForge is running. It comes back when DockForge closes.
+    /// Hide the Windows taskbar while DockForge is running (on by default: the dock replaces
+    /// it). It comes back when DockForge closes.
     pub hide_taskbar: bool,
     /// "pt" | "en"
     pub language: String,
@@ -71,6 +78,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            version: VERSION,
             theme: DEFAULT_THEME.to_string(),
             position: "bottom".into(),
             icon_size: 48,
@@ -85,7 +93,7 @@ impl Default for Settings {
             opacity: None,
             pins: Vec::new(),
             start_with_windows: false,
-            hide_taskbar: false,
+            hide_taskbar: true,
             language: "pt".into(),
             layout: "float".into(),
             align: "center".into(),
@@ -137,6 +145,7 @@ impl Settings {
             position = "top".into();
         }
         Settings {
+            version: self.version.min(VERSION),
             theme: if self.theme.is_empty() || self.theme.len() > 40 { defaults.theme } else { self.theme.clone() },
             position,
             icon_size: self.icon_size.clamp(32, 72),
@@ -186,6 +195,19 @@ impl Settings {
     }
 }
 
+impl Settings {
+    /// One-time changes to files saved by older versions.
+    fn migrated(mut self) -> Settings {
+        if self.version < 1 {
+            // Hiding the Windows taskbar became the default. Older files carry the old
+            // default (off) without the user ever having chosen it.
+            self.hide_taskbar = true;
+        }
+        self.version = VERSION;
+        self
+    }
+}
+
 fn file(data_dir: &Path) -> PathBuf {
     data_dir.join("settings.json")
 }
@@ -194,7 +216,7 @@ pub fn load(data_dir: &Path) -> Settings {
     fs::read_to_string(file(data_dir))
         .ok()
         .and_then(|s| serde_json::from_str::<Settings>(&s).ok())
-        .map(|s| s.sanitized())
+        .map(|s| s.migrated().sanitized())
         .unwrap_or_default()
 }
 
@@ -292,5 +314,20 @@ mod tests {
         let s: Settings = serde_json::from_str(r#"{"theme":"midnight-pill"}"#).unwrap();
         assert_eq!(s.theme, "midnight-pill");
         assert_eq!(s.icon_size, 48);
+    }
+
+    #[test]
+    fn files_from_before_the_taskbar_default_get_it_once() {
+        let old: Settings = serde_json::from_str(r#"{"theme":"papel","hideTaskbar":false}"#).unwrap();
+        assert_eq!(old.version, 0);
+        let old = old.migrated();
+        assert!(old.hide_taskbar);
+        assert_eq!(old.version, VERSION);
+
+        // Once migrated, turning it off sticks.
+        let chosen: Settings = serde_json::from_str(r#"{"version":1,"hideTaskbar":false}"#).unwrap();
+        assert!(!chosen.migrated().hide_taskbar);
+        assert!(Settings::default().hide_taskbar);
+        assert_eq!(Settings::default().version, VERSION);
     }
 }

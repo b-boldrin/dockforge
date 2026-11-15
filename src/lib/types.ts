@@ -57,6 +57,7 @@ export interface Pin {
 export type Position = "bottom" | "top" | "left" | "right";
 
 export interface Settings {
+  version: number;
   theme: string;
   position: Position;
   iconSize: number;
