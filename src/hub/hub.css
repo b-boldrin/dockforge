@@ -47,7 +47,7 @@ h1, h2, h3 { margin: 0; }
 
 .top {
   height: 48px; flex: none; display: flex; align-items: center; gap: 28px;
-  padding: 0 20px; border-bottom: 1px solid var(--line);
+  padding: 0 20px;
 }
 .brand { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 .brand-bg { fill: var(--raised-2); }
@@ -86,13 +86,23 @@ h1, h2, h3 { margin: 0; }
 .gear.panel-toggle, .gear.panel-toggle:hover, .gear.panel-toggle.on { rotate: none; }
 .panel-title { font-size: 14px; font-weight: 600; }
 .panel-preview { margin-top: 12px; height: 152px; border-radius: 12px; overflow: hidden; }
-.ph { margin: 24px 0 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+.grp { margin-top: 20px; }
+.panel-title + .sub + .panel-preview + .grp { margin-top: 20px; }
+.ph { margin: 0 0 8px 2px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+/* A section is one soft surface. Rows inside it are told apart by space, not by lines. */
+.box { background: var(--raised); border-radius: 12px; padding: 6px 14px; }
+.box select, .box .tg { background: var(--raised-2); }
+.box .tg[aria-pressed="true"] { background: var(--accent); }
+.box .seg-group { background: var(--panel); box-shadow: none; }
+.box .seg.on { background: var(--raised-2); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.box .groups input:hover, .box .groups input:focus { background: var(--raised-2); border-color: transparent; }
+.box .key { border-color: transparent; background: var(--raised-2); }
 .sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 .muted { color: var(--text-2); }
 .hint { margin: 4px 0 8px; font-size: 12px; line-height: 1.45; color: var(--text-3); }
 .stack { display: flex; flex-direction: column; }
 
-.seg-group { display: flex; gap: 2px; padding: 4px; margin-top: 8px; background: var(--bg); border-radius: 8px; box-shadow: inset 0 0 0 1px var(--line); }
+.seg-group { display: flex; gap: 2px; padding: 4px; margin-top: 6px; background: var(--bg); border-radius: 8px; box-shadow: inset 0 0 0 1px var(--line); }
 .seg {
   flex: 1; border: 0; background: transparent; color: var(--text-2); padding: 6px 0; border-radius: 4px;
   font-size: 12px; font-weight: 500; cursor: pointer;
@@ -124,7 +134,7 @@ h1, h2, h3 { margin: 0; }
 
 .prow {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 36px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px;
+  min-height: 40px; padding: 6px 0; font-size: 13px;
 }
 .seg-group + .prow { margin-top: 12px; }
 .range { display: flex; align-items: center; gap: 8px; }
@@ -172,7 +182,7 @@ select {
 .sw { transition: scale 140ms var(--ease); }
 .sw:hover { scale: 1.12; }
 .sw.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--panel) inset; }
-.panel-actions { padding-top: 12px; border-top: 1px solid var(--line); }
+.panel-actions { padding: 6px 0 8px; }
 
 /* ---- shared controls ------------------------------------------------------- */
 .btn {
@@ -295,21 +305,21 @@ select {
 .card-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .card-name { font-size: 14px; font-weight: 600; }
 
-.more { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); max-width: 68ch; }
+.more { margin-top: 40px; max-width: 68ch; }
 .more h2 { font-size: 18px; font-weight: 600; }
 .more p { margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-2); }
 
 /* ---- pins & system ------------------------------------------------------------ */
 .page { max-width: 740px; }
 .page h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
-.page h2 { margin: 40px 0 8px; font-size: 18px; font-weight: 600; }
+.page h2 { margin: 36px 0 4px; font-size: 18px; font-weight: 600; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .lead { margin: 8px 0 0; font-size: 14px; color: var(--text-3); max-width: 60ch; }
 .group-tabs { margin-top: 24px; }
 .kbd { margin-left: 4px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .picker { margin-top: 16px; padding: 12px 16px; border-radius: 12px; background: var(--panel); }
 .pin-list { margin-top: 16px; }
-.pin-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.pin-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; }
 .pin-icon { width: 32px; height: 32px; flex: none; border-radius: 22%; object-fit: contain; }
 .pin-icon.fallback {
   display: grid; place-items: center; color: #fff; font-weight: 600;
@@ -327,15 +337,16 @@ select {
 .btn:disabled { opacity: 0.55; cursor: default; }
 .notice { margin: 12px 0 0; font-size: 13px; color: var(--text-2); }
 
-.srow { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
-.page h1 + .srow { margin-top: 12px; }
+.srow { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
+.page .box { padding: 4px 20px; margin-top: 12px; }
+.page .box .srow + .srow { margin-top: 2px; }
+.page h1 + .box { margin-top: 20px; }
 .lbl { font-size: 14px; font-weight: 500; }
 
-.nested { margin-left: 16px; padding-left: 16px; border-left: 1px solid var(--line-2); }
-.nested .srow:first-child { border-top: 0; }
+.nested { margin: 2px 0 6px; padding: 2px 16px; border-radius: 10px; background: rgba(255, 255, 255, 0.03); }
 .srow.is-soon .lbl { color: var(--text-2); }
-.soon { flex: none; font-size: 12px; color: var(--text-3); padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; }
-.page h2 + .lead { margin: 0 0 8px; }
+.soon { flex: none; font-size: 12px; color: var(--text-3); padding: 4px 8px; background: var(--raised-2); border-radius: 6px; }
+.page h2 + .lead { margin: 0 0 4px; }
 
 /* ---- motion -----------------------------------------------------------------
    One curve everywhere. A page arrives in a short cascade; cards lift a little under the
@@ -393,7 +404,7 @@ select {
   to { width: 12px; }
 }
 .pin-row { transition: background 160ms var(--ease); }
-.pin-row:hover { background: rgba(255, 255, 255, 0.02); }
+.pin-row:hover { background: rgba(255, 255, 255, 0.04); }
 .ico { transition: background 160ms var(--ease), color 160ms var(--ease); }
 
 /* Animations off: by choice in Configurações, or following Windows. */

@@ -44,6 +44,7 @@
   const vertical = $derived(s.position === "left" || s.position === "right");
   const marks: Array<[Settings["indicator"], string]> = [
     ["theme", "A do tema"],
+    ["none", "Nenhuma"],
     ["dot", "Bolinha"],
     ["dash", "Traço"],
     ["bar", "Barra"],
@@ -99,7 +100,9 @@
     <ThemePreview theme={s.theme} apps={previewApps(6)} settings={preview} />
   </div>
 
+  <section class="grp">
   <h3 class="ph">Estilo</h3>
+  <div class="box">
   <div class="seg-group" role="group" aria-label="Formato">
     {#each layouts as [id, label] (id)}
       <button class="seg" class:on={s.layout === id} aria-pressed={s.layout === id} onclick={() => patch({ layout: id })}>{label}</button>
@@ -128,7 +131,12 @@
     </div>
   </div>
 
+  </div>
+  </section>
+
+  <section class="grp">
   <h3 class="ph">Widgets</h3>
+  <div class="box">
   <div class="prow">
     <span>Tocando agora</span>
     <button class="tg" aria-label="Tocando agora" aria-pressed={s.widgetMedia} onclick={() => patch({ widgetMedia: !s.widgetMedia })}></button>
@@ -142,7 +150,12 @@
     <button class="tg" aria-label="Relógio" aria-pressed={s.widgetClock} onclick={() => patch({ widgetClock: !s.widgetClock })}></button>
   </div>
 
+  </div>
+  </section>
+
+  <section class="grp">
   <h3 class="ph">Comportamento</h3>
+  <div class="box">
   <div class="prow">
     <span>Ocultar sozinha</span>
     <button class="tg" aria-label="Ocultar sozinha" aria-pressed={s.autoHide} onclick={() => patch({ autoHide: !s.autoHide })}></button>
@@ -177,7 +190,12 @@
     </select>
   </div>
 
+  </div>
+  </section>
+
+  <section class="grp">
   <h3 class="ph">Favoritos e grupos</h3>
+  <div class="box">
   <div class="prow">
     <span title="Apps que ficam na dock mesmo fechados">Favoritos</span>
     <button class="tg" aria-label="Mostrar favoritos" aria-pressed={s.favoritesEnabled} onclick={() => patch({ favoritesEnabled: !s.favoritesEnabled })}></button>
@@ -221,7 +239,12 @@
     </div>
   {/if}
 
+  </div>
+  </section>
+
+  <section class="grp">
   <h3 class="ph">Ajustes do tema</h3>
+  <div class="box">
   <div class="prow">
     <label for="isz">Tamanho</label>
     <span class="range"><input id="isz" type="range" min="32" max="72" step="4" value={s.iconSize} onchange={(e) => patch({ iconSize: num(e) })} /><span class="rv">{s.iconSize} px</span></span>
@@ -240,6 +263,11 @@
       <button class="seg icon" class:on={s.indicator === id} aria-pressed={s.indicator === id} aria-label={label} title={label} onclick={() => patch({ indicator: id })}>
         {#if id === "theme"}
           <span class="seg-text">Tema</span>
+        {:else if id === "none"}
+          <svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
+            <rect x="7.5" y="1.5" width="9" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"></rect>
+            <path d="M8 14.5h8" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="0.1 3"></path>
+          </svg>
         {:else}
           <svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
             <rect x="7.5" y="1.5" width="9" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"></rect>
@@ -271,4 +299,6 @@
   <div class="panel-actions">
     <button class="link muted" onclick={() => patch({ accent: null, radius: null, opacity: null, gap: null, indicator: "theme" })}>Desfazer ajustes</button>
   </div>
+  </div>
+  </section>
 </aside>

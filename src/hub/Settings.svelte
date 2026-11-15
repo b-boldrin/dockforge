@@ -37,6 +37,7 @@
 
 <div class="page">
   <h1>Configurações</h1>
+  <div class="box">
   <div class="srow">
     <div><div class="lbl">Iniciar com o Windows</div><div class="sub">A dock abre sozinha quando você liga o computador.</div></div>
     <button class="tg" aria-label="Iniciar com o Windows" aria-pressed={s.startWithWindows} onclick={() => patch({ startWithWindows: !s.startWithWindows })}></button>
@@ -64,9 +65,11 @@
       <option value="off">Desligadas</option>
     </select>
   </div>
+  </div>
 
   <h2>Integrações</h2>
   <p class="lead">O que a dock pode mostrar de outros programas. Cada uma liga e desliga sozinha.</p>
+  <div class="box">
   <div class="srow">
     <div><div class="lbl">Tocando agora</div><div class="sub">Música ou vídeo em reprodução, com capa e botões de pausar e pular.</div></div>
     <button class="tg" aria-label="Tocando agora" aria-pressed={s.widgetMedia} onclick={() => patch({ widgetMedia: !s.widgetMedia })}></button>
@@ -96,13 +99,17 @@
     </div>
   {/each}
 
+  </div>
+
   <h2>Sobre</h2>
+  <div class="box">
   <div class="srow">
     <div><div class="lbl">DockForge {version}</div><div class="sub">Código aberto, licença MIT.</div></div>
   </div>
   <div class="srow"><button class="link" onclick={() => open("https://github.com/b-boldrin/dockforge")}>Código no GitHub</button></div>
   <div class="srow"><button class="link" onclick={() => open("https://github.com/b-boldrin/dockforge-themes")}>Como criar e publicar um tema</button></div>
   <div class="srow"><button class="link" onclick={() => open("https://github.com/b-boldrin/dockforge/issues/new")}>Relatar um problema</button></div>
+  </div>
   <div class="row-actions">
     <button class="btn" onclick={() => invoke("open_themes_folder")}>Abrir pasta de temas</button>
     <button class="btn danger" onclick={reset}>Restaurar configurações padrão</button>
