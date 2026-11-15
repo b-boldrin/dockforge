@@ -149,6 +149,10 @@
   </div>
   {#if s.autoHide}
     <div class="prow" transition:slide={slideOpts}>
+      <span title="Sobre janelas soltas e na área de trabalho a dock fica à vista. Ela só se esconde quando a janela em uso está maximizada.">Só com janela maximizada</span>
+      <button class="tg" aria-label="Ocultar só com janela maximizada" aria-pressed={s.hideOnlyMaximized} onclick={() => patch({ hideOnlyMaximized: !s.hideOnlyMaximized })}></button>
+    </div>
+    <div class="prow" transition:slide={slideOpts}>
       <label for="dly" class="muted">Esperar</label>
       <span class="range"><input id="dly" type="range" min="0" max="2000" step="100" value={s.hideDelay} onchange={(e) => patch({ hideDelay: num(e) })} /><span class="rv">{(s.hideDelay / 1000).toFixed(1)} s</span></span>
     </div>
