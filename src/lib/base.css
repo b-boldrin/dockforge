@@ -236,7 +236,7 @@
   height: 5px;
   border-radius: 50%;
   background: transparent;
-  transition: all var(--df-transition);
+  transition: width var(--df-transition), height var(--df-transition), background-color var(--df-transition), opacity var(--df-transition);
 }
 .df-dock[data-position="top"] .df-indicator { bottom: auto; top: var(--df-indicator-offset); }
 .df-dock[data-position="left"] .df-indicator { bottom: auto; left: var(--df-indicator-offset); }
@@ -249,6 +249,35 @@
 .df-item.is-active .df-indicator {
   background: var(--df-indicator-active-color);
 }
+
+/* The mark under an open app can be chosen apart from the theme: data-indicator on the dock
+   is "theme" (nothing here applies) or one of four standard marks. They are written to win
+   over a theme's own mark, and use the theme's two indicator colors. */
+.df-dock:is([data-indicator="dot"], [data-indicator="dash"], [data-indicator="bar"], [data-indicator="glow"]) .df-item .df-indicator {
+  display: block;
+  box-shadow: none;
+  animation: none;
+  filter: none;
+  opacity: 1;
+}
+/* A theme may have stretched its mark from side to side; the standard ones are centered. */
+.df-dock:is([data-position="bottom"], [data-position="top"]):is([data-indicator="dot"], [data-indicator="dash"], [data-indicator="bar"], [data-indicator="glow"]) .df-item .df-indicator {
+  left: auto;
+  right: auto;
+}
+.df-dock[data-indicator="dot"] .df-item .df-indicator { width: 5px; height: 5px; border-radius: 50%; }
+.df-dock[data-indicator="dash"] .df-item .df-indicator { width: 8px; height: 3px; border-radius: 2px; }
+.df-dock[data-indicator="dash"] .df-item.is-active .df-indicator { width: 18px; }
+.df-dock[data-indicator="bar"] .df-item .df-indicator { width: 60%; height: 2px; border-radius: 1px; }
+.df-dock[data-indicator="bar"] .df-item.is-active .df-indicator { width: 100%; }
+.df-dock[data-indicator="glow"] .df-item .df-indicator { width: 70%; height: 6px; border-radius: 50%; filter: blur(4px); opacity: 0.55; }
+.df-dock[data-indicator="glow"] .df-item.is-active .df-indicator { opacity: 1; }
+/* On a side dock the long marks stand upright. */
+.df-dock:is([data-position="left"], [data-position="right"])[data-indicator="dash"] .df-item .df-indicator { width: 3px; height: 8px; }
+.df-dock:is([data-position="left"], [data-position="right"])[data-indicator="dash"] .df-item.is-active .df-indicator { width: 3px; height: 18px; }
+.df-dock:is([data-position="left"], [data-position="right"])[data-indicator="bar"] .df-item .df-indicator { width: 2px; height: 60%; }
+.df-dock:is([data-position="left"], [data-position="right"])[data-indicator="bar"] .df-item.is-active .df-indicator { width: 2px; height: 100%; }
+.df-dock:is([data-position="left"], [data-position="right"])[data-indicator="glow"] .df-item .df-indicator { width: 6px; height: 70%; }
 
 .df-tooltip {
   position: absolute;
