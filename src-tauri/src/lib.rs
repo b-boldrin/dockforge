@@ -278,12 +278,18 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
     Ok(())
 }
 
+/// What is playing, unless the widget is off or that kind of player was turned off.
+fn media_for(settings: &Settings) -> Option<MediaInfo> {
+    if !settings.widget_media {
+        return None;
+    }
+    platform::media_now().filter(|m| !settings.media_blocked.iter().any(|b| b == settings::media_kind(&m.source)))
+}
+
 #[tauri::command]
 async fn get_media(state: State<'_, AppState>) -> Result<Option<MediaInfo>, String> {
-    if !state.settings().widget_media {
-        return Ok(None);
-    }
-    tauri::async_runtime::spawn_blocking(platform::media_now).await.map_err(|e| e.to_string())
+    let settings = state.settings();
+    tauri::async_runtime::spawn_blocking(move || media_for(&settings)).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -804,8 +810,7 @@ fn start_media_watcher(app: AppHandle) {
             let mut last: Option<MediaInfo> = None;
             loop {
                 std::thread::sleep(Duration::from_millis(1000));
-                let enabled = app.state::<AppState>().settings().widget_media;
-                let now = if enabled { platform::media_now() } else { None };
+                let now = media_for(&app.state::<AppState>().settings());
                 if now != last {
                     let _ = app.emit("media-changed", &now);
                     last = now;

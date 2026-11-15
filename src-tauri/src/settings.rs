@@ -25,6 +25,22 @@ pub struct Pin {
 pub const MIN_GROUPS: usize = 4;
 pub const MAX_GROUPS: usize = 9;
 
+/// The kinds of players the user can turn on and off one by one.
+pub const MEDIA_KINDS: [&str; 3] = ["spotify", "browsers", "others"];
+
+/// Which kind a player is, from the name Windows gives for it.
+pub fn media_kind(source: &str) -> &'static str {
+    const BROWSERS: [&str; 8] = ["chrome", "msedge", "edge", "firefox", "brave", "opera", "vivaldi", "arc"];
+    let name = source.to_lowercase();
+    if name.contains("spotify") {
+        "spotify"
+    } else if BROWSERS.iter().any(|b| name.contains(b)) {
+        "browsers"
+    } else {
+        "others"
+    }
+}
+
 /// Bumped when a saved settings file needs a one-time change on load (see `migrated`).
 pub const VERSION: u32 = 1;
 
@@ -75,6 +91,8 @@ pub struct Settings {
     pub active_group: u8,
     pub group_names: Vec<String>,
     pub widget_media: bool,
+    /// Kinds of players the "now playing" widget ignores: "spotify", "browsers", "others".
+    pub media_blocked: Vec<String>,
     pub widget_clock: bool,
     /// Processor, memory and battery.
     pub widget_system: bool,
@@ -108,7 +126,8 @@ impl Default for Settings {
             active_group: 0,
             group_names: default_group_names(),
             widget_media: false,
-            widget_clock: true,
+media_blocked: Vec::new(),
+                        widget_clock: true,
             widget_system: false,
         }
     }
@@ -190,6 +209,7 @@ impl Settings {
                 })
                 .collect(),
             widget_media: self.widget_media,
+            media_blocked: MEDIA_KINDS.iter().filter(|k| self.media_blocked.iter().any(|b| b == *k)).map(|k| k.to_string()).collect(),
             widget_clock: self.widget_clock,
             widget_system: self.widget_system,
         }
@@ -317,6 +337,17 @@ mod tests {
         .sanitized();
         assert_eq!(s.accent.as_deref(), Some("#5ee6e0"));
         assert_eq!(s.pins.len(), 2);
+    }
+
+    #[test]
+    fn players_are_sorted_into_kinds() {
+        assert_eq!(media_kind("Spotify"), "spotify");
+        assert_eq!(media_kind("SpotifyAB.SpotifyMusic_zpdnekdrzrea0"), "spotify");
+        assert_eq!(media_kind("Msedge"), "browsers");
+        assert_eq!(media_kind("Chrome"), "browsers");
+        assert_eq!(media_kind("Vlc"), "others");
+        let s = Settings { media_blocked: vec!["others".into(), "radio".into(), "spotify".into(), "spotify".into()], ..Settings::default() }.sanitized();
+        assert_eq!(s.media_blocked, ["spotify", "others"]);
     }
 
     #[test]
