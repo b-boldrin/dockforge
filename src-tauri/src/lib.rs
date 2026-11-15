@@ -228,7 +228,8 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
         (true, Some(thickness), Some(handle)) if thickness > 0.0 => {
             let (pos, size) = (monitor.position(), monitor.size());
             let screen = (pos.x, pos.y, pos.x + size.width as i32, pos.y + size.height as i32);
-            platform::reserve_edge(handle, edge, (thickness * scale).round() as i32, screen)
+            // A dock that replaces the Windows taskbar takes the screen edge itself.
+            platform::reserve_edge(handle, edge, (thickness * scale).round() as i32, screen, !settings.hide_taskbar)
         }
         _ => {
             platform::release_edge();

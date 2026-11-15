@@ -823,10 +823,20 @@ fn appbar(window: isize) -> APPBARDATA {
 }
 
 /// Reserves `thickness` pixels along `edge` ("bottom" | "top" | "left" | "right") of the
-/// monitor `(left, top, right, bottom)` for `window`. Returns the strip Windows granted,
-/// which can be moved inwards if another toolbar already owns that edge.
+/// monitor `(left, top, right, bottom)` for `window` and returns the strip.
+///
+/// With `yield_to_others`, Windows may move the strip inwards to make room for another
+/// toolbar on that edge (the Windows taskbar, when it is visible). Without it the strip is
+/// exactly at the screen edge: that is what a dock that replaces the taskbar needs, since a
+/// hidden taskbar can still be holding on to its old place.
 /// Calling it again just updates the strip.
-pub fn reserve_edge(window: isize, edge: &str, thickness: i32, monitor: (i32, i32, i32, i32)) -> Option<(i32, i32, i32, i32)> {
+pub fn reserve_edge(
+    window: isize,
+    edge: &str,
+    thickness: i32,
+    monitor: (i32, i32, i32, i32),
+    yield_to_others: bool,
+) -> Option<(i32, i32, i32, i32)> {
     let mut registered = APPBAR.lock().ok()?;
     if *registered != Some(window) {
         if let Some(old) = registered.take() {
@@ -855,10 +865,12 @@ pub fn reserve_edge(window: isize, edge: &str, thickness: i32, monitor: (i32, i3
         _ => rc.top = rc.bottom - thickness,
     };
     narrow(&mut data.rc);
-    // Windows may push the strip away from the edge to make room for another toolbar;
-    // after that the thickness is applied again from wherever the strip ended up.
-    unsafe { SHAppBarMessage(ABM_QUERYPOS, &mut data) };
-    narrow(&mut data.rc);
+    if yield_to_others {
+        // Windows pushes the strip away from the edge if another toolbar is there; the
+        // thickness is then applied again from wherever the strip ended up.
+        unsafe { SHAppBarMessage(ABM_QUERYPOS, &mut data) };
+        narrow(&mut data.rc);
+    }
     unsafe { SHAppBarMessage(ABM_SETPOS, &mut data) };
     Some((data.rc.left, data.rc.top, data.rc.right, data.rc.bottom))
 }
