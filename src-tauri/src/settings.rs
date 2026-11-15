@@ -42,7 +42,7 @@ pub fn media_kind(source: &str) -> &'static str {
 }
 
 /// Bumped when a saved settings file needs a one-time change on load (see `migrated`).
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -114,7 +114,7 @@ impl Default for Settings {
             position: "bottom".into(),
             icon_size: 48,
             magnify: 1.3,
-            auto_hide: false,
+            auto_hide: true,
             reserve_space: true,
             hide_delay: 600,
             show_mode: "both".into(),
@@ -254,6 +254,10 @@ impl Settings {
             // Hiding the Windows taskbar became the default. Older files carry the old
             // default (off) without the user ever having chosen it.
             self.hide_taskbar = true;
+        }
+        if self.version < 2 {
+            // Auto-hide became the default too, so the dock stays out of the way.
+            self.auto_hide = true;
         }
         self.version = VERSION;
         self
@@ -408,8 +412,15 @@ mod tests {
         assert_eq!(old.version, VERSION);
 
         // Once migrated, turning it off sticks.
-        let chosen: Settings = serde_json::from_str(r#"{"version":1,"hideTaskbar":false}"#).unwrap();
-        assert!(!chosen.migrated().hide_taskbar);
+        let chosen: Settings = serde_json::from_str(r#"{"version":2,"hideTaskbar":false,"autoHide":false}"#).unwrap();
+        let chosen = chosen.migrated();
+        assert!(!chosen.hide_taskbar);
+        assert!(!chosen.auto_hide);
+
+        // A file from version 1 gets auto-hide turned on once.
+        let v1: Settings = serde_json::from_str(r#"{"version":1,"autoHide":false}"#).unwrap();
+        assert!(v1.migrated().auto_hide);
+        assert!(Settings::default().auto_hide);
         assert!(Settings::default().hide_taskbar);
         assert_eq!(Settings::default().version, VERSION);
     }
