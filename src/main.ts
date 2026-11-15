@@ -22,6 +22,11 @@ function showFailure(err: unknown) {
   box.textContent = `O DockForge não conseguiu abrir esta janela (${view ?? "?"}).\n\n${detail}`;
   document.body.append(box);
 }
+// The web view's own right-click menu (Back, Reload, Inspect) has no place in an app.
+// Text fields keep theirs, for copy and paste.
+window.addEventListener("contextmenu", (e) => {
+  if (!(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) e.preventDefault();
+});
 window.addEventListener("error", (e) => {
   // Browsers raise this harmless notice when a ResizeObserver resizes something in the same pass.
   if (e.message.startsWith("ResizeObserver loop")) {
