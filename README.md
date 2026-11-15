@@ -10,10 +10,11 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Three layouts: *floating* (sized to its icons), *edge to edge* (like the Windows 10 taskbar) or *island* (a small pill with the app in front and the widgets; the other apps appear when the pointer is over it)
 - Any screen edge, and for floating docks and islands the start, middle or end of that edge (so a dock can live in a corner)
 - Favorites that stay when closed (click to start them), then the other open apps, with an optional line between them. Favorites can be imported from the Windows taskbar, or turned off
-- Groups, switched from anywhere with **Alt+1 … Alt+4**. Group 1 has the favorites and everything open; groups 2 to 4 start empty. Move the app in front to a group with **Alt+Shift+1 … Alt+Shift+4**, drag its icon onto a group dot, or use the right-click menu
+- Groups, switched from anywhere with **Alt+1 … Alt+9** (four groups to start, up to nine). Group 1 has the favorites and everything open; groups 2 to 4 start empty. Move the app in front to a group with **Alt+Shift+number**, drag its icon onto a group dot, or use the right-click menu
 - Click: bring to front / minimize, cycle through the app's windows, or only bring to front (your choice)
 - Right-click menu: the app's windows, new window, add to / remove from favorites, move to group, close, close all
 - Hides the Windows taskbar while DockForge is open (on by default; turn it off in Sistema → *Esconder a barra de tarefas do Windows*). It comes back when DockForge closes, and on the next start if DockForge was killed
+- A dock that is always visible keeps its strip of the screen, so maximized windows end where it begins (can be turned off)
 - Auto-hide that slides through the screen edge and comes back when the mouse touches it
 - Click-through: the empty space around the dock (room for the hover zoom and the tooltips) does not block clicks
 - Widgets: **now playing** (anything in Windows' media controls: Spotify, YouTube Music in a browser, most players), **system** (processor, memory, battery) and a clock
