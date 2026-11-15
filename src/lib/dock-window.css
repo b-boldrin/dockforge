@@ -15,7 +15,8 @@ body {
   inset: 0;
   display: flex;
   box-sizing: border-box;
-  transition: translate 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms;
+  /* Coming back: the dock slides in from the edge and is fully there a little after. */
+  transition: translate 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;
 }
 
 .stage[data-position="bottom"] { align-items: flex-end; justify-content: center; padding-bottom: 6px; }
@@ -29,13 +30,17 @@ body {
 .stage:is([data-position="left"], [data-position="right"])[data-align="end"] { align-items: flex-end; padding-bottom: 8px; }
 .stage[data-layout="bar"] { padding: 0; }
 
-/* Auto-hide: slide out through the screen edge. */
-.stage.is-hidden { opacity: 0; }
+/* Auto-hide: the dock slides out through the screen edge, and only fades once it is almost
+   gone, so what you see is it leaving and not it blinking off. */
+.stage.is-hidden {
+  opacity: 0;
+  transition: translate 360ms cubic-bezier(0.5, 0, 0.75, 0), opacity 140ms ease 220ms;
+}
 .stage.is-hidden[data-position="bottom"] { translate: 0 100%; }
 .stage.is-hidden[data-position="top"] { translate: 0 -100%; }
 .stage.is-hidden[data-position="left"] { translate: -100% 0; }
 .stage.is-hidden[data-position="right"] { translate: 100% 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .stage { transition: opacity 120ms; }
+  .stage, .stage.is-hidden { transition: opacity 120ms; }
 }
