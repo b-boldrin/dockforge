@@ -73,3 +73,7 @@ pub fn release_edge() {}
 pub fn fullscreen_active() -> bool {
     false
 }
+
+pub fn maximized_in_front() -> bool {
+    false
+}

@@ -890,22 +890,39 @@ pub fn release_edge() {
 use windows::Win32::Graphics::Gdi::{GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST};
 use windows::Win32::UI::WindowsAndMessaging::{GetClassNameW, GetWindowRect, IsZoomed};
 
-/// True when the window in front covers its whole monitor: a game, a video in full screen,
-/// a browser after F11, a slideshow. A maximized window does not count (it also covers the
-/// monitor when no toolbar reserves space), and neither does the desktop itself.
-pub fn fullscreen_active() -> bool {
+/// The window in front, unless it is the desktop or the taskbar (which are as big as the
+/// screen but are not apps).
+fn front_app_window() -> Option<HWND> {
     unsafe {
         let front = GetForegroundWindow();
-        if front.is_invalid() || IsZoomed(front).as_bool() {
-            return false;
+        if front.is_invalid() {
+            return None;
         }
         let mut class = [0u16; 64];
         let len = GetClassNameW(front, &mut class).max(0) as usize;
         let class = String::from_utf16_lossy(&class[..len.min(class.len())]);
-        // The desktop and the taskbar are as big as the screen but are not "full screen apps".
-        if matches!(class.as_str(), "Progman" | "WorkerW" | "Shell_TrayWnd" | "Shell_SecondaryTrayWnd" | "XamlExplorerHostIslandWindow") {
-            return false;
+        let shell = matches!(class.as_str(), "Progman" | "WorkerW" | "Shell_TrayWnd" | "Shell_SecondaryTrayWnd" | "XamlExplorerHostIslandWindow");
+        (!shell).then_some(front)
+    }
+}
+
+/// True when something is in full screen: a game, a video, a browser after F11, a slideshow.
+///
+/// A maximized window is not full screen, even though it can cover the whole monitor once
+/// the taskbar is hidden. What tells them apart:
+/// - Windows itself knows about games, Direct3D full screen and presentations;
+/// - a maximized window keeps its resizable frame, a full screen one drops it.
+pub fn fullscreen_active() -> bool {
+    use windows::Win32::UI::Shell::{SHQueryUserNotificationState, QUNS_BUSY, QUNS_PRESENTATION_MODE, QUNS_RUNNING_D3D_FULL_SCREEN};
+    use windows::Win32::UI::WindowsAndMessaging::{GWL_STYLE, WS_CAPTION, WS_THICKFRAME};
+
+    if let Ok(state) = unsafe { SHQueryUserNotificationState() } {
+        if state == QUNS_BUSY || state == QUNS_RUNNING_D3D_FULL_SCREEN || state == QUNS_PRESENTATION_MODE {
+            return true;
         }
+    }
+    let Some(front) = front_app_window() else { return false };
+    unsafe {
         let mut rect = RECT::default();
         if GetWindowRect(front, &mut rect).is_err() {
             return false;
@@ -915,6 +932,17 @@ pub fn fullscreen_active() -> bool {
             return false;
         }
         let screen = info.rcMonitor;
-        rect.left <= screen.left && rect.top <= screen.top && rect.right >= screen.right && rect.bottom >= screen.bottom
+        let covers = rect.left <= screen.left && rect.top <= screen.top && rect.right >= screen.right && rect.bottom >= screen.bottom;
+        if !covers {
+            return false;
+        }
+        let style = GetWindowLongPtrW(front, GWL_STYLE) as u32;
+        let framed = style & WS_CAPTION.0 == WS_CAPTION.0 || style & WS_THICKFRAME.0 != 0;
+        !IsZoomed(front).as_bool() || !framed
     }
+}
+
+/// True when the window in front is maximized.
+pub fn maximized_in_front() -> bool {
+    front_app_window().is_some_and(|w| unsafe { IsZoomed(w) }.as_bool())
 }
