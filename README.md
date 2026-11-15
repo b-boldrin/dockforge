@@ -11,6 +11,7 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Any screen edge, and for floating docks and islands the start, middle or end of that edge (so a dock can live in a corner)
 - Favorites that stay when closed (click to start them), then the other open apps, with an optional line between them. Favorites can be imported from the Windows taskbar, or turned off
 - Groups, switched from anywhere with **Alt+1 … Alt+9** (four groups to start, up to nine). Group 1 has the favorites and everything open; groups 2 to 4 start empty. Move the app in front to a group with **Alt+Shift+number**, drag its icon onto a group dot, or use the right-click menu
+- Optional app names next to the icons, and apps at the start, middle or end of an edge-to-edge bar
 - Click: bring to front / minimize, cycle through the app's windows, or only bring to front (your choice)
 - Right-click menu: the app's windows, new window, add to / remove from favorites, move to group, close, close all
 - Hides the Windows taskbar while DockForge is open (on by default; turn it off in Sistema → *Esconder a barra de tarefas do Windows*). It comes back when DockForge closes, and on the next start if DockForge was killed
@@ -21,9 +22,9 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Motion: icons pop in when they appear, a starting app bounces, the group that receives an app blinks. All of it is off when Windows is set to reduce motion
 
 **The settings window** (tray icon → *Abrir o DockForge…*, or start DockForge again)
-- Ready-made docks: seven combinations of theme, place on screen and widgets, applied with one click and still fully editable
+- Ready-made docks: ten combinations of theme, place on screen and widgets, applied with one click and still fully editable
 - Store with live previews of every installed theme, settings for your dock on the left, favorites and groups, start with Windows, language
-- Six built-in themes: Forge Glass, Midnight Pill, Natal Cristal, Noite de Natal, Papel (light) and Âmbar CRT (retro); any theme dropped in `%APPDATA%\DockForge\themes\`
+- Twelve built-in themes, among them the looks people most often give their Windows taskbar: Barra clássica (flat, with app names), Transparente, Barra flutuante (rounded, off the edges), Segmentada (apps and widgets in separate blocks), Retrô cinza (90s bevels) and Prateleira (frosted glass shelf); any theme dropped in `%APPDATA%\DockForge\themes\`
 - Live reload: save a theme's `styles.css` and the dock updates within a second
 
 ## Run it (Windows)
