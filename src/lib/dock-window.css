@@ -28,7 +28,8 @@ body {
 .stage:is([data-position="bottom"], [data-position="top"])[data-align="end"] { justify-content: flex-end; padding-right: 8px; }
 .stage:is([data-position="left"], [data-position="right"])[data-align="start"] { align-items: flex-start; padding-top: 8px; }
 .stage:is([data-position="left"], [data-position="right"])[data-align="end"] { align-items: flex-end; padding-bottom: 8px; }
-.stage[data-layout="bar"] { padding: 0; }
+/* Edge to edge means no gap at all, whatever the alignment. */
+.stage[data-layout="bar"][data-position] { padding: 0; }
 
 /* Auto-hide: the dock slides out through the screen edge, and only fades once it is almost
    gone, so what you see is it leaving and not it blinking off. */
