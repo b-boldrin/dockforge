@@ -86,16 +86,14 @@
         onclick={() => patch({ position: id })}>{label}</button>
     {/each}
   </div>
-  {#if s.layout !== "bar"}
-    <div class="seg-label" id="seg-align">Posição na borda</div>
-    <div class="seg-group" role="group" aria-labelledby="seg-align">
-      {#each aligns as [id, horizontal, upright] (id)}
-        <button class="seg" class:on={s.align === id} aria-pressed={s.align === id} onclick={() => patch({ align: id })}>
-          {vertical ? upright : horizontal}
-        </button>
-      {/each}
-    </div>
-  {/if}
+  <div class="seg-label" id="seg-align">{s.layout === "bar" ? "Apps na barra" : "Posição na borda"}</div>
+  <div class="seg-group" role="group" aria-labelledby="seg-align">
+    {#each aligns as [id, horizontal, upright] (id)}
+      <button class="seg" class:on={s.align === id} aria-pressed={s.align === id} onclick={() => patch({ align: id })}>
+        {vertical ? upright : horizontal}
+      </button>
+    {/each}
+  </div>
   {#if s.layout === "island"}
     <p class="hint">A ilha mostra o app em foco e os widgets. Aponte para ela e os outros apps aparecem.</p>
   {/if}
@@ -145,6 +143,13 @@
     <span>Separar favoritos e abertos</span>
     <button class="tg" aria-label="Separar favoritos e abertos" aria-pressed={s.separator} onclick={() => patch({ separator: !s.separator })}></button>
   </div>
+
+  {#if !vertical && s.layout !== "island"}
+    <div class="prow" transition:slide={slideOpts}>
+      <span class="stack"><span>Nome ao lado do ícone</span><span class="sub">Cada app aberto vira um botão com o nome</span></span>
+      <button class="tg" aria-label="Nome ao lado do ícone" aria-pressed={s.labels} onclick={() => patch({ labels: !s.labels })}></button>
+    </div>
+  {/if}
 
   <h3 class="ph">Favoritos e grupos</h3>
   <div class="prow">
