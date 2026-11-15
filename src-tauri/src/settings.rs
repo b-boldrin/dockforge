@@ -212,7 +212,7 @@ impl Settings {
             radius: self.radius.map(|r| r.min(32)),
             opacity: self.opacity.map(|o| o.clamp(30, 100)),
             gap: self.gap.map(|g| g.min(24)),
-            indicator: one_of(&self.indicator, &["theme", "dot", "dash", "bar", "glow"], "theme"),
+            indicator: one_of(&self.indicator, &["theme", "none", "dot", "dash", "bar", "glow"], "theme"),
             pins,
             start_with_windows: self.start_with_windows,
             hide_taskbar: self.hide_taskbar,

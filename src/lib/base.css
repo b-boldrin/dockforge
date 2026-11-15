@@ -250,6 +250,9 @@
   background: var(--df-indicator-active-color);
 }
 
+/* "none": no mark at all, whatever the theme draws. */
+.df-dock[data-indicator="none"] .df-item .df-indicator { display: none !important; }
+
 /* The mark under an open app can be chosen apart from the theme: data-indicator on the dock
    is "theme" (nothing here applies) or one of four standard marks. They are written to win
    over a theme's own mark, and use the theme's two indicator colors. */
