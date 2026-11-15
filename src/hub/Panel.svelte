@@ -2,12 +2,28 @@
   import ThemePreview from "./ThemePreview.svelte";
   import { slide } from "svelte/transition";
   import { hub, patch, previewApps } from "./store.svelte.js";
+  import { motionOff } from "../lib/motion";
   import type { Settings } from "../lib/types";
 
   const s = $derived(hub.settings!);
   const themeName = $derived(hub.themes.find((t) => t.id === s.theme)?.name ?? s.theme);
   // The preview is small: shrink the icons but keep every other choice.
   const preview = $derived<Settings>({ ...s, iconSize: Math.round(Math.min(s.iconSize, 48) * 0.62) });
+
+  let { open = true }: { open?: boolean } = $props();
+
+  /** Where the little bar sits inside the screen drawn on a button: `edge` picks the side,
+   *  `align` (when given) makes it short and puts it at the start, middle or end. */
+  function bar(edge: Settings["position"], align?: Settings["align"]) {
+    const upright = edge === "left" || edge === "right";
+    const along = align ? { start: 0, center: 0.5, end: 1 }[align] : 0.5;
+    if (upright) {
+      const h = align ? 5 : 10;
+      return { x: edge === "left" ? 4 : 17, y: 4 + (10 - h) * along, w: 3, h };
+    }
+    const w = align ? 6 : 14;
+    return { x: 5 + (14 - w) * along, y: edge === "top" ? 3.5 : 11.5, w, h: 3 };
+  }
 
   const positions: Array<[Settings["position"], string]> = [
     ["bottom", "Embaixo"],
@@ -58,45 +74,52 @@
       activeGroup: Math.min(s.activeGroup, last - 1),
     });
   }
-  const slideOpts = { duration: 220 };
+  const slideOpts = $derived({ duration: motionOff() || !hub.settings ? 0 : 220 });
 </script>
 
-<aside class="panel" aria-label="Sua dock">
+{#snippet screen(edge: Settings["position"], align?: Settings["align"])}
+  {@const b = bar(edge, align)}
+  <svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
+    <rect x="1.5" y="1.5" width="21" height="15" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.45"></rect>
+    <rect x={b.x} y={b.y} width={b.w} height={b.h} rx="1.5" fill="currentColor"></rect>
+  </svg>
+{/snippet}
+
+<aside class="panel" class:closed={!open} inert={!open} aria-label="Sua dock">
   <h2 class="panel-title">Sua dock</h2>
-  <p class="sub">Tema: {themeName}</p>
+  <p class="sub">{themeName}</p>
   <div class="panel-preview">
     <ThemePreview theme={s.theme} apps={previewApps(6)} settings={preview} />
   </div>
 
   <h3 class="ph">Estilo</h3>
-  <div class="seg-label" id="seg-layout">Formato</div>
-  <div class="seg-group" role="group" aria-labelledby="seg-layout">
+  <div class="seg-group" role="group" aria-label="Formato">
     {#each layouts as [id, label] (id)}
       <button class="seg" class:on={s.layout === id} aria-pressed={s.layout === id} onclick={() => patch({ layout: id })}>{label}</button>
     {/each}
   </div>
-  <div class="seg-label" id="seg-edge">Borda da tela</div>
-  <div class="seg-group" role="group" aria-labelledby="seg-edge">
-    {#each positions as [id, label] (id)}
-      <button
-        class="seg"
-        class:on={s.position === id}
-        aria-pressed={s.position === id}
-        disabled={s.layout === "island" && (id === "left" || id === "right")}
-        onclick={() => patch({ position: id })}>{label}</button>
-    {/each}
+  <div class="seg-pair">
+    <div class="seg-group" role="group" aria-label="Borda da tela">
+      {#each positions as [id, label] (id)}
+        <button
+          class="seg icon"
+          class:on={s.position === id}
+          aria-pressed={s.position === id}
+          aria-label={label}
+          title={label}
+          disabled={s.layout === "island" && (id === "left" || id === "right")}
+          onclick={() => patch({ position: id })}>{@render screen(id)}</button>
+      {/each}
+    </div>
+    <div class="seg-group" role="group" aria-label={s.layout === "bar" ? "Apps na barra" : "Posição na borda"}>
+      {#each aligns as [id, horizontal, upright] (id)}
+        {@const label = vertical ? upright : horizontal}
+        <button class="seg icon" class:on={s.align === id} aria-pressed={s.align === id} aria-label={label} title={label} onclick={() => patch({ align: id })}>
+          {@render screen(s.position, id)}
+        </button>
+      {/each}
+    </div>
   </div>
-  <div class="seg-label" id="seg-align">{s.layout === "bar" ? "Apps na barra" : "Posição na borda"}</div>
-  <div class="seg-group" role="group" aria-labelledby="seg-align">
-    {#each aligns as [id, horizontal, upright] (id)}
-      <button class="seg" class:on={s.align === id} aria-pressed={s.align === id} onclick={() => patch({ align: id })}>
-        {vertical ? upright : horizontal}
-      </button>
-    {/each}
-  </div>
-  {#if s.layout === "island"}
-    <p class="hint">A ilha mostra o app em foco e os widgets. Aponte para ela e os outros apps aparecem.</p>
-  {/if}
   <div class="prow">
     <label for="isz">Tamanho</label>
     <span class="range"><input id="isz" type="range" min="32" max="72" step="4" value={s.iconSize} onchange={(e) => patch({ iconSize: num(e) })} /><span class="rv">{s.iconSize} px</span></span>
@@ -106,23 +129,56 @@
     <span class="range"><input id="mag" type="range" min="1" max="1.6" step="0.05" value={s.magnify} onchange={(e) => patch({ magnify: num(e) })} /><span class="rv">{Math.round(s.magnify * 100)}%</span></span>
   </div>
 
+  <h3 class="ph">Widgets</h3>
+  <div class="prow">
+    <span>Tocando agora</span>
+    <button class="tg" aria-label="Tocando agora" aria-pressed={s.widgetMedia} onclick={() => patch({ widgetMedia: !s.widgetMedia })}></button>
+  </div>
+  <div class="prow">
+    <span title="Processador, memória e bateria">Sistema</span>
+    <button class="tg" aria-label="Sistema" aria-pressed={s.widgetSystem} onclick={() => patch({ widgetSystem: !s.widgetSystem })}></button>
+  </div>
+  <div class="prow">
+    <span>Relógio</span>
+    <button class="tg" aria-label="Relógio" aria-pressed={s.widgetClock} onclick={() => patch({ widgetClock: !s.widgetClock })}></button>
+  </div>
+
   <h3 class="ph">Comportamento</h3>
   <div class="prow">
     <span>Ocultar sozinha</span>
     <button class="tg" aria-label="Ocultar sozinha" aria-pressed={s.autoHide} onclick={() => patch({ autoHide: !s.autoHide })}></button>
   </div>
-  {#if !s.autoHide && s.layout !== "island"}
-    <div class="prow" transition:slide={slideOpts}>
-      <span class="stack"><span>Empurrar as janelas</span><span class="sub">Janelas maximizadas terminam onde a dock começa</span></span>
-      <button class="tg" aria-label="Empurrar as janelas" aria-pressed={s.reserveSpace} onclick={() => patch({ reserveSpace: !s.reserveSpace })}></button>
-    </div>
-  {/if}
   {#if s.autoHide}
     <div class="prow" transition:slide={slideOpts}>
       <label for="dly" class="muted">Esperar</label>
       <span class="range"><input id="dly" type="range" min="0" max="2000" step="100" value={s.hideDelay} onchange={(e) => patch({ hideDelay: num(e) })} /><span class="rv">{(s.hideDelay / 1000).toFixed(1)} s</span></span>
     </div>
+  {:else if s.layout !== "island"}
+    <div class="prow" transition:slide={slideOpts}>
+      <span title="Janelas maximizadas terminam onde a dock começa">Empurrar as janelas</span>
+      <button class="tg" aria-label="Empurrar as janelas" aria-pressed={s.reserveSpace} onclick={() => patch({ reserveSpace: !s.reserveSpace })}></button>
+    </div>
   {/if}
+  {#if !vertical && s.layout !== "island"}
+    <div class="prow" transition:slide={slideOpts}>
+      <span title="Cada app aberto vira um botão com o nome">Nome ao lado do ícone</span>
+      <button class="tg" aria-label="Nome ao lado do ícone" aria-pressed={s.labels} onclick={() => patch({ labels: !s.labels })}></button>
+    </div>
+  {/if}
+  <div class="prow">
+    <label for="clk">Ao clicar</label>
+    <select id="clk" value={s.clickAction} onchange={(e) => patch({ clickAction: val(e) as Settings["clickAction"] })}>
+      <option value="focus-min">Abrir ou minimizar</option>
+      <option value="cycle">Alternar janelas</option>
+      <option value="focus">Só abrir</option>
+    </select>
+  </div>
+
+  <h3 class="ph">Favoritos e grupos</h3>
+  <div class="prow">
+    <span title="Apps que ficam na dock mesmo fechados">Favoritos</span>
+    <button class="tg" aria-label="Mostrar favoritos" aria-pressed={s.favoritesEnabled} onclick={() => patch({ favoritesEnabled: !s.favoritesEnabled })}></button>
+  </div>
   <div class="prow">
     <label for="shw">Mostrar</label>
     <select id="shw" value={s.showMode} onchange={(e) => patch({ showMode: val(e) as Settings["showMode"] })}>
@@ -132,74 +188,35 @@
     </select>
   </div>
   <div class="prow">
-    <label for="clk">Ao clicar</label>
-    <select id="clk" value={s.clickAction} onchange={(e) => patch({ clickAction: val(e) as Settings["clickAction"] })}>
-      <option value="focus-min">Abrir ou minimizar</option>
-      <option value="cycle">Alternar janelas</option>
-      <option value="focus">Só abrir</option>
-    </select>
-  </div>
-  <div class="prow">
-    <span>Separar favoritos e abertos</span>
+    <span>Linha entre eles</span>
     <button class="tg" aria-label="Separar favoritos e abertos" aria-pressed={s.separator} onclick={() => patch({ separator: !s.separator })}></button>
   </div>
-
-  {#if !vertical && s.layout !== "island"}
-    <div class="prow" transition:slide={slideOpts}>
-      <span class="stack"><span>Nome ao lado do ícone</span><span class="sub">Cada app aberto vira um botão com o nome</span></span>
-      <button class="tg" aria-label="Nome ao lado do ícone" aria-pressed={s.labels} onclick={() => patch({ labels: !s.labels })}></button>
-    </div>
-  {/if}
-
-  <h3 class="ph">Favoritos e grupos</h3>
   <div class="prow">
-    <span class="stack"><span>Mostrar favoritos</span><span class="sub">Apps que ficam na dock mesmo fechados</span></span>
-    <button class="tg" aria-label="Mostrar favoritos" aria-pressed={s.favoritesEnabled} onclick={() => patch({ favoritesEnabled: !s.favoritesEnabled })}></button>
-  </div>
-  <div class="prow">
-    <span class="stack"><span>Grupos de apps</span><span class="sub">De 4 a 9, um atalho Alt+número para cada</span></span>
+    <span title="De 4 a 9 grupos. Alt+número troca, Alt+Shift+número manda o app em foco.">Grupos</span>
     <button class="tg" aria-label="Usar grupos" aria-pressed={s.groupsEnabled} onclick={() => patch({ groupsEnabled: !s.groupsEnabled })}></button>
   </div>
   {#if s.groupsEnabled}
-  <div transition:slide={slideOpts}>
-    <p class="hint">
-      O grupo 1 tem os favoritos e tudo que está aberto. Os outros começam vazios: mande o app em foco para um
-      deles com Alt+Shift+número, ou arraste o ícone até a bolinha do grupo.
-    </p>
-    <ol class="groups">
-      {#each s.groupNames as name, i (i)}
-        <li class:current={i === s.activeGroup} transition:slide={slideOpts}>
-          <button class="key" aria-label="Mostrar o grupo {name}" onclick={() => patch({ activeGroup: i })}>Alt+{i + 1}</button>
-          <input aria-label="Nome do grupo {i + 1}" value={name} maxlength="24" onchange={(e) => renameGroup(i, val(e))} />
-          <span class="count" title="Apps neste grupo">{i === 0 ? s.pins.filter((p) => p.group === 0).length : s.pins.filter((p) => p.group === i).length}</span>
-        </li>
-      {/each}
-    </ol>
-    <div class="group-actions">
-      <button class="link" disabled={s.groupNames.length >= MAX_GROUPS} onclick={addGroup}>
-        {s.groupNames.length >= MAX_GROUPS ? "Limite de 9 grupos" : `Adicionar grupo (Alt+${s.groupNames.length + 1})`}
-      </button>
-      {#if s.groupNames.length > MIN_GROUPS}
-        <button class="link muted" onclick={removeGroup}>Remover o último</button>
-      {/if}
+    <div transition:slide={slideOpts}>
+      <ol class="groups">
+        {#each s.groupNames as name, i (i)}
+          <li class:current={i === s.activeGroup} transition:slide={slideOpts}>
+            <button class="key" aria-label="Mostrar o grupo {name}" onclick={() => patch({ activeGroup: i })}>Alt+{i + 1}</button>
+            <input aria-label="Nome do grupo {i + 1}" value={name} maxlength="24" onchange={(e) => renameGroup(i, val(e))} />
+            <span class="count" title="Apps neste grupo">{s.pins.filter((p) => p.group === i).length}</span>
+          </li>
+        {/each}
+      </ol>
+      <div class="group-actions">
+        <button class="link" disabled={s.groupNames.length >= MAX_GROUPS} onclick={addGroup}>
+          {s.groupNames.length >= MAX_GROUPS ? "Limite de 9" : "Adicionar grupo"}
+        </button>
+        {#if s.groupNames.length > MIN_GROUPS}
+          <button class="link muted" onclick={removeGroup}>Remover o último</button>
+        {/if}
+      </div>
+      <p class="hint">Alt+Shift+número manda o app em foco para o grupo.</p>
     </div>
-  </div>
   {/if}
-
-  <h3 class="ph">Widgets</h3>
-  <div class="prow">
-    <span class="stack"><span>Tocando agora</span><span class="sub">Escolha os players em Configurações</span></span>
-    <button class="tg" aria-label="Tocando agora" aria-pressed={s.widgetMedia} onclick={() => patch({ widgetMedia: !s.widgetMedia })}></button>
-  </div>
-  <div class="prow">
-    <span>Relógio</span>
-    <button class="tg" aria-label="Relógio" aria-pressed={s.widgetClock} onclick={() => patch({ widgetClock: !s.widgetClock })}></button>
-  </div>
-
-  <div class="prow">
-    <span class="stack"><span>Sistema</span><span class="sub">Processador, memória e bateria</span></span>
-    <button class="tg" aria-label="Sistema" aria-pressed={s.widgetSystem} onclick={() => patch({ widgetSystem: !s.widgetSystem })}></button>
-  </div>
 
   <h3 class="ph">Ajustes do tema</h3>
   <div class="prow">
