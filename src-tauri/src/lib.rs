@@ -173,8 +173,8 @@ fn update_settings(app: AppHandle, state: State<'_, AppState>, settings: Setting
     if next.theme != previous.theme {
         emit_theme(&app);
     }
-    if next.groups_enabled != previous.groups_enabled {
-        sync_shortcuts(&app, next.groups_enabled);
+    if next.groups_enabled != previous.groups_enabled || next.group_names.len() != previous.group_names.len() {
+        sync_shortcuts(&app, &next);
     }
     if next.theme != previous.theme || next.language != previous.language {
         let _ = build_tray(&app);
@@ -184,10 +184,23 @@ fn update_settings(app: AppHandle, state: State<'_, AppState>, settings: Setting
     Ok(next)
 }
 
+/// The dock window's native handle, as a plain number (Windows only).
+fn native_handle(window: &WebviewWindow) -> Option<isize> {
+    use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+    match window.window_handle().ok()?.as_raw() {
+        RawWindowHandle::Win32(handle) => Some(handle.hwnd.get()),
+        _ => None,
+    }
+}
+
 /// Resizes the dock window to `width`×`height` (CSS pixels) and puts it against the screen
-/// edge chosen in the settings, inside the work area (so it never covers the Windows taskbar).
+/// edge chosen in the settings.
+///
+/// `thickness` is how far the dock itself reaches from that edge. A dock that is always
+/// visible reserves that strip, so maximized windows end where the dock begins. An
+/// auto-hiding dock and the island float over the windows instead.
 #[tauri::command]
-fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, height: f64) -> Result<(), String> {
+fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, height: f64, thickness: Option<f64>) -> Result<(), String> {
     let monitor = window
         .current_monitor()
         .map_err(|e| e.to_string())?
@@ -195,11 +208,45 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
         .ok_or("no monitor found")?;
 
     let scale = monitor.scale_factor();
-    let area = monitor.work_area();
-    let (area_w, area_h) = (area.size.width as i32, area.size.height as i32);
     let settings = state.settings();
-    let vertical = matches!(settings.position.as_str(), "left" | "right");
+    let edge = settings.position.as_str();
+    let vertical = matches!(edge, "left" | "right");
     let bar = settings.layout == "bar";
+
+    // The area the dock is placed in: (left, top, right, bottom). It starts as the work
+    // area (the screen minus the Windows taskbar and other toolbars).
+    let work = monitor.work_area();
+    let mut area = (
+        work.position.x,
+        work.position.y,
+        work.position.x + work.size.width as i32,
+        work.position.y + work.size.height as i32,
+    );
+
+    let reserve = settings.reserve_space && !settings.auto_hide && settings.layout != "island";
+    let strip = match (reserve, thickness, native_handle(&window)) {
+        (true, Some(thickness), Some(handle)) if thickness > 0.0 => {
+            let (pos, size) = (monitor.position(), monitor.size());
+            let screen = (pos.x, pos.y, pos.x + size.width as i32, pos.y + size.height as i32);
+            platform::reserve_edge(handle, edge, (thickness * scale).round() as i32, screen)
+        }
+        _ => {
+            platform::release_edge();
+            None
+        }
+    };
+    if let Some((left, top, right, bottom)) = strip {
+        // The work area no longer includes the dock's own strip, so the dock's edge is the
+        // outer edge of the strip.
+        match edge {
+            "top" => area.1 = top,
+            "left" => area.0 = left,
+            "right" => area.2 = right,
+            _ => area.3 = bottom,
+        }
+    }
+
+    let (area_w, area_h) = ((area.2 - area.0).max(1), (area.3 - area.1).max(1));
     let mut w = ((width.max(1.0) * scale).round() as i32).min(area_w);
     let mut h = ((height.max(1.0) * scale).round() as i32).min(area_h);
     // "Barra inteira" goes from one end of the screen to the other.
@@ -216,11 +263,11 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
         "end" => room,
         _ => room / 2,
     };
-    let (x, y) = match settings.position.as_str() {
-        "top" => (area.position.x + along(area_w - w), area.position.y),
-        "left" => (area.position.x, area.position.y + along(area_h - h)),
-        "right" => (area.position.x + area_w - w, area.position.y + along(area_h - h)),
-        _ => (area.position.x + along(area_w - w), area.position.y + area_h - h),
+    let (x, y) = match edge {
+        "top" => (area.0 + along(area_w - w), area.1),
+        "left" => (area.0, area.1 + along(area_h - h)),
+        "right" => (area.2 - w, area.1 + along(area_h - h)),
+        _ => (area.0 + along(area_w - w), area.3 - h),
     };
 
     window.set_size(PhysicalSize::new(w as u32, h as u32)).map_err(|e| e.to_string())?;
@@ -329,8 +376,8 @@ fn show_app_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppStat
         let label = if entry.windows.is_empty() { tr(&lang, "Abrir", "Open") } else { tr(&lang, "Nova janela", "New window") };
         items.push(Box::new(mk("ctx-launch".into(), label).map_err(|e| e.to_string())?));
         match place {
-            Some(0) => items.push(Box::new(mk("ctx-unpin".into(), tr(&lang, "Tirar dos favoritos", "Remove from favorites")).map_err(|e| e.to_string())?)),
-            None => items.push(Box::new(mk("ctx-pin".into(), tr(&lang, "Adicionar aos favoritos", "Add to favorites")).map_err(|e| e.to_string())?)),
+            Some(0) => items.push(Box::new(mk("ctx-unpin".into(), tr(&lang, "Desafixar da dock", "Unpin from dock")).map_err(|e| e.to_string())?)),
+            None => items.push(Box::new(mk("ctx-pin".into(), tr(&lang, "Fixar na dock", "Pin to dock")).map_err(|e| e.to_string())?)),
             Some(_) => {}
         }
         if settings.groups_enabled {
@@ -418,23 +465,33 @@ fn on_context_menu(app: &AppHandle, event: MenuEvent) {
 // Groups: Alt+1 … Alt+4 switch, Alt+Shift+1 … Alt+Shift+4 move the app in front
 // ---------------------------------------------------------------------------
 
-const GROUP_KEYS: [Code; settings::GROUPS] = [Code::Digit1, Code::Digit2, Code::Digit3, Code::Digit4];
+const GROUP_KEYS: [Code; settings::MAX_GROUPS] = [
+    Code::Digit1,
+    Code::Digit2,
+    Code::Digit3,
+    Code::Digit4,
+    Code::Digit5,
+    Code::Digit6,
+    Code::Digit7,
+    Code::Digit8,
+    Code::Digit9,
+];
 const SWITCH: Modifiers = Modifiers::ALT;
 const MOVE: Modifiers = Modifiers::ALT.union(Modifiers::SHIFT);
 
-/// Registers the group keys while groups are on, and releases them when they are off, so
-/// other programs get those keys back.
-fn sync_shortcuts(app: &AppHandle, enabled: bool) {
+/// Registers one pair of keys per existing group while groups are on, and releases every
+/// other one, so other programs get those keys back.
+fn sync_shortcuts(app: &AppHandle, settings: &Settings) {
+    let wanted = if settings.groups_enabled { settings.group_names.len() } else { 0 };
     let shortcuts = app.global_shortcut();
-    for code in GROUP_KEYS {
+    for (index, code) in GROUP_KEYS.into_iter().enumerate() {
         for mods in [SWITCH, MOVE] {
             let shortcut = Shortcut::new(Some(mods), code);
-            let result = if enabled {
-                if shortcuts.is_registered(shortcut) { Ok(()) } else { shortcuts.register(shortcut) }
-            } else if shortcuts.is_registered(shortcut) {
-                shortcuts.unregister(shortcut)
-            } else {
-                Ok(())
+            let registered = shortcuts.is_registered(shortcut);
+            let result = match (index < wanted, registered) {
+                (true, false) => shortcuts.register(shortcut),
+                (false, true) => shortcuts.unregister(shortcut),
+                _ => Ok(()),
             };
             if let Err(err) = result {
                 // Usually another program already owns the key. The rest keep working.
@@ -861,7 +918,7 @@ pub fn run() {
             start_media_watcher(app.handle().clone());
             start_system_watcher(app.handle().clone());
             start_taskbar_keeper(app.handle().clone());
-            sync_shortcuts(app.handle(), app.state::<AppState>().settings().groups_enabled);
+            sync_shortcuts(app.handle(), &app.state::<AppState>().settings());
             if first_run {
                 open_hub(app.handle())?;
             }
@@ -895,6 +952,7 @@ pub fn run() {
         .run(|app, event| {
             // Whatever way DockForge closes, the Windows taskbar comes back first.
             if let tauri::RunEvent::Exit = event {
+                platform::release_edge();
                 apply_taskbar(&app.state::<AppState>().data_dir, false);
             }
         });

@@ -21,6 +21,7 @@ serde_json = "1"
 base64 = "0.23"
 tauri-plugin-single-instance = "2.5"
 tauri-plugin-global-shortcut = "2"
+raw-window-handle = "0.6"
 
 [target.'cfg(windows)'.dependencies]
 png = "0.18"
