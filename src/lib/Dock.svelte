@@ -26,6 +26,8 @@
   const pinned = $derived(apps.filter((a) => a.pinned));
   const others = $derived(apps.filter((a) => !a.pinned));
   const island = $derived(settings.layout === "island");
+  // Names next to the icons only fit a horizontal dock that is not an island.
+  const labels = $derived(settings.labels && !vertical && settings.layout !== "island");
   const front = $derived(apps.find((a) => a.active) ?? null);
   const showSeparator = $derived(settings.separator && pinned.length > 0 && others.length > 0);
 
@@ -226,6 +228,9 @@
     {:else}
       <span class="df-icon df-icon--fallback" style:--df-fallback-hue={hue(app.name)}>{initial(app.name)}</span>
     {/if}
+    {#if labels && app.windows.length > 0}
+      <span class="df-label">{app.name}</span>
+    {/if}
     <span class="df-indicator"></span>
     <span class="df-tooltip">{app.name}</span>
   </button>
@@ -236,12 +241,13 @@
 <div
   class="df-dock"
   class:is-dragging={drag != null}
+  class:has-labels={labels}
   data-position={settings.position}
   data-layout={settings.layout}
   data-align={settings.align}
   bind:this={dockEl}
   style:--df-icon-size="{settings.iconSize}px"
-  style:--df-hover-scale={settings.magnify}
+  style:--df-hover-scale={labels ? 1 : settings.magnify}
   style:--df-indicator-active-color={settings.accent ?? undefined}
   style:--df-radius={settings.radius != null ? `${settings.radius}px` : undefined}
   style:background={settings.opacity != null

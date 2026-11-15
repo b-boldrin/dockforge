@@ -126,6 +126,46 @@
   display: block;
   flex: 1;
 }
+/* Edge to edge, the apps can also sit in the middle or at the end of the bar. */
+.df-dock[data-layout="bar"]:is([data-align="center"], [data-align="end"])::before {
+  content: "";
+  flex: 1;
+}
+.df-dock[data-layout="bar"][data-align="end"] .df-spacer {
+  display: none;
+}
+
+/* Names next to the icons: each open app becomes a wide button with its name. A closed
+   favorite stays icon-only. */
+.df-label {
+  min-width: 0;
+  font-size: 12px;
+  color: var(--df-widget-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.df-dock.has-labels .df-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 8px;
+  width: auto;
+  min-width: calc(var(--df-icon-size) + 16px);
+  max-width: 184px;
+}
+.df-dock.has-labels .df-item.is-running { padding-right: 12px; }
+.df-dock.has-labels .df-icon { flex: none; }
+.df-dock.has-labels .df-tooltip { display: none; }
+/* The mark under a named button is a line as wide as the button. */
+.df-dock.has-labels .df-item.is-running .df-indicator {
+  left: 8px;
+  right: 8px;
+  width: auto;
+  height: 2px;
+  border-radius: 1px;
+}
 
 .df-item {
   position: relative;
