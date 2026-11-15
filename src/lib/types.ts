@@ -73,6 +73,10 @@ export interface Settings {
   accent: string | null;
   radius: number | null;
   opacity: number | null;
+  /** Space between the apps in pixels, or null for the theme's own. */
+  gap: number | null;
+  /** The mark under an open app: the theme's own, or one of four standard ones. */
+  indicator: "theme" | "dot" | "dash" | "bar" | "glow";
   pins: Pin[];
   startWithWindows: boolean;
   hideTaskbar: boolean;

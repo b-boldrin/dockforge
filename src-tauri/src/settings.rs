@@ -72,6 +72,10 @@ pub struct Settings {
     pub accent: Option<String>,
     pub radius: Option<u32>,
     pub opacity: Option<u32>,
+    /// Space between the apps, in pixels. `None` = the theme's own.
+    pub gap: Option<u32>,
+    /// The mark under an open app: "theme" (the theme's own), "dot", "dash", "bar" or "glow".
+    pub indicator: String,
     pub pins: Vec<Pin>,
     pub start_with_windows: bool,
     /// Hide the Windows taskbar while DockForge is running (on by default: the dock replaces
@@ -120,6 +124,8 @@ impl Default for Settings {
             accent: None,
             radius: None,
             opacity: None,
+            gap: None,
+            indicator: "theme".into(),
             pins: Vec::new(),
             start_with_windows: false,
             hide_taskbar: true,
@@ -200,6 +206,8 @@ impl Settings {
             accent: self.accent.clone().filter(|c| is_hex_color(c)),
             radius: self.radius.map(|r| r.min(32)),
             opacity: self.opacity.map(|o| o.clamp(30, 100)),
+            gap: self.gap.map(|g| g.min(24)),
+            indicator: one_of(&self.indicator, &["theme", "dot", "dash", "bar", "glow"], "theme"),
             pins,
             start_with_windows: self.start_with_windows,
             hide_taskbar: self.hide_taskbar,
