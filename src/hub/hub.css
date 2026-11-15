@@ -13,6 +13,7 @@
   --cyan-hover: #93ece6;
   --line: rgba(232, 243, 240, 0.09);
   --coral: #ffb1a8;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: dark;
 }
 
@@ -47,7 +48,7 @@ h1, h2, h3 { margin: 0; }
 .tab:hover, .tab.on { color: var(--ice); }
 .tab::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--cyan);
-  scale: 0 1; transition: scale 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  scale: 0 1; transition: scale 200ms var(--ease);
 }
 .tab.on::after { scale: 1 1; }
 
@@ -74,7 +75,7 @@ h1, h2, h3 { margin: 0; }
   flex: 1; border: 0; background: transparent; color: var(--frost); padding: 6px 0; border-radius: 4px;
   font-size: 12px; font-weight: 500; cursor: pointer;
 }
-.seg { transition: background 140ms, color 140ms; }
+.seg { transition: background 140ms var(--ease), color 140ms var(--ease); }
 .seg.on { background: var(--ice); color: var(--pine); }
 .seg:disabled { opacity: 0.35; cursor: default; }
 /* Each choice says what it chooses: three unlabeled rows read as one block. */
@@ -102,10 +103,10 @@ select {
 }
 .tg::after {
   content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%;
-  background: var(--frost); transition: left 0.14s;
+  background: var(--frost); transition: translate 160ms var(--ease), background 160ms var(--ease);
 }
 .tg[aria-pressed="true"] { background: var(--cyan); border-color: var(--cyan); }
-.tg[aria-pressed="true"]::after { left: 19px; background: var(--pine); }
+.tg[aria-pressed="true"]::after { translate: 16px 0; background: var(--pine); }
 
 .groups { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .groups li { display: flex; align-items: center; gap: 8px; }
@@ -133,7 +134,7 @@ select {
   border: 1px solid rgba(232, 243, 240, 0.22); background: transparent; padding: 8px 16px; border-radius: 8px;
   font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.btn { transition: background 140ms, scale 120ms; }
+.btn { transition: background 140ms var(--ease), scale 120ms var(--ease); }
 .btn:hover { background: rgba(232, 243, 240, 0.07); }
 .btn:active:not(:disabled) { scale: 0.97; }
 .btn.pri { background: var(--cyan); border-color: var(--cyan); color: #0b231e; font-weight: 600; }
@@ -211,9 +212,9 @@ select {
 .preset-pic {
   display: block; height: 136px; border-radius: 12px; overflow: hidden; margin-bottom: 4px;
   outline: 1px solid rgba(232, 243, 240, 0.08); outline-offset: -1px;
-  transition: translate 180ms cubic-bezier(0.2, 0.8, 0.2, 1), outline-color 180ms, box-shadow 180ms;
+  transition: outline-color 160ms var(--ease);
 }
-.preset:hover .preset-pic { translate: 0 -3px; outline-color: rgba(232, 243, 240, 0.35); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3); }
+.preset:hover .preset-pic { outline-color: rgba(232, 243, 240, 0.35); }
 .preset.on .preset-pic { outline: 2px solid var(--cyan); outline-offset: -2px; }
 .preset-name { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 600; }
 .preset-about { font-size: 12px; line-height: 1.4; color: var(--moss); }
@@ -240,8 +241,8 @@ select {
   height: 132px; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: pointer;
   outline: 1px solid rgba(232, 243, 240, 0.08); outline-offset: -1px; background: var(--pine-deep);
 }
-.card-pic { transition: translate 180ms cubic-bezier(0.2, 0.8, 0.2, 1), outline-color 180ms; }
-.card-pic:hover { outline-color: rgba(232, 243, 240, 0.35); translate: 0 -3px; }
+.card-pic { transition: outline-color 160ms var(--ease); }
+.card-pic:hover { outline-color: rgba(232, 243, 240, 0.35); }
 .card-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .card-name { font-size: 14px; font-weight: 600; }
 
@@ -282,27 +283,17 @@ select {
 .lbl { font-size: 14px; font-weight: 500; }
 
 /* ---- motion -----------------------------------------------------------------
-   One entrance when the window opens or the tab changes; everything else only moves in
-   answer to the pointer. */
-.view { animation: view-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+   One curve. One entrance, when the window opens or the tab changes. Everything else is a
+   quick change of color in answer to the pointer. */
+.view { animation: view-in 320ms var(--ease) both; }
 @keyframes view-in {
-  from { opacity: 0; translate: 0 10px; }
+  from { opacity: 0; translate: 0 8px; }
   to { opacity: 1; translate: 0 0; }
 }
-.hero-text > * { animation: view-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.hero-text > :nth-child(2) { animation-delay: 60ms; }
-.hero-text > :nth-child(3) { animation-delay: 120ms; }
-.hero-text > :nth-child(4) { animation-delay: 180ms; }
-.in-use { animation: mark-in 240ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
-@keyframes mark-in {
-  from { opacity: 0; scale: 0.85; }
-  to { opacity: 1; scale: 1; }
-}
-.pin-row { animation: view-in 200ms ease both; }
-.error, .notice { animation: view-in 200ms ease both; }
+.error { animation: view-in 200ms var(--ease) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .view, .hero-text > *, .in-use, .pin-row, .error, .notice { animation: none; }
+  .view, .error { animation: none; }
   .tab::after, .seg, .preset-pic, .card-pic, .btn { transition: none; }
   .tg::after { transition: none; }
 }
