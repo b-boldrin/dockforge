@@ -42,6 +42,13 @@
     ["end", "Fim", "Base"],
   ];
   const vertical = $derived(s.position === "left" || s.position === "right");
+  const marks: Array<[Settings["indicator"], string]> = [
+    ["theme", "A do tema"],
+    ["dot", "Bolinha"],
+    ["dash", "Traço"],
+    ["bar", "Barra"],
+    ["glow", "Brilho"],
+  ];
   const accents: Array<[string, string]> = [
     ["#6fe3dc", "Ciano"],
     ["#e2524f", "Vermelho"],
@@ -119,14 +126,6 @@
         </button>
       {/each}
     </div>
-  </div>
-  <div class="prow">
-    <label for="isz">Tamanho</label>
-    <span class="range"><input id="isz" type="range" min="32" max="72" step="4" value={s.iconSize} onchange={(e) => patch({ iconSize: num(e) })} /><span class="rv">{s.iconSize} px</span></span>
-  </div>
-  <div class="prow">
-    <label for="mag">Ampliação</label>
-    <span class="range"><input id="mag" type="range" min="1" max="1.6" step="0.05" value={s.magnify} onchange={(e) => patch({ magnify: num(e) })} /><span class="rv">{Math.round(s.magnify * 100)}%</span></span>
   </div>
 
   <h3 class="ph">Widgets</h3>
@@ -220,6 +219,36 @@
 
   <h3 class="ph">Ajustes do tema</h3>
   <div class="prow">
+    <label for="isz">Tamanho</label>
+    <span class="range"><input id="isz" type="range" min="32" max="72" step="4" value={s.iconSize} onchange={(e) => patch({ iconSize: num(e) })} /><span class="rv">{s.iconSize} px</span></span>
+  </div>
+  <div class="prow">
+    <label for="mag">Ampliação</label>
+    <span class="range"><input id="mag" type="range" min="1" max="1.6" step="0.05" value={s.magnify} onchange={(e) => patch({ magnify: num(e) })} /><span class="rv">{Math.round(s.magnify * 100)}%</span></span>
+  </div>
+  <div class="prow">
+    <label for="gap" title="Espaço entre os apps">Espaço</label>
+    <span class="range"><input id="gap" type="range" min="0" max="24" step="1" value={s.gap ?? 8} onchange={(e) => patch({ gap: num(e) })} /><span class="rv">{s.gap == null ? "tema" : `${s.gap} px`}</span></span>
+  </div>
+  <div class="seg-label" id="seg-mark">Marca de app aberto</div>
+  <div class="seg-group" role="group" aria-labelledby="seg-mark">
+    {#each marks as [id, label] (id)}
+      <button class="seg icon" class:on={s.indicator === id} aria-pressed={s.indicator === id} aria-label={label} title={label} onclick={() => patch({ indicator: id })}>
+        {#if id === "theme"}
+          <span class="seg-text">Tema</span>
+        {:else}
+          <svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
+            <rect x="7.5" y="1.5" width="9" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"></rect>
+            {#if id === "dot"}<circle cx="12" cy="14.5" r="1.6" fill="currentColor"></circle>
+            {:else if id === "dash"}<rect x="8.5" y="13.5" width="7" height="2" rx="1" fill="currentColor"></rect>
+            {:else if id === "bar"}<rect x="4" y="13.5" width="16" height="2" rx="1" fill="currentColor"></rect>
+            {:else}<ellipse cx="12" cy="14.5" rx="6.5" ry="2.2" fill="currentColor" fill-opacity="0.45"></ellipse><ellipse cx="12" cy="14.5" rx="3" ry="1.2" fill="currentColor"></ellipse>{/if}
+          </svg>
+        {/if}
+      </button>
+    {/each}
+  </div>
+  <div class="prow">
     <span>Destaque</span>
     <span class="swatches">
       {#each accents as [color, label] (color)}
@@ -236,6 +265,6 @@
     <span class="range"><input id="opa" type="range" min="30" max="100" step="5" value={s.opacity ?? 100} onchange={(e) => patch({ opacity: num(e) })} /><span class="rv">{s.opacity == null ? "tema" : `${s.opacity}%`}</span></span>
   </div>
   <div class="panel-actions">
-    <button class="link muted" onclick={() => patch({ accent: null, radius: null, opacity: null })}>Desfazer ajustes</button>
+    <button class="link muted" onclick={() => patch({ accent: null, radius: null, opacity: null, gap: null, indicator: "theme" })}>Desfazer ajustes</button>
   </div>
 </aside>

@@ -14,6 +14,8 @@ const clean: Partial<Settings> = {
   accent: null,
   radius: null,
   opacity: null,
+  gap: null,
+  indicator: "theme",
   align: "center",
   autoHide: false,
   separator: true,

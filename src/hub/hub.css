@@ -115,6 +115,9 @@ h1, h2, h3 { margin: 0; }
 .seg.icon svg { transition: scale 200ms var(--ease); }
 .seg.icon:active:not(:disabled) svg { scale: 0.85; }
 .seg.icon.on { color: var(--accent); }
+.seg-text { font-size: 12px; line-height: 18px; }
+.prow + .seg-label { margin-top: 12px; }
+.seg-group + .panel-actions, .seg-group + .prow { margin-top: 12px; }
 .seg-label { margin-top: 12px; font-size: 12px; color: var(--text-3); }
 .ph + .seg-label { margin-top: 0; }
 .seg-label + .seg-group { margin-top: 4px; }
