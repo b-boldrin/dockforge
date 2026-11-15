@@ -62,16 +62,16 @@ h1, h2, h3 { margin: 0; }
   background: var(--pine-deep); border-right: 1px solid var(--line);
 }
 .panel-title { font-size: 18px; font-weight: 600; }
-.panel-preview { margin-top: 12px; height: 150px; border-radius: 9px; overflow: hidden; }
+.panel-preview { margin-top: 12px; height: 152px; border-radius: 12px; overflow: hidden; }
 .ph { margin: 24px 0 8px; font-size: 14px; font-weight: 600; }
 .sub { font-size: 12px; color: var(--moss); margin-top: 2px; }
 .muted { color: var(--frost); }
 .hint { margin: 4px 0 8px; font-size: 12px; line-height: 1.45; color: var(--moss); }
 .stack { display: flex; flex-direction: column; }
 
-.seg-group { display: flex; gap: 2px; padding: 4px; margin-top: 8px; background: var(--pine-raised); border-radius: 7px; }
+.seg-group { display: flex; gap: 2px; padding: 4px; margin-top: 8px; background: var(--pine-raised); border-radius: 8px; }
 .seg {
-  flex: 1; border: 0; background: transparent; color: var(--frost); padding: 6px 0; border-radius: 5px;
+  flex: 1; border: 0; background: transparent; color: var(--frost); padding: 6px 0; border-radius: 4px;
   font-size: 12px; font-weight: 500; cursor: pointer;
 }
 .seg { transition: background 140ms, color 140ms; }
@@ -130,7 +130,7 @@ select {
 
 /* ---- shared controls ------------------------------------------------------- */
 .btn {
-  border: 1px solid rgba(232, 243, 240, 0.22); background: transparent; padding: 8px 16px; border-radius: 7px;
+  border: 1px solid rgba(232, 243, 240, 0.22); background: transparent; padding: 8px 16px; border-radius: 8px;
   font-size: 13px; font-weight: 500; cursor: pointer;
 }
 .btn { transition: background 140ms, scale 120ms; }
@@ -175,7 +175,7 @@ select {
 .df-preview[data-layout="bar"][data-position="right"] .df-fit { flex: none; }
 
 /* ---- store ----------------------------------------------------------------- */
-.hero { position: relative; height: 320px; border-radius: 14px; overflow: hidden; }
+.hero { position: relative; height: 320px; border-radius: 16px; overflow: hidden; }
 .hero-stage { position: absolute; inset: 0; }
 .hero-stage .df-preview { padding: 0 40px 28px 0; justify-content: flex-end; }
 .hero-text {
@@ -188,7 +188,11 @@ select {
   font-variation-settings: "opsz" 96;
 }
 .hero-copy { margin: 12px 0 20px; max-width: 34ch; font-size: 16px; line-height: 1.45; color: #d4e6e0; }
-.badge { display: inline-block; padding: 7px 13px; border: 1px solid var(--cyan); border-radius: 7px; color: var(--cyan); font-size: 13px; font-weight: 600; }
+/* "In use" is a state, not a button: the small cyan dock from the logo, then the words.
+   The same mark is used wherever something is the one in use. */
+.in-use { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--cyan); white-space: nowrap; }
+.in-use::before { content: ""; width: 12px; height: 4px; border-radius: 2px; background: var(--cyan); }
+.hero-text .in-use { height: 36px; }
 
 /* ---- ready-made docks ------------------------------------------------------- */
 .presets { margin-top: 32px; }
@@ -205,13 +209,13 @@ select {
   cursor: pointer; scroll-snap-align: start;
 }
 .preset-pic {
-  display: block; height: 136px; border-radius: 10px; overflow: hidden; margin-bottom: 4px;
+  display: block; height: 136px; border-radius: 12px; overflow: hidden; margin-bottom: 4px;
   outline: 1px solid rgba(232, 243, 240, 0.08); outline-offset: -1px;
   transition: translate 180ms cubic-bezier(0.2, 0.8, 0.2, 1), outline-color 180ms, box-shadow 180ms;
 }
 .preset:hover .preset-pic { translate: 0 -3px; outline-color: rgba(232, 243, 240, 0.35); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3); }
 .preset.on .preset-pic { outline: 2px solid var(--cyan); outline-offset: -2px; }
-.preset-name { font-size: 14px; font-weight: 600; }
+.preset-name { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 600; }
 .preset-about { font-size: 12px; line-height: 1.4; color: var(--moss); }
 
 .list-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 32px 0 16px; }
@@ -225,7 +229,7 @@ select {
 .flt:hover { color: var(--ice); }
 .flt.on { color: var(--ice); border-bottom-color: var(--ice); }
 .search {
-  background: var(--pine-deep); border: 1px solid rgba(232, 243, 240, 0.14); border-radius: 7px;
+  background: var(--pine-deep); border: 1px solid rgba(232, 243, 240, 0.14); border-radius: 8px;
   padding: 8px 12px; font-size: 13px; width: 240px;
 }
 .search::placeholder { color: #7f9f94; }
@@ -233,14 +237,13 @@ select {
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(208px, 1fr)); gap: 24px 16px; }
 .card { display: flex; flex-direction: column; gap: 8px; }
 .card-pic {
-  height: 132px; padding: 0; border: 0; border-radius: 9px; overflow: hidden; cursor: pointer;
+  height: 132px; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: pointer;
   outline: 1px solid rgba(232, 243, 240, 0.08); outline-offset: -1px; background: var(--pine-deep);
 }
 .card-pic { transition: translate 180ms cubic-bezier(0.2, 0.8, 0.2, 1), outline-color 180ms; }
 .card-pic:hover { outline-color: rgba(232, 243, 240, 0.35); translate: 0 -3px; }
 .card-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .card-name { font-size: 14px; font-weight: 600; }
-.in-use { font-size: 13px; font-weight: 600; color: var(--cyan); }
 
 .more { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); max-width: 68ch; }
 .more h2 { font-size: 18px; font-weight: 600; }
@@ -254,7 +257,7 @@ select {
 .lead { margin: 8px 0 0; font-size: 14px; color: var(--moss); max-width: 60ch; }
 .group-tabs { margin-top: 24px; }
 .kbd { margin-left: 4px; font-size: 12px; color: var(--moss); font-variant-numeric: tabular-nums; }
-.picker { margin-top: 16px; padding: 12px 16px; border-radius: 9px; background: var(--pine-deep); }
+.picker { margin-top: 16px; padding: 12px 16px; border-radius: 12px; background: var(--pine-deep); }
 .pin-list { margin-top: 16px; }
 .pin-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
 .pin-icon { width: 32px; height: 32px; flex: none; border-radius: 22%; object-fit: contain; }
@@ -267,7 +270,7 @@ select {
 .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .import {
-  margin-top: 16px; padding: 16px; border-radius: 9px; background: var(--pine-deep);
+  margin-top: 16px; padding: 16px; border-radius: 12px; background: var(--pine-deep);
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
 }
 .import .sub { margin: 4px 0 0; max-width: 52ch; line-height: 1.4; }
@@ -290,7 +293,7 @@ select {
 .hero-text > :nth-child(2) { animation-delay: 60ms; }
 .hero-text > :nth-child(3) { animation-delay: 120ms; }
 .hero-text > :nth-child(4) { animation-delay: 180ms; }
-.in-use, .badge { animation: mark-in 240ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+.in-use { animation: mark-in 240ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
 @keyframes mark-in {
   from { opacity: 0; scale: 0.85; }
   to { opacity: 1; scale: 1; }
@@ -299,7 +302,7 @@ select {
 .error, .notice { animation: view-in 200ms ease both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .view, .hero-text > *, .in-use, .badge, .pin-row, .error, .notice { animation: none; }
+  .view, .hero-text > *, .in-use, .pin-row, .error, .notice { animation: none; }
   .tab::after, .seg, .preset-pic, .card-pic, .btn { transition: none; }
   .tg::after { transition: none; }
 }

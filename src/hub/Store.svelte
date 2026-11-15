@@ -75,7 +75,7 @@
         {/if}
       </p>
       {#if s.theme === hero.id}
-        <span class="badge">Em uso</span>
+        <span class="in-use">Em uso</span>
       {:else}
         <button class="btn pri" onclick={() => useTheme(hero.id)}>Usar este tema</button>
       {/if}
@@ -99,7 +99,7 @@
             settings={{ ...s, ...preset.settings, activeGroup: 0, iconSize: Math.round((preset.settings.iconSize ?? 44) * 0.5) }}
           />
         </span>
-        <span class="preset-name">{preset.name}{#if on}<span class="in-use"> · em uso</span>{/if}</span>
+        <span class="preset-name">{preset.name}{#if on}<span class="in-use">Em uso</span>{/if}</span>
         <span class="preset-about">{preset.about}</span>
       </button>
     {/each}
