@@ -99,17 +99,11 @@ export function applyBar(bar: SavedBar) {
   return patch(bar.look);
 }
 
-export function updateBar(id: string) {
+/** Saves what the bar editor changed: the name and the look, only when the user asks for it. */
+export function saveBarEdit(id: string, name: string, look: Partial<Settings>) {
   if (!hub.settings) return;
-  const look = lookOf(hub.settings);
-  return patch({ saved: $state.snapshot(hub.settings.saved).map((b) => (b.id === id ? { ...b, look } : b)) });
-}
-
-export function renameBar(id: string, name: string) {
-  if (!hub.settings) return;
-  const clean = name.trim().slice(0, 40);
-  if (!clean) return;
-  return patch({ saved: $state.snapshot(hub.settings.saved).map((b) => (b.id === id ? { ...b, name: clean } : b)) });
+  const clean = name.trim().slice(0, 40) || "Sem nome";
+  return patch({ saved: $state.snapshot(hub.settings.saved).map((b) => (b.id === id ? { ...b, name: clean, look } : b)) });
 }
 
 export function removeBar(id: string) {

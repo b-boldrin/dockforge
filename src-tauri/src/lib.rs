@@ -448,6 +448,60 @@ fn menu_icon(id: &str) -> Option<Image<'static>> {
     Image::from_bytes(png).ok()
 }
 
+/// The Windows options that a hidden Windows taskbar takes away. Each entry opens Windows' own
+/// settings page; the last two open the taskbar settings and DockForge's own panel.
+fn popup_tray(app: &AppHandle, window: tauri::Window, state: &AppState) -> Result<(), String> {
+    let lang = state.settings().language;
+    let pages: [(&str, &str, &str); 6] = [
+        ("tray-sound", "Som", "Sound"),
+        ("tray-network", "Rede e internet", "Network and internet"),
+        ("tray-battery", "Bateria", "Battery"),
+        ("tray-datetime", "Data e hora", "Date and time"),
+        ("tray-notifications", "Notificações", "Notifications"),
+        ("tray-settings", "Configurações do Windows", "Windows settings"),
+    ];
+    let mut items: Vec<Box<dyn IsMenuItem<Wry>>> = Vec::new();
+    for (id, pt, en) in pages {
+        items.push(Box::new(MenuItem::with_id(app, id, tr(&lang, pt, en), true, None::<&str>).map_err(|e| e.to_string())?));
+    }
+    items.push(Box::new(PredefinedMenuItem::separator(app).map_err(|e| e.to_string())?));
+    items.push(Box::new(MenuItem::with_id(app, "tray-taskbar", tr(&lang, "Configurações da barra de tarefas", "Taskbar settings"), true, None::<&str>).map_err(|e| e.to_string())?));
+    items.push(Box::new(MenuItem::with_id(app, "tray-personalize", tr(&lang, "Personalizar o DockForge…", "Customize DockForge…"), true, None::<&str>).map_err(|e| e.to_string())?));
+    let refs: Vec<&dyn IsMenuItem<Wry>> = items.iter().map(|i| i.as_ref()).collect();
+    let menu = Menu::with_items(app, &refs).map_err(|e| e.to_string())?;
+
+    state.menu_open.store(true, Ordering::Relaxed);
+    let result = menu.popup(window).map_err(|e| e.to_string());
+    state.menu_open.store(false, Ordering::Relaxed);
+    result
+}
+
+/// Opened from the arrow at the end of a bar.
+#[tauri::command]
+fn show_tray_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppState>) -> Result<(), String> {
+    popup_tray(&app, window, &state)
+}
+
+/// Opens one of Windows' settings pages. Only the pages named here can be opened.
+fn open_windows_page(id: &str) {
+    let uri = match id {
+        "sound" => "ms-settings:sound",
+        "network" => "ms-settings:network",
+        "battery" => "ms-settings:batterysaver",
+        "datetime" => "ms-settings:dateandtime",
+        "notifications" => "ms-settings:notifications",
+        "settings" => "ms-settings:",
+        "taskbar" => "ms-settings:taskbar",
+        _ => return,
+    };
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("explorer").arg(uri).spawn();
+    }
+    #[cfg(not(windows))]
+    let _ = uri;
+}
+
 /// The menu for a right click on the dock itself, away from any app.
 #[tauri::command]
 fn show_dock_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppState>) -> Result<(), String> {
@@ -465,6 +519,15 @@ fn show_dock_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppSta
 
 fn on_context_menu(app: &AppHandle, event: MenuEvent) {
     let id = event.id().as_ref().to_string();
+    if let Some(item) = id.strip_prefix("tray-") {
+        match item {
+            "personalize" => {
+                let _ = open_hub(app);
+            }
+            other => open_windows_page(other),
+        }
+        return;
+    }
     if !id.starts_with("ctx-") {
         return;
     }
@@ -782,6 +845,9 @@ fn start_mouse_watcher(app: AppHandle) {
         .spawn(move || {
             let mut last_inside = Instant::now();
             let mut ignoring = false;
+            // The screen corner that stands in for the Windows options when there is no bar.
+            let mut corner_since: Option<Instant> = None;
+            let mut corner_shown = false;
             loop {
                 std::thread::sleep(Duration::from_millis(80));
                 let state = app.state::<AppState>();
@@ -807,6 +873,33 @@ fn start_mouse_watcher(app: AppHandle) {
                 let (x0, y0) = (pos.x as f64, pos.y as f64);
                 let (x1, y1) = (x0 + size.width as f64, y0 + size.height as f64);
                 let in_window = cursor.x >= x0 && cursor.x <= x1 && cursor.y >= y0 && cursor.y <= y1;
+
+                // Taskbar hidden and no bar along an edge: resting the pointer in the bottom-right
+                // corner for half a second opens the Windows options. Leaving the corner re-arms it.
+                let in_corner = settings.hide_taskbar
+                    && settings.layout != "bar"
+                    && matches!(window.current_monitor(), Ok(Some(ref mon)) if {
+                        let reach = 6.0 * scale;
+                        let right = mon.position().x as f64 + mon.size().width as f64;
+                        let bottom = mon.position().y as f64 + mon.size().height as f64;
+                        cursor.x >= right - reach && cursor.y >= bottom - reach
+                    });
+                if !in_corner {
+                    corner_since = None;
+                    corner_shown = false;
+                } else if !menu_open && !corner_shown {
+                    let since = *corner_since.get_or_insert_with(Instant::now);
+                    if since.elapsed() >= Duration::from_millis(500) {
+                        corner_shown = true;
+                        let handle = app.clone();
+                        let _ = app.run_on_main_thread(move || {
+                            if let Some(w) = handle.get_webview_window("dock") {
+                                let state = handle.state::<AppState>();
+                                let _ = popup_tray(&handle, w.as_ref().window(), &state);
+                            }
+                        });
+                    }
+                }
 
                 // The dock's own rectangle, reported by the web side in CSS pixels.
                 let over_dock = match state.hit.lock().ok().and_then(|h| *h) {
@@ -1001,6 +1094,7 @@ pub fn run() {
             open_settings,
             show_app_menu,
             show_dock_menu,
+            show_tray_menu,
             get_media,
             get_system,
             media_control,

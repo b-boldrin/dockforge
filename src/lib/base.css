@@ -188,6 +188,24 @@
   flex: none;
 }
 
+.df-tray {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: var(--df-icon-size);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--df-widget-color);
+  cursor: pointer;
+  opacity: 0.8;
+}
+.df-tray:hover { opacity: 1; }
+.df-tray svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.df-pomo { border: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.df-pomo.is-running .df-clock-time { color: var(--df-indicator-active-color); }
+
 .df-icon {
   width: var(--df-icon-size);
   height: var(--df-icon-size);

@@ -149,6 +149,27 @@
     <span>Relógio</span>
     <button class="tg" aria-label="Relógio" aria-pressed={s.widgetClock} onclick={() => patch({ widgetClock: !s.widgetClock })}></button>
   </div>
+  <div class="prow">
+    <span title="25 minutos de foco e 5 de pausa">Pomodoro</span>
+    <button class="tg" aria-label="Pomodoro" aria-pressed={s.widgetPomodoro} onclick={() => patch({ widgetPomodoro: !s.widgetPomodoro })}></button>
+  </div>
+  <div class="prow">
+    <span>Hora em outra cidade</span>
+    <button class="tg" aria-label="Hora em outra cidade" aria-pressed={s.widgetWorldClock} onclick={() => patch({ widgetWorldClock: !s.widgetWorldClock })}></button>
+  </div>
+  {#if s.widgetWorldClock}
+    <div class="prow" transition:slide={slideOpts}>
+      <label for="zone" class="muted">Cidade</label>
+      <select id="zone" aria-label="Cidade do relógio" value={s.worldZone} onchange={(e) => patch({ worldZone: val(e) })}>
+        <option value="America/Sao_Paulo">São Paulo</option>
+        <option value="America/New_York">Nova York</option>
+        <option value="Europe/London">Londres</option>
+        <option value="Europe/Lisbon">Lisboa</option>
+        <option value="Asia/Tokyo">Tóquio</option>
+        <option value="Australia/Sydney">Sydney</option>
+      </select>
+    </div>
+  {/if}
 
   </div>
   </section>

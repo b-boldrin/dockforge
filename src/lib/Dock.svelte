@@ -42,13 +42,52 @@
   // ---- clock -------------------------------------------------------------
   let now = $state(new Date());
   $effect(() => {
-    if (!settings.widgetClock) return;
+    if (!settings.widgetClock && !settings.widgetWorldClock) return;
     const timer = setInterval(() => (now = new Date()), 10_000);
     return () => clearInterval(timer);
   });
   const locale = $derived(en ? "en-US" : "pt-BR");
   const time = $derived(now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }));
   const date = $derived(now.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: vertical ? undefined : "numeric" }));
+
+  // ---- pomodoro: 25 minutes of focus, then 5 of rest; a click starts, pauses or goes on ----
+  const POMO_FOCUS = 25 * 60;
+  const POMO_REST = 5 * 60;
+  let pomoLeft = $state(POMO_FOCUS);
+  let pomoRunning = $state(false);
+  let pomoResting = $state(false);
+  $effect(() => {
+    if (!pomoRunning) return;
+    const timer = setInterval(() => {
+      pomoLeft = Math.max(0, pomoLeft - 1);
+      if (pomoLeft === 0) pomoRunning = false;
+    }, 1000);
+    return () => clearInterval(timer);
+  });
+  function pomoClick() {
+    if (pomoLeft === 0) {
+      pomoResting = !pomoResting;
+      pomoLeft = pomoResting ? POMO_REST : POMO_FOCUS;
+    }
+    pomoRunning = !pomoRunning;
+  }
+  const pomoText = $derived(`${String(Math.floor(pomoLeft / 60)).padStart(2, "0")}:${String(pomoLeft % 60).padStart(2, "0")}`);
+  const pomoPhase = $derived(pomoResting ? (en ? "Rest" : "Pausa") : en ? "Focus" : "Foco");
+
+  // ---- world clock: the time in one of the cities the user picked ----
+  const worldTime = $derived(
+    new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone: settings.worldZone }).format(now),
+  );
+  const worldLabel = $derived(
+    {
+      "America/Sao_Paulo": "São Paulo",
+      "America/New_York": "Nova York",
+      "Europe/London": "Londres",
+      "Europe/Lisbon": "Lisboa",
+      "Asia/Tokyo": "Tóquio",
+      "Australia/Sydney": "Sydney",
+    }[settings.worldZone] ?? settings.worldZone,
+  );
 
   // ---- window size and click-through --------------------------------------
   let dockEl: HTMLDivElement;
@@ -427,5 +466,27 @@
       <span class="df-clock-time">{time}</span>
       <span class="df-clock-date">{date}</span>
     </div>
+  {/if}
+
+  {#if settings.widgetPomodoro}
+    <button class="df-widget df-pomo" transition:scale={pop()} class:is-running={pomoRunning} onclick={pomoClick} title={en ? "Pomodoro: click to start or pause" : "Pomodoro: clique para iniciar ou pausar"}>
+      <span class="df-clock-time">{pomoText}</span>
+      <span class="df-clock-date">{pomoPhase}</span>
+    </button>
+  {/if}
+
+  {#if settings.widgetWorldClock}
+    <div class="df-widget df-clock df-world" transition:scale={pop()}>
+      <span class="df-clock-time">{worldTime}</span>
+      <span class="df-clock-date">{worldLabel}</span>
+    </div>
+  {/if}
+
+  <!-- With the Windows taskbar hidden, a bar that runs along the edge keeps its own arrow: it
+       opens the Windows options (sound, network, …) that the taskbar would have held. -->
+  {#if settings.hideTaskbar && settings.layout === "bar"}
+    <button class="df-tray" aria-label={en ? "Windows options" : "Opções do Windows"} title={en ? "Windows options" : "Opções do Windows"} onclick={() => invoke("show_tray_menu").catch((err) => console.error("tray menu failed", err))}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14l6-6 6 6" /></svg>
+    </button>
   {/if}
 </div>

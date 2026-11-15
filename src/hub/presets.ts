@@ -24,6 +24,9 @@ const clean: Partial<Settings> = {
   groupsEnabled: false,
   widgetMedia: false,
   widgetClock: false,
+  widgetPomodoro: false,
+  widgetWorldClock: false,
+  worldZone: "America/Sao_Paulo",
   widgetSystem: false,
 };
 

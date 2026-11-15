@@ -27,6 +27,7 @@
     const blocked = s.mediaBlocked.includes(kind) ? s.mediaBlocked.filter((k) => k !== kind) : [...s.mediaBlocked, kind];
     patch({ mediaBlocked: blocked });
   }
+  const val = (e: Event) => (e.currentTarget as HTMLSelectElement).value;
   const agents = ["Claude Code", "OpenCode", "Codex"];
 
   async function reset() {
@@ -92,6 +93,27 @@
     <div><div class="lbl">Relógio</div><div class="sub">Hora e data no fim da dock.</div></div>
     <button class="tg" aria-label="Relógio" aria-pressed={s.widgetClock} onclick={() => patch({ widgetClock: !s.widgetClock })}></button>
   </div>
+  <div class="srow">
+    <div><div class="lbl">Pomodoro</div><div class="sub">Cronômetro de foco: 25 minutos de trabalho e 5 de pausa.</div></div>
+    <button class="tg" aria-label="Pomodoro" aria-pressed={s.widgetPomodoro} onclick={() => patch({ widgetPomodoro: !s.widgetPomodoro })}></button>
+  </div>
+  <div class="srow">
+    <div><div class="lbl">Hora em outra cidade</div><div class="sub">Mostra a hora de uma cidade escolhida ao lado do relógio.</div></div>
+    <button class="tg" aria-label="Hora em outra cidade" aria-pressed={s.widgetWorldClock} onclick={() => patch({ widgetWorldClock: !s.widgetWorldClock })}></button>
+  </div>
+  {#if s.widgetWorldClock}
+    <div class="srow" transition:slide={{ duration: 220 }}>
+      <label class="lbl" for="zone-s">Cidade</label>
+      <select id="zone-s" aria-label="Cidade do relógio" value={s.worldZone} onchange={(e) => patch({ worldZone: val(e) })}>
+        <option value="America/Sao_Paulo">São Paulo</option>
+        <option value="America/New_York">Nova York</option>
+        <option value="Europe/London">Londres</option>
+        <option value="Europe/Lisbon">Lisboa</option>
+        <option value="Asia/Tokyo">Tóquio</option>
+        <option value="Australia/Sydney">Sydney</option>
+      </select>
+    </div>
+  {/if}
   {#each agents as agent (agent)}
     <div class="srow is-soon">
       <div><div class="lbl">{agent}</div><div class="sub">Quanto ainda resta do seu limite de uso. Ainda não está pronto.</div></div>

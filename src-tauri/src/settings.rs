@@ -10,6 +10,16 @@ use std::path::{Path, PathBuf};
 
 pub const DEFAULT_THEME: &str = "forge-glass";
 pub const MAX_PINS: usize = 40;
+/// The cities the world clock can show.
+pub const WORLD_ZONES: &[&str] = &[
+    "America/Sao_Paulo",
+    "America/New_York",
+    "Europe/London",
+    "Europe/Lisbon",
+    "Asia/Tokyo",
+    "Australia/Sydney",
+];
+
 /// How many docks can be kept in "Minhas barras".
 pub const MAX_SAVED: usize = 30;
 
@@ -124,6 +134,12 @@ pub struct Settings {
     pub widget_clock: bool,
     /// Processor, memory and battery.
     pub widget_system: bool,
+    /// Pomodoro in the dock: 25 minutes of focus, then 5 of rest.
+    pub widget_pomodoro: bool,
+    /// The time in another city, shown in the dock.
+    pub widget_world_clock: bool,
+    /// The city for the world clock, an IANA zone name from a short list.
+    pub world_zone: String,
 }
 
 /// Keeps the saved docks that have a usable id, a name and a look that is an object. Drops
@@ -192,6 +208,9 @@ impl Default for Settings {
 media_blocked: Vec::new(),
                         widget_clock: true,
             widget_system: false,
+            widget_pomodoro: false,
+            widget_world_clock: false,
+            world_zone: "America/Sao_Paulo".into(),
         }
     }
 }
@@ -282,6 +301,9 @@ impl Settings {
             media_blocked: MEDIA_KINDS.iter().filter(|k| self.media_blocked.iter().any(|b| b == *k)).map(|k| k.to_string()).collect(),
             widget_clock: self.widget_clock,
             widget_system: self.widget_system,
+            widget_pomodoro: self.widget_pomodoro,
+            widget_world_clock: self.widget_world_clock,
+            world_zone: one_of(&self.world_zone, WORLD_ZONES, "America/Sao_Paulo"),
         }
     }
 }

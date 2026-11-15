@@ -96,6 +96,9 @@ export interface Settings {
   /** Kinds of players the "now playing" widget ignores. */
   mediaBlocked: Array<"spotify" | "browsers" | "others">;
   widgetClock: boolean;
+  widgetPomodoro: boolean;
+  widgetWorldClock: boolean;
+  worldZone: string;
   widgetSystem: boolean;
 }
 

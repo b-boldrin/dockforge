@@ -10,10 +10,11 @@
 
   type Tab = "store" | "pins" | "bars" | "settings";
   let tab = $state<Tab>("store");
+  // Minhas barras comes first in the row; the window still opens on the Loja.
   const tabs: Array<[Exclude<Tab, "settings">, string]> = [
+    ["bars", "Minhas barras"],
     ["store", "Loja"],
     ["pins", "Favoritos e grupos"],
-    ["bars", "Minhas barras"],
   ];
   // Small marks for the three sections, so each tab is found by its shape as well as its name.
   const marks: Record<Exclude<Tab, "settings">, string> = {
