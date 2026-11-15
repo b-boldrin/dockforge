@@ -17,7 +17,7 @@ const clean: Partial<Settings> = {
   gap: null,
   indicator: "theme",
   align: "center",
-  autoHide: false,
+  autoHide: true,
   separator: true,
   labels: false,
   groupsEnabled: false,
