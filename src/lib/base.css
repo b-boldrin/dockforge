@@ -573,7 +573,8 @@
   to { opacity: 1; }
 }
 
-@media (prefers-reduced-motion: reduce) {
+/* Animations off: by choice in Configurações, or following Windows. */
+:root[data-motion="off"] {
   .df-item, .df-widget, .df-item.is-launching .df-icon { animation: none; }
   .df-dock[data-layout="island"] .df-apps, .df-island-now { transition: none; }
   .df-group-dot.is-received { animation: none; }

@@ -42,6 +42,7 @@ body {
 .stage.is-hidden[data-position="left"] { translate: -100% 0; }
 .stage.is-hidden[data-position="right"] { translate: 100% 0; }
 
-@media (prefers-reduced-motion: reduce) {
+/* Animations off: by choice in Configurações, or following Windows. */
+:root[data-motion="off"] {
   .stage, .stage.is-hidden { transition: opacity 120ms; }
 }

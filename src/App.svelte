@@ -4,6 +4,7 @@
   import { listen } from "@tauri-apps/api/event";
   import Dock from "./lib/Dock.svelte";
   import { createSheet, setSheet } from "./lib/themeSheet";
+  import { setMotion } from "./lib/motion";
   import type { AppEntry, MediaInfo, Settings, SystemStats, ThemePayload } from "./lib/types";
 
   let apps = $state<AppEntry[]>([]);
@@ -15,6 +16,10 @@
 
   const themeSheet = createSheet();
   const applyTheme = (t: ThemePayload) => setSheet(themeSheet, t.css, t.id);
+
+  $effect(() => {
+    if (settings) setMotion(settings.motion);
+  });
 
   onMount(() => {
     const unlisten: Array<() => void> = [];
