@@ -153,6 +153,12 @@
     invoke("show_app_menu", { key: app.key }).catch((err) => console.error("show_app_menu failed", err));
   }
 
+  function dockMenu(event: MouseEvent) {
+    if (!interactive || event.defaultPrevented) return;
+    event.preventDefault();
+    invoke("show_dock_menu").catch((err) => console.error("show_dock_menu failed", err));
+  }
+
   // ---- groups: click a dot to switch, drag an icon onto a dot to move it ------
   function showGroup(i: number) {
     if (!interactive || i === settings.activeGroup) return;
@@ -238,8 +244,11 @@
 
 <svelte:window onpointermove={pointerMove} onpointerup={pointerEnd} onpointercancel={() => pointerEnd(null)} />
 
+<!-- A right click on the dock itself, away from the apps, opens the dock's own menu. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="df-dock"
+  oncontextmenu={dockMenu}
   class:is-dragging={drag != null}
   class:has-labels={labels}
   data-position={settings.position}

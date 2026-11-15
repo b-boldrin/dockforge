@@ -385,7 +385,8 @@ fn show_app_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppStat
         match place {
             Some(0) => items.push(Box::new(mk("ctx-unpin".into(), tr(&lang, "Desafixar da dock", "Unpin from dock")).map_err(|e| e.to_string())?)),
             None => items.push(Box::new(mk("ctx-pin".into(), tr(&lang, "Fixar na dock", "Pin to dock")).map_err(|e| e.to_string())?)),
-            Some(_) => {}
+            // An app that lives in a group stays there, open or closed, until it is taken out.
+            Some(_) => items.push(Box::new(mk("ctx-group:0".into(), tr(&lang, "Tirar do grupo", "Remove from group")).map_err(|e| e.to_string())?)),
         }
         if settings.groups_enabled {
             let mut targets: Vec<MenuItem<Wry>> = Vec::new();
@@ -422,6 +423,21 @@ fn show_app_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppStat
     result
 }
 
+/// The menu for a right click on the dock itself, away from any app.
+#[tauri::command]
+fn show_dock_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppState>) -> Result<(), String> {
+    let lang = state.settings().language;
+    let settings = MenuItem::with_id(&app, "ctx-settings", tr(&lang, "Configurações…", "Settings…"), true, None::<&str>).map_err(|e| e.to_string())?;
+    let quit = MenuItem::with_id(&app, "ctx-quit", tr(&lang, "Sair do DockForge", "Quit DockForge"), true, None::<&str>).map_err(|e| e.to_string())?;
+    let separator = PredefinedMenuItem::separator(&app).map_err(|e| e.to_string())?;
+    let menu = Menu::with_items(&app, &[&settings, &separator, &quit]).map_err(|e| e.to_string())?;
+
+    state.menu_open.store(true, Ordering::Relaxed);
+    let result = menu.popup(window).map_err(|e| e.to_string());
+    state.menu_open.store(false, Ordering::Relaxed);
+    result
+}
+
 fn on_context_menu(app: &AppHandle, event: MenuEvent) {
     let id = event.id().as_ref().to_string();
     if !id.starts_with("ctx-") {
@@ -432,6 +448,10 @@ fn on_context_menu(app: &AppHandle, event: MenuEvent) {
 
     if id == "ctx-settings" {
         let _ = open_hub(app);
+        return;
+    }
+    if id == "ctx-quit" {
+        app.exit(0);
         return;
     }
     let Some(entry) = target else { return };
@@ -942,6 +962,7 @@ pub fn run() {
             fit_dock,
             open_settings,
             show_app_menu,
+            show_dock_menu,
             get_media,
             get_system,
             media_control,
