@@ -25,6 +25,10 @@
 
 * { box-sizing: border-box; }
 
+/* Scrollbars: thin, no arrows, a faint thumb that gets clearer when its area is pointed at. */
+* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.12) transparent; }
+*:hover { scrollbar-color: rgba(255, 255, 255, 0.26) transparent; }
+
 html, body {
   margin: 0;
   height: 100%;
