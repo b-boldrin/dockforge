@@ -69,3 +69,7 @@ pub fn reserve_edge(_window: isize, _edge: &str, _thickness: i32, _monitor: (i32
     None
 }
 pub fn release_edge() {}
+
+pub fn fullscreen_active() -> bool {
+    false
+}

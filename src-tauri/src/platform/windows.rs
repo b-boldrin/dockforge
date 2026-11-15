@@ -882,3 +882,39 @@ pub fn release_edge() {
         unsafe { SHAppBarMessage(ABM_REMOVE, &mut appbar(window)) };
     }
 }
+
+// ---------------------------------------------------------------------------
+// Is something in full screen?
+// ---------------------------------------------------------------------------
+
+use windows::Win32::Graphics::Gdi::{GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST};
+use windows::Win32::UI::WindowsAndMessaging::{GetClassNameW, GetWindowRect, IsZoomed};
+
+/// True when the window in front covers its whole monitor: a game, a video in full screen,
+/// a browser after F11, a slideshow. A maximized window does not count (it also covers the
+/// monitor when no toolbar reserves space), and neither does the desktop itself.
+pub fn fullscreen_active() -> bool {
+    unsafe {
+        let front = GetForegroundWindow();
+        if front.is_invalid() || IsZoomed(front).as_bool() {
+            return false;
+        }
+        let mut class = [0u16; 64];
+        let len = GetClassNameW(front, &mut class).max(0) as usize;
+        let class = String::from_utf16_lossy(&class[..len.min(class.len())]);
+        // The desktop and the taskbar are as big as the screen but are not "full screen apps".
+        if matches!(class.as_str(), "Progman" | "WorkerW" | "Shell_TrayWnd" | "Shell_SecondaryTrayWnd" | "XamlExplorerHostIslandWindow") {
+            return false;
+        }
+        let mut rect = RECT::default();
+        if GetWindowRect(front, &mut rect).is_err() {
+            return false;
+        }
+        let mut info = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
+        if !GetMonitorInfoW(MonitorFromWindow(front, MONITOR_DEFAULTTONEAREST), &mut info).as_bool() {
+            return false;
+        }
+        let screen = info.rcMonitor;
+        rect.left <= screen.left && rect.top <= screen.top && rect.right >= screen.right && rect.bottom >= screen.bottom
+    }
+}
