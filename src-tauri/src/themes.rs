@@ -50,6 +50,36 @@ pub const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../themes/ambar-crt/theme.json"),
         include_str!("../themes/ambar-crt/styles.css"),
     ),
+    (
+        "barra-classica",
+        include_str!("../themes/barra-classica/theme.json"),
+        include_str!("../themes/barra-classica/styles.css"),
+    ),
+    (
+        "transparente",
+        include_str!("../themes/transparente/theme.json"),
+        include_str!("../themes/transparente/styles.css"),
+    ),
+    (
+        "barra-flutuante",
+        include_str!("../themes/barra-flutuante/theme.json"),
+        include_str!("../themes/barra-flutuante/styles.css"),
+    ),
+    (
+        "segmentada",
+        include_str!("../themes/segmentada/theme.json"),
+        include_str!("../themes/segmentada/styles.css"),
+    ),
+    (
+        "retro-cinza",
+        include_str!("../themes/retro-cinza/theme.json"),
+        include_str!("../themes/retro-cinza/styles.css"),
+    ),
+    (
+        "prateleira",
+        include_str!("../themes/prateleira/theme.json"),
+        include_str!("../themes/prateleira/styles.css"),
+    ),
 ];
 
 #[derive(Debug, Clone, Default, Deserialize)]
