@@ -102,10 +102,19 @@
     invoke("fit_dock", { ...size, thickness }).catch((err) => console.error("fit_dock failed", err));
   }
 
+  /** Tells the app where the dock is in its window, so clicks beside it go through.
+   *  Measured from the layout, not from what is on screen: while the dock is slid away by
+   *  auto-hide, what is on screen is the hidden position, and a dock that came back with
+   *  that position recorded would let every click fall through to the window behind it. */
   function reportHitRect() {
     if (!interactive || !dockEl) return;
-    const r = dockEl.getBoundingClientRect();
-    invoke("set_hit_rect", { x: r.left, y: r.top, width: r.width, height: r.height }).catch(() => {});
+    let x = 0;
+    let y = 0;
+    for (let el: HTMLElement | null = dockEl; el; el = el.offsetParent as HTMLElement | null) {
+      x += el.offsetLeft;
+      y += el.offsetTop;
+    }
+    invoke("set_hit_rect", { x, y, width: dockEl.offsetWidth, height: dockEl.offsetHeight }).catch(() => {});
   }
 
   $effect(() => {
