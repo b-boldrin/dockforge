@@ -63,6 +63,7 @@ export interface Settings {
   iconSize: number;
   magnify: number;
   autoHide: boolean;
+  reserveSpace: boolean;
   hideDelay: number;
   showMode: "both" | "pinned" | "open";
   clickAction: "focus-min" | "cycle" | "focus";
@@ -81,6 +82,8 @@ export interface Settings {
   activeGroup: number;
   groupNames: string[];
   widgetMedia: boolean;
+  /** Kinds of players the "now playing" widget ignores. */
+  mediaBlocked: Array<"spotify" | "browsers" | "others">;
   widgetClock: boolean;
   widgetSystem: boolean;
 }
