@@ -56,6 +56,15 @@
     </select>
   </div>
 
+  <div class="srow">
+    <div><label class="lbl" for="motion">Animações</label><div class="sub">Na dock e nesta janela. "Seguir o Windows" desliga quando os efeitos de animação do Windows estão desligados.</div></div>
+    <select id="motion" value={s.motion} onchange={(e) => patch({ motion: (e.currentTarget as HTMLSelectElement).value as Settings["motion"] })}>
+      <option value="on">Ligadas</option>
+      <option value="system">Seguir o Windows</option>
+      <option value="off">Desligadas</option>
+    </select>
+  </div>
+
   <h2>Integrações</h2>
   <p class="lead">O que a dock pode mostrar de outros programas. Cada uma liga e desliga sozinha.</p>
   <div class="srow">
