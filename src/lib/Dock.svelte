@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { motionOff } from "./motion";
   import type { AppEntry, MediaInfo, Settings, SystemStats } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
@@ -116,8 +117,16 @@
     void settings.autoHide;
     void settings.reserveSpace;
     void appsWidth;
+    // A dock that grew needs its window now, or the new icon is cut off. A dock that shrank
+    // (an app closed) waits for the icon's exit to finish, so the window is resized once.
+    let lastLength = 0;
+    let later: ReturnType<typeof setTimeout> | undefined;
     const observer = new ResizeObserver(() => {
-      fitWindow();
+      const length = vertical ? dockEl.offsetHeight : dockEl.offsetWidth;
+      clearTimeout(later);
+      if (length >= lastLength) fitWindow();
+      else later = setTimeout(fitWindow, 260);
+      lastLength = length;
       reportHitRect();
     });
     observer.observe(dockEl);
@@ -132,6 +141,22 @@
 
   /** The app that was just started: its icon bounces until the window shows up. */
   let launching = $state<string | null>(null);
+
+  /** An app that closed: its icon shrinks and fades while the neighbours close the gap. */
+  function leave(node: HTMLElement) {
+    if (!interactive || motionOff()) return { duration: 0 };
+    const upright = vertical;
+    const size = upright ? node.offsetHeight : node.offsetWidth;
+    const gap = parseFloat(getComputedStyle(node.parentElement ?? node).columnGap) || 0;
+    const side = upright ? "block" : "inline";
+    return {
+      duration: 180,
+      easing: (t: number) => 1 - Math.pow(1 - t, 3),
+      css: (t: number) =>
+        `opacity:${t};scale:${0.85 + 0.15 * t};${upright ? "height" : "width"}:${size * t}px;min-width:0;` +
+        `margin-${side}:${(-gap / 2) * (1 - t)}px;pointer-events:none`,
+    };
+  }
 
   // ---- actions -------------------------------------------------------------
   function click(app: AppEntry) {
@@ -228,6 +253,7 @@
     onclick={() => click(app)}
     onpointerdown={(e) => press(e, app)}
     oncontextmenu={(e) => menu(e, app)}
+    out:leave
   >
     {#if icon}
       <img class="df-icon" src={icon} alt="" draggable="false" />
@@ -258,6 +284,8 @@
   style:--df-icon-size="{settings.iconSize}px"
   style:--df-hover-scale={labels ? 1 : settings.magnify}
   style:--df-indicator-active-color={settings.accent ?? undefined}
+  style:--df-gap={settings.gap != null ? `${settings.gap}px` : undefined}
+  data-indicator={settings.indicator}
   style:--df-radius={settings.radius != null ? `${settings.radius}px` : undefined}
   style:background={settings.opacity != null
     ? `color-mix(in srgb, var(--df-bg) ${settings.opacity}%, transparent)`
