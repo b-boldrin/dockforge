@@ -77,6 +77,8 @@ export interface Settings {
   startWithWindows: boolean;
   hideTaskbar: boolean;
   language: "pt" | "en";
+  /** Animations: on, off, or follow the Windows setting. */
+  motion: "on" | "system" | "off";
   layout: "float" | "bar" | "island";
   align: "start" | "center" | "end";
   favoritesEnabled: boolean;

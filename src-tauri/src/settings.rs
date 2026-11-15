@@ -79,6 +79,8 @@ pub struct Settings {
     pub hide_taskbar: bool,
     /// "pt" | "en"
     pub language: String,
+    /// Animations: "on", "off", or "system" (follow the Windows "animation effects" switch).
+    pub motion: String,
     /// "float": a dock sized to its icons. "bar": edge to edge, with the clock at the end.
     /// "island": a small pill (clock, music) that opens to show the apps when pointed at.
     pub layout: String,
@@ -122,6 +124,7 @@ impl Default for Settings {
             start_with_windows: false,
             hide_taskbar: true,
             language: "pt".into(),
+            motion: "on".into(),
             layout: "float".into(),
             align: "center".into(),
             favorites_enabled: true,
@@ -201,6 +204,7 @@ impl Settings {
             start_with_windows: self.start_with_windows,
             hide_taskbar: self.hide_taskbar,
             language: one_of(&self.language, &["pt", "en"], "pt"),
+            motion: one_of(&self.motion, &["on", "system", "off"], "on"),
             layout,
             align: one_of(&self.align, &["start", "center", "end"], "center"),
             favorites_enabled: self.favorites_enabled,
