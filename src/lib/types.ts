@@ -63,6 +63,7 @@ export interface Settings {
   iconSize: number;
   magnify: number;
   autoHide: boolean;
+  hideOnlyMaximized: boolean;
   reserveSpace: boolean;
   hideDelay: number;
   showMode: "both" | "pinned" | "open";

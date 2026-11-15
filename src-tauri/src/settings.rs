@@ -56,6 +56,9 @@ pub struct Settings {
     pub icon_size: u32,
     pub magnify: f32,
     pub auto_hide: bool,
+    /// With auto-hide on: hide only while the window in front is maximized. Over windows of
+    /// any other size, and over the desktop, the dock stays in view.
+    pub hide_only_maximized: bool,
     /// A dock that is always visible keeps its strip of the screen for itself, so maximized
     /// windows end where the dock begins (like the Windows taskbar does).
     pub reserve_space: bool,
@@ -115,6 +118,7 @@ impl Default for Settings {
             icon_size: 48,
             magnify: 1.3,
             auto_hide: true,
+            hide_only_maximized: true,
             reserve_space: true,
             hide_delay: 600,
             show_mode: "both".into(),
@@ -197,6 +201,7 @@ impl Settings {
             icon_size: self.icon_size.clamp(32, 72),
             magnify: if self.magnify.is_finite() { self.magnify.clamp(1.0, 1.6) } else { 1.3 },
             auto_hide: self.auto_hide,
+            hide_only_maximized: self.hide_only_maximized,
             reserve_space: self.reserve_space,
             hide_delay: self.hide_delay.min(2000),
             show_mode: one_of(&self.show_mode, &["both", "pinned", "open"], "both"),
