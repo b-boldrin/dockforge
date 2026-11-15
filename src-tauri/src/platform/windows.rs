@@ -509,12 +509,12 @@ unsafe fn hicon_to_rgba(icon: HICON) -> Option<Rgba> {
         return None;
     }
 
-    for px in pixels.chunks_exact_mut(4) {
+    for px in pixels.as_chunks_mut::<4>().0 {
         px.swap(0, 2); // BGRA -> RGBA
     }
     // Very old icons have no alpha channel at all: treat them as opaque.
-    if pixels.chunks_exact(4).all(|px| px[3] == 0) {
-        for px in pixels.chunks_exact_mut(4) {
+    if pixels.as_chunks::<4>().0.iter().all(|px| px[3] == 0) {
+        for px in pixels.as_chunks_mut::<4>().0 {
             px[3] = 255;
         }
     }
