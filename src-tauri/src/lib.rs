@@ -23,7 +23,8 @@ use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime};
 
-use tauri::menu::{CheckMenuItem, ContextMenu, IsMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::image::Image;
+use tauri::menu::{CheckMenuItem, ContextMenu, IconMenuItem, IsMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{
     AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, State, WebviewUrl, WebviewWindow,
@@ -369,7 +370,10 @@ fn show_app_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppStat
     let place = entry.exe.as_deref().and_then(|e| settings.pins.iter().find(|p| p.path.eq_ignore_ascii_case(e))).map(|p| p.group);
 
     let mut items: Vec<Box<dyn IsMenuItem<Wry>>> = Vec::new();
-    let mk = |id: String, label: &str| MenuItem::with_id(&app, id, label, true, None::<&str>);
+    let mk = |id: String, label: &str| {
+        let icon = menu_icon(&id);
+        IconMenuItem::with_id(&app, id, label, true, icon, None::<&str>)
+    };
 
     if entry.windows.len() > 1 {
         items.push(Box::new(MenuItem::new(&app, tr(&lang, "Janelas abertas", "Open windows"), false, None::<&str>).map_err(|e| e.to_string())?));
@@ -397,6 +401,7 @@ fn show_app_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppStat
             }
             let refs: Vec<&dyn IsMenuItem<Wry>> = targets.iter().map(|t| t as &dyn IsMenuItem<Wry>).collect();
             let submenu = Submenu::with_items(&app, tr(&lang, "Mover para o grupo", "Move to group"), true, &refs).map_err(|e| e.to_string())?;
+            let _ = submenu.set_icon(menu_icon("ctx-group"));
             items.push(Box::new(submenu));
         }
     }
@@ -423,12 +428,30 @@ fn show_app_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppStat
     result
 }
 
+/// The small picture shown next to a menu entry, picked from the entry's id.
+fn menu_icon(id: &str) -> Option<Image<'static>> {
+    let png: &[u8] = match id.split(':').next().unwrap_or(id) {
+        "ctx-win" => include_bytes!("../icons/menu/window.png"),
+        "ctx-launch" => include_bytes!("../icons/menu/new.png"),
+        "ctx-pin" => include_bytes!("../icons/menu/pin.png"),
+        "ctx-unpin" => include_bytes!("../icons/menu/unpin.png"),
+        "ctx-group" if id == "ctx-group:0" => include_bytes!("../icons/menu/out.png"),
+        "ctx-group" if id == "ctx-group" => include_bytes!("../icons/menu/group.png"),
+        "ctx-close" => include_bytes!("../icons/menu/close.png"),
+        "ctx-close-all" => include_bytes!("../icons/menu/close-all.png"),
+        "ctx-settings" => include_bytes!("../icons/menu/settings.png"),
+        "ctx-quit" => include_bytes!("../icons/menu/quit.png"),
+        _ => return None,
+    };
+    Image::from_bytes(png).ok()
+}
+
 /// The menu for a right click on the dock itself, away from any app.
 #[tauri::command]
 fn show_dock_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppState>) -> Result<(), String> {
     let lang = state.settings().language;
-    let settings = MenuItem::with_id(&app, "ctx-settings", tr(&lang, "Configurações…", "Settings…"), true, None::<&str>).map_err(|e| e.to_string())?;
-    let quit = MenuItem::with_id(&app, "ctx-quit", tr(&lang, "Sair do DockForge", "Quit DockForge"), true, None::<&str>).map_err(|e| e.to_string())?;
+    let settings = IconMenuItem::with_id(&app, "ctx-settings", tr(&lang, "Configurações…", "Settings…"), true, menu_icon("ctx-settings"), None::<&str>).map_err(|e| e.to_string())?;
+    let quit = IconMenuItem::with_id(&app, "ctx-quit", tr(&lang, "Sair do DockForge", "Quit DockForge"), true, menu_icon("ctx-quit"), None::<&str>).map_err(|e| e.to_string())?;
     let separator = PredefinedMenuItem::separator(&app).map_err(|e| e.to_string())?;
     let menu = Menu::with_items(&app, &[&settings, &separator, &quit]).map_err(|e| e.to_string())?;
 
