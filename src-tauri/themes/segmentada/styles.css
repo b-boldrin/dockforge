@@ -23,7 +23,7 @@
 .df-apps {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--df-app-gap, 6px);
   padding: 7px 12px;
   border-radius: 16px;
   background: var(--df-widget-bg);

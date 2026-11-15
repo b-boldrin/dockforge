@@ -15,6 +15,7 @@ const clean: Partial<Settings> = {
   radius: null,
   opacity: null,
   gap: null,
+  appScale: 1,
   indicator: "theme",
   align: "center",
   autoHide: true,

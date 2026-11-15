@@ -55,6 +55,8 @@ pub struct Settings {
     pub position: String,
     pub icon_size: u32,
     pub magnify: f32,
+    /// App icons as a share of the dock's size, 0.5 to 1.2. Only the icons change, not the slots.
+    pub app_scale: f32,
     pub auto_hide: bool,
     /// With auto-hide on: hide only while the window in front is maximized. Over windows of
     /// any other size, and over the desktop, the dock stays in view.
@@ -117,6 +119,7 @@ impl Default for Settings {
             position: "bottom".into(),
             icon_size: 48,
             magnify: 1.3,
+            app_scale: 1.0,
             auto_hide: true,
             hide_only_maximized: true,
             reserve_space: true,
@@ -200,6 +203,7 @@ impl Settings {
             position,
             icon_size: self.icon_size.clamp(32, 72),
             magnify: if self.magnify.is_finite() { self.magnify.clamp(1.0, 1.6) } else { 1.3 },
+            app_scale: if self.app_scale.is_finite() { self.app_scale.clamp(0.5, 1.2) } else { 1.0 },
             auto_hide: self.auto_hide,
             hide_only_maximized: self.hide_only_maximized,
             reserve_space: self.reserve_space,
@@ -297,6 +301,7 @@ mod tests {
             position: "middle".into(),
             icon_size: 500,
             magnify: f32::NAN,
+            app_scale: f32::NAN,
             hide_delay: 99_999,
             show_mode: "x".into(),
             click_action: "y".into(),
@@ -310,6 +315,7 @@ mod tests {
         assert_eq!(s.position, "bottom");
         assert_eq!(s.icon_size, 72);
         assert_eq!(s.magnify, 1.3);
+        assert_eq!(s.app_scale, 1.0);
         assert_eq!(s.hide_delay, 2000);
         assert_eq!(s.show_mode, "both");
         assert_eq!(s.click_action, "focus-min");

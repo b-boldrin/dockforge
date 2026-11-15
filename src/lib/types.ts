@@ -62,6 +62,7 @@ export interface Settings {
   position: Position;
   iconSize: number;
   magnify: number;
+  appScale: number;
   autoHide: boolean;
   hideOnlyMaximized: boolean;
   reserveSpace: boolean;

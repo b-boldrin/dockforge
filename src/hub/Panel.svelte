@@ -246,15 +246,15 @@
   <h3 class="ph">Ajustes do tema</h3>
   <div class="box">
   <div class="prow">
-    <label for="isz">Tamanho</label>
+    <label for="isz" title="Tamanho do espaço de cada app na dock">Dock</label>
     <span class="range"><input id="isz" type="range" min="32" max="72" step="4" value={s.iconSize} onchange={(e) => patch({ iconSize: num(e) })} /><span class="rv">{s.iconSize} px</span></span>
   </div>
   <div class="prow">
-    <label for="mag">Ampliação</label>
-    <span class="range"><input id="mag" type="range" min="1" max="1.6" step="0.05" value={s.magnify} onchange={(e) => patch({ magnify: num(e) })} /><span class="rv">{Math.round(s.magnify * 100)}%</span></span>
+    <label for="app" title="Tamanho dos ícones dentro da dock">Apps</label>
+    <span class="range"><input id="app" type="range" min="0.5" max="1.2" step="0.05" value={s.appScale} onchange={(e) => patch({ appScale: num(e) })} /><span class="rv">{Math.round(s.appScale * 100)}%</span></span>
   </div>
   <div class="prow">
-    <label for="gap" title="Espaço entre os apps">Espaço</label>
+    <label for="gap" title="Espaço só entre os apps">Espaço entre apps</label>
     <span class="range"><input id="gap" type="range" min="0" max="24" step="1" value={s.gap ?? 8} onchange={(e) => patch({ gap: num(e) })} /><span class="rv">{s.gap == null ? "tema" : `${s.gap} px`}</span></span>
   </div>
   <div class="seg-label" id="seg-mark">Marca de app aberto</div>
@@ -297,7 +297,7 @@
     <span class="range"><input id="opa" type="range" min="30" max="100" step="5" value={s.opacity ?? 100} onchange={(e) => patch({ opacity: num(e) })} /><span class="rv">{s.opacity == null ? "tema" : `${s.opacity}%`}</span></span>
   </div>
   <div class="panel-actions">
-    <button class="link muted" onclick={() => patch({ accent: null, radius: null, opacity: null, gap: null, indicator: "theme" })}>Desfazer ajustes</button>
+    <button class="link muted" onclick={() => patch({ accent: null, radius: null, opacity: null, gap: null, appScale: 1, indicator: "theme" })}>Desfazer ajustes</button>
   </div>
   </div>
   </section>

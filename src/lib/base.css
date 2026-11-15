@@ -64,9 +64,16 @@
 .df-dock[data-layout="bar"][data-position="left"] { border-width: 0 1px 0 0; }
 .df-dock[data-layout="bar"][data-position="right"] { border-width: 0 0 0 1px; }
 
-/* The app icons sit in a wrapper that only matters for the island layout. */
+/* The app icons sit in their own block, so the space between apps is set apart from the space
+   between modules (groups, separator, widgets), which stays on the dock's own gap. */
 .df-apps {
-  display: contents;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--df-app-gap, var(--df-gap));
+}
+.df-dock:is([data-position="left"], [data-position="right"]) .df-apps {
+  flex-direction: column;
 }
 
 /* Island: closed, it shows the app in front and the widgets. Pointing at it (or reaching it
@@ -74,7 +81,7 @@
 .df-dock[data-layout="island"] .df-apps {
   display: flex;
   align-items: center;
-  gap: var(--df-gap);
+  gap: var(--df-app-gap, var(--df-gap));
   box-sizing: border-box;
   max-width: 0;
   padding: 0;
@@ -184,6 +191,8 @@
 .df-icon {
   width: var(--df-icon-size);
   height: var(--df-icon-size);
+  /* The user's app size: the icon shrinks or grows inside its slot, the slot stays put. */
+  zoom: var(--df-app-scale, 1);
   object-fit: contain;
   transform-origin: 50% 100%;
   transition: transform var(--df-transition), filter var(--df-transition);

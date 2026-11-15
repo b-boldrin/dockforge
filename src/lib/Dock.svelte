@@ -293,7 +293,8 @@
   style:--df-icon-size="{settings.iconSize}px"
   style:--df-hover-scale={labels ? 1 : settings.magnify}
   style:--df-indicator-active-color={settings.accent ?? undefined}
-  style:--df-gap={settings.gap != null ? `${settings.gap}px` : undefined}
+  style:--df-app-gap={settings.gap != null ? `${settings.gap}px` : undefined}
+  style:--df-app-scale={settings.appScale}
   data-indicator={settings.indicator}
   style:--df-radius={settings.radius != null ? `${settings.radius}px` : undefined}
   style:background={settings.opacity != null
