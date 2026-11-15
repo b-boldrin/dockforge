@@ -794,3 +794,79 @@ pub fn show_taskbar(state: u32) {
         let _ = unsafe { ShowWindow(bar, SW_SHOWNOACTIVATE) };
     }
 }
+
+// ---------------------------------------------------------------------------
+// Keeping a strip of the screen for the dock
+// ---------------------------------------------------------------------------
+//
+// Windows calls a window that owns a strip along a screen edge an "application desktop
+// toolbar" (appbar). Maximized windows stop where the strip begins. This is the documented
+// way to do it, the same one the Windows taskbar uses.
+
+use windows::Win32::Foundation::RECT;
+use windows::Win32::UI::Shell::{ABE_BOTTOM, ABE_LEFT, ABE_RIGHT, ABE_TOP, ABM_NEW, ABM_QUERYPOS, ABM_REMOVE, ABM_SETPOS};
+use windows::Win32::UI::WindowsAndMessaging::WM_APP;
+
+/// The window registered as an appbar, if any.
+static APPBAR: Mutex<Option<isize>> = Mutex::new(None);
+/// Windows wants a message number to notify the appbar with. The notifications are not
+/// needed, and a number in the application's private range is ignored by the window.
+const APPBAR_MESSAGE: u32 = WM_APP + 0x0DF;
+
+fn appbar(window: isize) -> APPBARDATA {
+    APPBARDATA {
+        cbSize: std::mem::size_of::<APPBARDATA>() as u32,
+        hWnd: HWND(window as *mut core::ffi::c_void),
+        uCallbackMessage: APPBAR_MESSAGE,
+        ..Default::default()
+    }
+}
+
+/// Reserves `thickness` pixels along `edge` ("bottom" | "top" | "left" | "right") of the
+/// monitor `(left, top, right, bottom)` for `window`. Returns the strip Windows granted,
+/// which can be moved inwards if another toolbar already owns that edge.
+/// Calling it again just updates the strip.
+pub fn reserve_edge(window: isize, edge: &str, thickness: i32, monitor: (i32, i32, i32, i32)) -> Option<(i32, i32, i32, i32)> {
+    let mut registered = APPBAR.lock().ok()?;
+    if *registered != Some(window) {
+        if let Some(old) = registered.take() {
+            unsafe { SHAppBarMessage(ABM_REMOVE, &mut appbar(old)) };
+        }
+        if unsafe { SHAppBarMessage(ABM_NEW, &mut appbar(window)) } == 0 {
+            return None;
+        }
+        *registered = Some(window);
+    }
+
+    let (left, top, right, bottom) = monitor;
+    let thickness = thickness.max(1);
+    let mut data = appbar(window);
+    data.uEdge = match edge {
+        "top" => ABE_TOP,
+        "left" => ABE_LEFT,
+        "right" => ABE_RIGHT,
+        _ => ABE_BOTTOM,
+    };
+    data.rc = RECT { left, top, right, bottom };
+    let narrow = |rc: &mut RECT| match edge {
+        "top" => rc.bottom = rc.top + thickness,
+        "left" => rc.right = rc.left + thickness,
+        "right" => rc.left = rc.right - thickness,
+        _ => rc.top = rc.bottom - thickness,
+    };
+    narrow(&mut data.rc);
+    // Windows may push the strip away from the edge to make room for another toolbar;
+    // after that the thickness is applied again from wherever the strip ended up.
+    unsafe { SHAppBarMessage(ABM_QUERYPOS, &mut data) };
+    narrow(&mut data.rc);
+    unsafe { SHAppBarMessage(ABM_SETPOS, &mut data) };
+    Some((data.rc.left, data.rc.top, data.rc.right, data.rc.bottom))
+}
+
+/// Gives the strip back. Safe to call when nothing is reserved.
+pub fn release_edge() {
+    let Ok(mut registered) = APPBAR.lock() else { return };
+    if let Some(window) = registered.take() {
+        unsafe { SHAppBarMessage(ABM_REMOVE, &mut appbar(window)) };
+    }
+}

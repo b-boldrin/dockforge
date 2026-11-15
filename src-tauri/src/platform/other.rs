@@ -63,3 +63,9 @@ pub fn taskbar_state() -> u32 {
 }
 pub fn hide_taskbar() {}
 pub fn show_taskbar(_state: u32) {}
+
+// Reserving a strip of the screen is a Windows feature.
+pub fn reserve_edge(_window: isize, _edge: &str, _thickness: i32, _monitor: (i32, i32, i32, i32)) -> Option<(i32, i32, i32, i32)> {
+    None
+}
+pub fn release_edge() {}
