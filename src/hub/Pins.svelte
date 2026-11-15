@@ -63,8 +63,8 @@
     <div>
       <h1>Favoritos e grupos</h1>
       <p class="lead">
-        Os favoritos ficam na dock mesmo fechados, sempre no grupo 1. Os outros grupos começam vazios e recebem os
-        apps que você mandar para eles.
+        Favorito é o app que fica na dock mesmo fechado. Para fixar um, clique nele com o botão direito na dock e
+        escolha "Fixar na dock", ou adicione por aqui. Só entra o que você fixar.
       </p>
     </div>
     <button class="btn pri" aria-expanded={adding} onclick={() => (adding = !adding)}>Adicionar app</button>
@@ -143,7 +143,7 @@
         <button class="ico" aria-label="Mover {pin.name} para baixo" disabled={row === rows.length - 1} onclick={() => move(row, 1)}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
         </button>
-        <button class="link muted" onclick={() => remove(index)}>Tirar</button>
+        <button class="link muted" onclick={() => remove(index)}>Desafixar</button>
       </div>
     {:else}
       <p class="empty">
