@@ -105,7 +105,7 @@
   <div class="box">
   <div class="seg-group" role="group" aria-label="Formato">
     {#each layouts as [id, label] (id)}
-      <button class="seg" class:on={s.layout === id} aria-pressed={s.layout === id} onclick={() => patch({ layout: id })}>{label}</button>
+      <button class="seg" class:on={s.layout === id} aria-pressed={s.layout === id} onclick={() => patch(id === "bar" ? { layout: id, autoHide: false, reserveSpace: true } : { layout: id })}>{label}</button>
     {/each}
   </div>
   <div class="seg-pair">

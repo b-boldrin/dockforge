@@ -33,19 +33,19 @@ export const PRESETS: Preset[] = [
     id: "barra-classica",
     name: "Barra clássica",
     about: "Reta, opaca, de ponta a ponta, com o nome de cada app aberto ao lado do ícone.",
-    settings: { ...clean, theme: "barra-classica", layout: "bar", position: "bottom", align: "start", iconSize: 36, magnify: 1, labels: true, separator: false, widgetClock: true },
+    settings: { ...clean, theme: "barra-classica", layout: "bar", autoHide: false, reserveSpace: true, position: "bottom", align: "start", iconSize: 36, magnify: 1, labels: true, separator: false, widgetClock: true },
   },
   {
     id: "centralizada",
     name: "Centralizada",
     about: "Barra transparente com os ícones no meio, para o papel de parede aparecer.",
-    settings: { ...clean, theme: "transparente", layout: "bar", position: "bottom", iconSize: 40, magnify: 1.1, widgetClock: true },
+    settings: { ...clean, theme: "transparente", layout: "bar", autoHide: false, reserveSpace: true, position: "bottom", iconSize: 40, magnify: 1.1, widgetClock: true },
   },
   {
     id: "barra-flutuante",
     name: "Barra flutuante",
     about: "De ponta a ponta, mas solta das bordas da tela e com os cantos arredondados.",
-    settings: { ...clean, theme: "barra-flutuante", layout: "bar", position: "bottom", iconSize: 40, magnify: 1.1, widgetMedia: true, widgetClock: true },
+    settings: { ...clean, theme: "barra-flutuante", layout: "bar", autoHide: false, reserveSpace: true, position: "bottom", iconSize: 40, magnify: 1.1, widgetMedia: true, widgetClock: true },
   },
   {
     id: "segmentada",
@@ -57,7 +57,7 @@ export const PRESETS: Preset[] = [
     id: "retro",
     name: "Retrô",
     about: "Cinza, com relevo e botões de apertar, como nos computadores dos anos 90.",
-    settings: { ...clean, theme: "retro-cinza", layout: "bar", position: "bottom", align: "start", iconSize: 32, magnify: 1, labels: true, separator: false, widgetClock: true },
+    settings: { ...clean, theme: "retro-cinza", layout: "bar", autoHide: false, reserveSpace: true, position: "bottom", align: "start", iconSize: 32, magnify: 1, labels: true, separator: false, widgetClock: true },
   },
   {
     id: "prateleira",
@@ -81,7 +81,7 @@ export const PRESETS: Preset[] = [
     id: "terminal",
     name: "Terminal",
     about: "Barra âmbar no topo, com cara de monitor antigo e os números da máquina.",
-    settings: { ...clean, theme: "ambar-crt", layout: "bar", position: "top", align: "start", iconSize: 36, magnify: 1, widgetSystem: true, widgetClock: true },
+    settings: { ...clean, theme: "ambar-crt", layout: "bar", autoHide: false, reserveSpace: true, position: "top", align: "start", iconSize: 36, magnify: 1, widgetSystem: true, widgetClock: true },
   },
   {
     id: "mesas",

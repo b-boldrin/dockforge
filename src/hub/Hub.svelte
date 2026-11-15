@@ -4,15 +4,23 @@
   import Store from "./Store.svelte";
   import Pins from "./Pins.svelte";
   import Settings from "./Settings.svelte";
+  import Bars from "./Bars.svelte";
   import { hub, start } from "./store.svelte.js";
   import { setMotion } from "../lib/motion";
 
-  type Tab = "store" | "pins" | "settings";
+  type Tab = "store" | "pins" | "bars" | "settings";
   let tab = $state<Tab>("store");
-  const tabs: Array<[Tab, string]> = [
+  const tabs: Array<[Exclude<Tab, "settings">, string]> = [
     ["store", "Loja"],
     ["pins", "Favoritos e grupos"],
+    ["bars", "Minhas barras"],
   ];
+  // Small marks for the three sections, so each tab is found by its shape as well as its name.
+  const marks: Record<Exclude<Tab, "settings">, string> = {
+    store: "M4 9l1.5-5h13L20 9M4 9h16v10H4zM9 19v-5h6v5",
+    pins: "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9-4.3-4.1 5.9-.8z",
+    bars: "M4 7h16M4 12h16M4 17h10",
+  };
 
   // The "Sua dock" panel slides away to the left when it is not needed. The choice is
   // remembered on this computer; storage can be unavailable, and then it just starts open.
@@ -80,7 +88,10 @@
       </div>
       <nav aria-label="Seções" class="tabs">
         {#each tabs as [id, label] (id)}
-          <button class="tab" class:on={tab === id} aria-current={tab === id ? "page" : undefined} onclick={() => (tab = id)}>{label}</button>
+          <button class="tab" class:on={tab === id} aria-current={tab === id ? "page" : undefined} onclick={() => (tab = id)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={marks[id]}></path></svg>
+            {label}
+          </button>
         {/each}
       </nav>
       <button
@@ -114,6 +125,8 @@
               <Store />
             {:else if tab === "pins"}
               <Pins />
+            {:else if tab === "bars"}
+              <Bars />
             {:else}
               <Settings />
             {/if}

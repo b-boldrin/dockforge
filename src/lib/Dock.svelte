@@ -1,6 +1,9 @@
 <script lang="ts">
+  /** A widget that is added grows in from a little smaller, and shrinks out the same way. */
+  const pop = () => ({ duration: motionOff() ? 0 : 240, start: 0.82 });
   import { invoke } from "@tauri-apps/api/core";
   import { motionOff } from "./motion";
+  import { scale } from "svelte/transition";
   import type { AppEntry, MediaInfo, Settings, SystemStats } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
@@ -363,7 +366,7 @@
   <span class="df-spacer"></span>
 
   {#if settings.widgetMedia && media}
-    <div class="df-widget df-media" title="{media.title} — {media.artist} ({media.source})">
+    <div class="df-widget df-media" transition:scale={pop()} title="{media.title} — {media.artist} ({media.source})">
       {#if media.thumbnail}
         <img class="df-media-cover" src={media.thumbnail} alt="" draggable="false" />
       {:else}
@@ -394,6 +397,7 @@
   {#if settings.widgetSystem && system}
     <div
       class="df-widget df-system"
+      transition:scale={pop()}
       title={en
         ? `Processor ${system.cpu}% · Memory ${system.memory}%`
         : `Processador ${system.cpu}% · Memória ${system.memory}%`}
@@ -419,7 +423,7 @@
   {/if}
 
   {#if settings.widgetClock}
-    <div class="df-widget df-clock">
+    <div class="df-widget df-clock" transition:scale={pop()}>
       <span class="df-clock-time">{time}</span>
       <span class="df-clock-date">{date}</span>
     </div>

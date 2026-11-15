@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 
 pub const DEFAULT_THEME: &str = "forge-glass";
 pub const MAX_PINS: usize = 40;
+/// How many docks can be kept in "Minhas barras".
+pub const MAX_SAVED: usize = 30;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -20,6 +22,17 @@ pub struct Pin {
     pub group: u8,
 }
 
+
+/// A dock the user kept in "Minhas barras": its name and how it looked. The look is every
+/// setting except the favorites, the saved list and the version, so applying it changes the
+/// dock without touching the apps pinned to it.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SavedBar {
+    pub id: String,
+    pub name: String,
+    pub look: serde_json::Value,
+}
 
 /// A dock always has at least `MIN_GROUPS` groups and at most `MAX_GROUPS` (Alt+1 … Alt+9).
 pub const MIN_GROUPS: usize = 4;
@@ -82,6 +95,8 @@ pub struct Settings {
     /// The mark under an open app: "theme" (the theme's own), "dot", "dash", "bar" or "glow".
     pub indicator: String,
     pub pins: Vec<Pin>,
+    /// The docks kept in "Minhas barras", in the order the user sees them.
+    pub saved: Vec<SavedBar>,
     pub start_with_windows: bool,
     /// Hide the Windows taskbar while DockForge is running (on by default: the dock replaces
     /// it). It comes back when DockForge closes.
@@ -111,6 +126,34 @@ pub struct Settings {
     pub widget_system: bool,
 }
 
+/// Keeps the saved docks that have a usable id, a name and a look that is an object. Drops
+/// the keys that are never part of a look, so a bar can't carry favorites or the list itself.
+fn sanitize_saved(saved: &[SavedBar]) -> Vec<SavedBar> {
+    let mut seen: Vec<String> = Vec::new();
+    let mut out: Vec<SavedBar> = Vec::new();
+    for bar in saved {
+        let id = bar.id.trim();
+        let name = bar.name.trim();
+        let Some(look) = bar.look.as_object() else { continue };
+        if id.is_empty() || id.len() > 40 || !id.is_ascii() || seen.iter().any(|s| s == id) {
+            continue;
+        }
+        if name.is_empty() || name.chars().count() > 40 {
+            continue;
+        }
+        let mut look = look.clone();
+        for key in ["pins", "saved", "version"] {
+            look.remove(key);
+        }
+        seen.push(id.to_string());
+        out.push(SavedBar { id: id.to_string(), name: name.to_string(), look: serde_json::Value::Object(look) });
+        if out.len() == MAX_SAVED {
+            break;
+        }
+    }
+    out
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -134,6 +177,7 @@ impl Default for Settings {
             gap: None,
             indicator: "theme".into(),
             pins: Vec::new(),
+            saved: Vec::new(),
             start_with_windows: false,
             hide_taskbar: true,
             language: "pt".into(),
@@ -218,6 +262,7 @@ impl Settings {
             gap: self.gap.map(|g| g.min(24)),
             indicator: one_of(&self.indicator, &["theme", "none", "dot", "dash", "bar", "glow"], "theme"),
             pins,
+            saved: sanitize_saved(&self.saved),
             start_with_windows: self.start_with_windows,
             hide_taskbar: self.hide_taskbar,
             language: one_of(&self.language, &["pt", "en"], "pt"),
@@ -434,5 +479,25 @@ mod tests {
         assert!(Settings::default().auto_hide);
         assert!(Settings::default().hide_taskbar);
         assert_eq!(Settings::default().version, VERSION);
+    }
+
+    #[test]
+    fn saved_bars_keep_look_without_favorites_and_drop_bad_entries() {
+        let look = serde_json::json!({ "theme": "barra-classica", "layout": "bar", "pins": [1], "saved": [2], "version": 9 });
+        let s = Settings {
+            saved: vec![
+                SavedBar { id: "a".into(), name: "Minha".into(), look: look.clone() },
+                SavedBar { id: "a".into(), name: "Repetida".into(), look: look.clone() },
+                SavedBar { id: "b".into(), name: "".into(), look: look.clone() },
+                SavedBar { id: "c".into(), name: "Sem objeto".into(), look: serde_json::json!(3) },
+            ],
+            ..Settings::default()
+        }
+        .sanitized();
+        assert_eq!(s.saved.len(), 1);
+        assert_eq!(s.saved[0].look["theme"], "barra-classica");
+        assert!(s.saved[0].look.get("pins").is_none());
+        assert!(s.saved[0].look.get("saved").is_none());
+        assert!(s.saved[0].look.get("version").is_none());
     }
 }

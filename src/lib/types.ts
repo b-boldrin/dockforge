@@ -80,6 +80,7 @@ export interface Settings {
   /** The mark under an open app: the theme's own, or one of four standard ones. */
   indicator: "theme" | "none" | "dot" | "dash" | "bar" | "glow";
   pins: Pin[];
+  saved: SavedBar[];
   startWithWindows: boolean;
   hideTaskbar: boolean;
   language: "pt" | "en";
@@ -96,4 +97,11 @@ export interface Settings {
   mediaBlocked: Array<"spotify" | "browsers" | "others">;
   widgetClock: boolean;
   widgetSystem: boolean;
+}
+
+/** A dock kept in "Minhas barras": its name and every setting except the favorites. */
+export interface SavedBar {
+  id: string;
+  name: string;
+  look: Partial<Settings>;
 }

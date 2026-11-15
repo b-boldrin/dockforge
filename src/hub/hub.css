@@ -54,6 +54,7 @@ h1, h2, h3 { margin: 0; }
 .brand-dock { fill: var(--accent); }
 .tabs { display: flex; gap: 4px; flex: 1; }
 .tab {
+  display: inline-flex; align-items: center; gap: 7px;
   border: 0; background: transparent; color: var(--text-2); height: 32px; padding: 0 12px; border-radius: 8px;
   font-size: 13px; font-weight: 500; cursor: pointer;
   transition: background 160ms var(--ease), color 160ms var(--ease);

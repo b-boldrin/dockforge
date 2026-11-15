@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { AppEntry, MediaInfo, Settings, SystemStats, ThemeSummary } from "../lib/types";
+import type { AppEntry, MediaInfo, SavedBar, Settings, SystemStats, ThemeSummary } from "../lib/types";
 import type { Preset } from "./presets";
 import { refreshPreviewTheme } from "./themes.svelte.js";
 
@@ -64,13 +64,57 @@ export async function importFavorites(): Promise<number> {
   }
 }
 
+/** The part of the dock that a saved bar keeps: every setting but the favorites and the list itself. */
+export function lookOf(s: Settings): Partial<Settings> {
+  const look: Record<string, unknown> = { ...$state.snapshot(s) };
+  delete look.pins;
+  delete look.saved;
+  delete look.version;
+  return look as Partial<Settings>;
+}
+
+const sameLook = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Puts a dock as it is now into "Minhas barras", at the top. A look already there is not repeated. */
+export function keepBar(name: string) {
+  if (!hub.settings) return;
+  const look = lookOf(hub.settings);
+  if (hub.settings.saved.some((b) => sameLook(b.look, look))) return;
+  const id = `bar-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  return patch({ saved: [{ id, name, look }, ...$state.snapshot(hub.settings.saved)] });
+}
+
 export function useTheme(id: string) {
   // A new theme starts clean: tweaks made on the old one do not carry over.
-  return patch({ theme: id, accent: null, radius: null, opacity: null });
+  const name = hub.themes.find((t) => t.id === id)?.name ?? id;
+  return patch({ theme: id, accent: null, radius: null, opacity: null }).then(() => keepBar(name));
 }
 
 export function usePreset(preset: Preset) {
-  return patch(preset.settings);
+  return patch(preset.settings).then(() => keepBar(preset.name));
+}
+
+/** Applies a kept bar. Its look replaces the dock's look; the favorites stay as they are. */
+export function applyBar(bar: SavedBar) {
+  return patch(bar.look);
+}
+
+export function updateBar(id: string) {
+  if (!hub.settings) return;
+  const look = lookOf(hub.settings);
+  return patch({ saved: $state.snapshot(hub.settings.saved).map((b) => (b.id === id ? { ...b, look } : b)) });
+}
+
+export function renameBar(id: string, name: string) {
+  if (!hub.settings) return;
+  const clean = name.trim().slice(0, 40);
+  if (!clean) return;
+  return patch({ saved: $state.snapshot(hub.settings.saved).map((b) => (b.id === id ? { ...b, name: clean } : b)) });
+}
+
+export function removeBar(id: string) {
+  if (!hub.settings) return;
+  return patch({ saved: $state.snapshot(hub.settings.saved).filter((b) => b.id !== id) });
 }
 
 /** Sample widget contents for previews: the real ones only reach the dock window. */
