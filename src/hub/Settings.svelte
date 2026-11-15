@@ -3,6 +3,7 @@
   import { invoke } from "@tauri-apps/api/core";
   import { getVersion } from "@tauri-apps/api/app";
   import { hub, patch } from "./store.svelte.js";
+  import { slide } from "svelte/transition";
   import type { Settings } from "../lib/types";
 
   const s = $derived(hub.settings!);
@@ -15,6 +16,19 @@
 
   const open = (url: string) => invoke("open_link", { url }).catch((err) => (hub.error = String(err)));
 
+  // ---- integrations ---------------------------------------------------------
+  type Kind = Settings["mediaBlocked"][number];
+  const players: Array<[Kind, string, string]> = [
+    ["spotify", "Spotify", "O aplicativo do Spotify para Windows."],
+    ["browsers", "Navegadores", "YouTube Music, YouTube e outros sites tocando no Chrome, Edge, Firefox, Brave, Opera ou Vivaldi."],
+    ["others", "Outros players", "Qualquer outro programa que apareça nos controles de mídia do Windows."],
+  ];
+  function togglePlayer(kind: Kind) {
+    const blocked = s.mediaBlocked.includes(kind) ? s.mediaBlocked.filter((k) => k !== kind) : [...s.mediaBlocked, kind];
+    patch({ mediaBlocked: blocked });
+  }
+  const agents = ["Claude Code", "OpenCode", "Codex"];
+
   async function reset() {
     hub.settings = await invoke<Settings>("reset_settings");
     resetDone = true;
@@ -22,7 +36,7 @@
 </script>
 
 <div class="page">
-  <h1>Sistema</h1>
+  <h1>Configurações</h1>
   <div class="srow">
     <div><div class="lbl">Iniciar com o Windows</div><div class="sub">A dock abre sozinha quando você liga o computador.</div></div>
     <button class="tg" aria-label="Iniciar com o Windows" aria-pressed={s.startWithWindows} onclick={() => patch({ startWithWindows: !s.startWithWindows })}></button>
@@ -41,6 +55,37 @@
       <option value="en">English</option>
     </select>
   </div>
+
+  <h2>Integrações</h2>
+  <p class="lead">O que a dock pode mostrar de outros programas. Cada uma liga e desliga sozinha.</p>
+  <div class="srow">
+    <div><div class="lbl">Tocando agora</div><div class="sub">Música ou vídeo em reprodução, com capa e botões de pausar e pular.</div></div>
+    <button class="tg" aria-label="Tocando agora" aria-pressed={s.widgetMedia} onclick={() => patch({ widgetMedia: !s.widgetMedia })}></button>
+  </div>
+  {#if s.widgetMedia}
+    <div class="nested" transition:slide={{ duration: 220 }}>
+      {#each players as [kind, name, about] (kind)}
+        <div class="srow">
+          <div><div class="lbl">{name}</div><div class="sub">{about}</div></div>
+          <button class="tg" aria-label={name} aria-pressed={!s.mediaBlocked.includes(kind)} onclick={() => togglePlayer(kind)}></button>
+        </div>
+      {/each}
+    </div>
+  {/if}
+  <div class="srow">
+    <div><div class="lbl">Sistema</div><div class="sub">Uso do processador, da memória e carga da bateria.</div></div>
+    <button class="tg" aria-label="Sistema" aria-pressed={s.widgetSystem} onclick={() => patch({ widgetSystem: !s.widgetSystem })}></button>
+  </div>
+  <div class="srow">
+    <div><div class="lbl">Relógio</div><div class="sub">Hora e data no fim da dock.</div></div>
+    <button class="tg" aria-label="Relógio" aria-pressed={s.widgetClock} onclick={() => patch({ widgetClock: !s.widgetClock })}></button>
+  </div>
+  {#each agents as agent (agent)}
+    <div class="srow is-soon">
+      <div><div class="lbl">{agent}</div><div class="sub">Quanto ainda resta do seu limite de uso. Ainda não está pronto.</div></div>
+      <span class="soon">Em breve</span>
+    </div>
+  {/each}
 
   <h2>Sobre</h2>
   <div class="srow">
