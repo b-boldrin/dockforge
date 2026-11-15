@@ -13,7 +13,7 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Groups, switched from anywhere with **Alt+1 … Alt+4**. Group 1 has the favorites and everything open; groups 2 to 4 start empty. Move the app in front to a group with **Alt+Shift+1 … Alt+Shift+4**, drag its icon onto a group dot, or use the right-click menu
 - Click: bring to front / minimize, cycle through the app's windows, or only bring to front (your choice)
 - Right-click menu: the app's windows, new window, add to / remove from favorites, move to group, close, close all
-- Optional: hide the Windows taskbar while DockForge is open (Sistema → *Esconder a barra de tarefas do Windows*). It comes back when DockForge closes, and on the next start if DockForge was killed
+- Hides the Windows taskbar while DockForge is open (on by default; turn it off in Sistema → *Esconder a barra de tarefas do Windows*). It comes back when DockForge closes, and on the next start if DockForge was killed
 - Auto-hide that slides through the screen edge and comes back when the mouse touches it
 - Click-through: the empty space around the dock (room for the hover zoom and the tooltips) does not block clicks
 - Widgets: **now playing** (anything in Windows' media controls: Spotify, YouTube Music in a browser, most players), **system** (processor, memory, battery) and a clock
