@@ -16,6 +16,7 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Right-click menu: the app's windows, new window, add to / remove from favorites, move to group, close, close all
 - Hides the Windows taskbar while DockForge is open (on by default; turn it off in Sistema → *Esconder a barra de tarefas do Windows*). It comes back when DockForge closes, and on the next start if DockForge was killed
 - A dock that is always visible keeps its strip of the screen, so maximized windows end where it begins (can be turned off)
+- Gets out of the way of anything in full screen (games, videos, F11): the dock is hidden until full screen ends
 - Auto-hide that slides through the screen edge and comes back when the mouse touches it
 - Click-through: the empty space around the dock (room for the hover zoom and the tooltips) does not block clicks
 - Widgets: **now playing** (anything in Windows' media controls: Spotify, YouTube Music in a browser, most players), **system** (processor, memory, battery) and a clock
