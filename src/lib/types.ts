@@ -68,6 +68,8 @@ export interface Settings {
   showMode: "both" | "pinned" | "open";
   clickAction: "focus-min" | "cycle" | "focus";
   separator: boolean;
+  /** Each open app's name next to its icon (horizontal docks). */
+  labels: boolean;
   accent: string | null;
   radius: number | null;
   opacity: number | null;

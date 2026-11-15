@@ -66,6 +66,8 @@ pub struct Settings {
     /// "focus-min" | "cycle" | "focus"
     pub click_action: String,
     pub separator: bool,
+    /// Show each open app's name next to its icon (horizontal docks only).
+    pub labels: bool,
     /// Optional tweaks on top of the theme. `None` means "whatever the theme says".
     pub accent: Option<String>,
     pub radius: Option<u32>,
@@ -112,6 +114,7 @@ impl Default for Settings {
             show_mode: "both".into(),
             click_action: "focus-min".into(),
             separator: true,
+            labels: false,
             accent: None,
             radius: None,
             opacity: None,
@@ -190,6 +193,7 @@ impl Settings {
             show_mode: one_of(&self.show_mode, &["both", "pinned", "open"], "both"),
             click_action: one_of(&self.click_action, &["focus-min", "cycle", "focus"], "focus-min"),
             separator: self.separator,
+            labels: self.labels,
             accent: self.accent.clone().filter(|c| is_hex_color(c)),
             radius: self.radius.map(|r| r.min(32)),
             opacity: self.opacity.map(|o| o.clamp(30, 100)),
