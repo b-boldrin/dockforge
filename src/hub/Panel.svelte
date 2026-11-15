@@ -21,7 +21,7 @@
   ];
   const aligns: Array<[Settings["align"], string, string]> = [
     ["start", "Início", "Topo"],
-    ["center", "Meio", "Meio"],
+    ["center", "Centro", "Centro"],
     ["end", "Fim", "Base"],
   ];
   const vertical = $derived(s.position === "left" || s.position === "right");
@@ -51,12 +51,14 @@
   </div>
 
   <h3 class="ph">Estilo</h3>
-  <div class="seg-group" role="group" aria-label="Estilo">
+  <div class="seg-label" id="seg-layout">Formato</div>
+  <div class="seg-group" role="group" aria-labelledby="seg-layout">
     {#each layouts as [id, label] (id)}
       <button class="seg" class:on={s.layout === id} aria-pressed={s.layout === id} onclick={() => patch({ layout: id })}>{label}</button>
     {/each}
   </div>
-  <div class="seg-group" role="group" aria-label="Posição">
+  <div class="seg-label" id="seg-edge">Borda da tela</div>
+  <div class="seg-group" role="group" aria-labelledby="seg-edge">
     {#each positions as [id, label] (id)}
       <button
         class="seg"
@@ -67,10 +69,11 @@
     {/each}
   </div>
   {#if s.layout !== "bar"}
-    <div class="seg-group" role="group" aria-label="Alinhamento">
+    <div class="seg-label" id="seg-align">Posição na borda</div>
+    <div class="seg-group" role="group" aria-labelledby="seg-align">
       {#each aligns as [id, horizontal, upright] (id)}
         <button class="seg" class:on={s.align === id} aria-pressed={s.align === id} onclick={() => patch({ align: id })}>
-          {vertical ? upright : id === "start" ? "Canto esq." : id === "end" ? "Canto dir." : horizontal}
+          {vertical ? upright : horizontal}
         </button>
       {/each}
     </div>

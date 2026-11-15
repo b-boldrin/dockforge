@@ -77,7 +77,10 @@ h1, h2, h3 { margin: 0; }
 .seg { transition: background 140ms, color 140ms; }
 .seg.on { background: var(--ice); color: var(--pine); }
 .seg:disabled { opacity: 0.35; cursor: default; }
-.seg-group + .seg-group { margin-top: 4px; }
+/* Each choice says what it chooses: three unlabeled rows read as one block. */
+.seg-label { margin-top: 12px; font-size: 12px; color: var(--moss); }
+.ph + .seg-label { margin-top: 0; }
+.seg-label + .seg-group { margin-top: 4px; }
 
 .prow {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
