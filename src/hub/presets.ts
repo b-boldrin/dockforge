@@ -17,17 +17,50 @@ const clean: Partial<Settings> = {
   align: "center",
   autoHide: false,
   separator: true,
+  labels: false,
+  groupsEnabled: false,
   widgetMedia: false,
   widgetClock: false,
   widgetSystem: false,
 };
 
+/** The first ones are the styles people most often give their Windows taskbar. */
 export const PRESETS: Preset[] = [
   {
-    id: "classica",
-    name: "Clássica",
-    about: "Flutua no centro, embaixo, e os ícones crescem quando o mouse passa.",
-    settings: { ...clean, theme: "forge-glass", layout: "float", position: "bottom", iconSize: 48, magnify: 1.35, widgetClock: true },
+    id: "barra-classica",
+    name: "Barra clássica",
+    about: "Reta, opaca, de ponta a ponta, com o nome de cada app aberto ao lado do ícone.",
+    settings: { ...clean, theme: "barra-classica", layout: "bar", position: "bottom", align: "start", iconSize: 36, magnify: 1, labels: true, separator: false, widgetClock: true },
+  },
+  {
+    id: "centralizada",
+    name: "Centralizada",
+    about: "Barra transparente com os ícones no meio, para o papel de parede aparecer.",
+    settings: { ...clean, theme: "transparente", layout: "bar", position: "bottom", iconSize: 40, magnify: 1.1, widgetClock: true },
+  },
+  {
+    id: "barra-flutuante",
+    name: "Barra flutuante",
+    about: "De ponta a ponta, mas solta das bordas da tela e com os cantos arredondados.",
+    settings: { ...clean, theme: "barra-flutuante", layout: "bar", position: "bottom", iconSize: 40, magnify: 1.1, widgetMedia: true, widgetClock: true },
+  },
+  {
+    id: "segmentada",
+    name: "Segmentada",
+    about: "Os apps num bloco e cada widget no seu, com espaço entre eles.",
+    settings: { ...clean, theme: "segmentada", layout: "float", position: "bottom", iconSize: 40, magnify: 1.15, widgetSystem: true, widgetClock: true },
+  },
+  {
+    id: "retro",
+    name: "Retrô",
+    about: "Cinza, com relevo e botões de apertar, como nos computadores dos anos 90.",
+    settings: { ...clean, theme: "retro-cinza", layout: "bar", position: "bottom", align: "start", iconSize: 32, magnify: 1, labels: true, separator: false, widgetClock: true },
+  },
+  {
+    id: "prateleira",
+    name: "Prateleira",
+    about: "Vidro fosco no centro, com reflexo e ícones que crescem bastante quando o mouse passa.",
+    settings: { ...clean, theme: "prateleira", layout: "float", position: "bottom", iconSize: 52, magnify: 1.5 },
   },
   {
     id: "ilha",
@@ -36,33 +69,21 @@ export const PRESETS: Preset[] = [
     settings: { ...clean, theme: "midnight-pill", layout: "island", position: "top", iconSize: 36, magnify: 1.15, widgetMedia: true, widgetClock: true },
   },
   {
-    id: "painel",
-    name: "Painel",
-    about: "Barra de ponta a ponta, com processador, memória e relógio no fim.",
-    settings: { ...clean, theme: "papel", layout: "bar", position: "bottom", iconSize: 40, magnify: 1, widgetSystem: true, widgetClock: true },
-  },
-  {
     id: "coluna",
     name: "Coluna de foco",
     about: "Fina, na lateral esquerda, e some sozinha para a tela ficar livre.",
     settings: { ...clean, theme: "forge-glass", layout: "float", position: "left", iconSize: 40, magnify: 1.15, autoHide: true, separator: false },
   },
   {
-    id: "canto",
-    name: "Canto do som",
-    about: "Pequena, no canto direito, com o que está tocando sempre à mão.",
-    settings: { ...clean, theme: "noite-de-natal", layout: "float", position: "bottom", align: "end", iconSize: 36, magnify: 1.2, widgetMedia: true },
-  },
-  {
     id: "terminal",
     name: "Terminal",
     about: "Barra âmbar no topo, com cara de monitor antigo e os números da máquina.",
-    settings: { ...clean, theme: "ambar-crt", layout: "bar", position: "top", iconSize: 36, magnify: 1, widgetSystem: true, widgetClock: true },
+    settings: { ...clean, theme: "ambar-crt", layout: "bar", position: "top", align: "start", iconSize: 36, magnify: 1, widgetSystem: true, widgetClock: true },
   },
   {
     id: "mesas",
     name: "Quatro mesas",
-    about: "Quatro grupos de apps na mesma dock. Alt+1 a Alt+4 troca de mesa.",
+    about: "Grupos de apps na mesma dock, com clima de Natal. Alt+1 a Alt+4 troca de mesa.",
     settings: { ...clean, theme: "natal-cristal", layout: "float", position: "bottom", align: "start", iconSize: 44, magnify: 1.25, groupsEnabled: true, widgetClock: true },
   },
 ];
