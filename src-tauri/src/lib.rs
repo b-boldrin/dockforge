@@ -45,6 +45,8 @@ struct AppState {
     menu_open: AtomicBool,
     /// The dock entry the right-click menu was opened for.
     menu_target: Mutex<Option<AppEntry>>,
+    /// True while an app is in full screen: the dock window is hidden and must stay hidden.
+    fullscreen: AtomicBool,
     /// True while the dock is slid away because of auto-hide.
     hidden: AtomicBool,
     /// The dock's rectangle inside its window (x, y, width, height in CSS pixels).
@@ -274,7 +276,7 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
 
     window.set_size(PhysicalSize::new(w as u32, h as u32)).map_err(|e| e.to_string())?;
     window.set_position(PhysicalPosition::new(x, y)).map_err(|e| e.to_string())?;
-    if !window.is_visible().unwrap_or(true) {
+    if !state.fullscreen.load(Ordering::Relaxed) && !window.is_visible().unwrap_or(true) {
         window.show().map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -787,6 +789,16 @@ fn start_mouse_watcher(app: AppHandle) {
                 let settings = state.settings();
                 let menu_open = state.menu_open.load(Ordering::Relaxed);
 
+                // An app in full screen owns the whole screen: the dock is taken off it
+                // entirely, whatever its settings, and comes back when full screen ends.
+                let fullscreen = !menu_open && platform::fullscreen_active();
+                if fullscreen != state.fullscreen.swap(fullscreen, Ordering::Relaxed) {
+                    let _ = if fullscreen { window.hide() } else { window.show() };
+                }
+                if fullscreen {
+                    continue;
+                }
+
                 let (Ok(cursor), Ok(pos), Ok(size), Ok(scale)) =
                     (window.cursor_position(), window.outer_position(), window.outer_size(), window.scale_factor())
                 else {
@@ -957,6 +969,7 @@ pub fn run() {
                 theme_items: Mutex::new(Vec::new()),
                 menu_open: AtomicBool::new(false),
                 menu_target: Mutex::new(None),
+                fullscreen: AtomicBool::new(false),
                 hidden: AtomicBool::new(false),
                 hit: Mutex::new(None),
             });
