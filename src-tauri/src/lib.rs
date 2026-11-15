@@ -828,7 +828,9 @@ fn start_mouse_watcher(app: AppHandle) {
                             "right" => cursor.x >= x1 - edge,
                             _ => cursor.y >= y1 - edge,
                         };
-                    let wants_visible = menu_open || if hidden { touching_edge } else { over_dock };
+                    // Nothing maximized in front: the dock can stay out, if the user asked for that.
+                    let room = settings.hide_only_maximized && !platform::maximized_in_front();
+                    let wants_visible = menu_open || room || if hidden { touching_edge } else { over_dock };
                     if wants_visible {
                         last_inside = Instant::now();
                     }
