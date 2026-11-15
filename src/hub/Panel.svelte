@@ -1,5 +1,6 @@
 <script lang="ts">
   import ThemePreview from "./ThemePreview.svelte";
+  import { slide } from "svelte/transition";
   import { hub, patch, previewApps } from "./store.svelte.js";
   import type { Settings } from "../lib/types";
 
@@ -41,6 +42,23 @@
     names[i] = name;
     patch({ groupNames: names });
   }
+
+  const MIN_GROUPS = 4;
+  const MAX_GROUPS = 9;
+  function addGroup() {
+    if (s.groupNames.length < MAX_GROUPS) patch({ groupNames: [...s.groupNames, `Grupo ${s.groupNames.length + 1}`] });
+  }
+  /** Removes the last group. Its apps go back to group 1 as ordinary open apps. */
+  function removeGroup() {
+    if (s.groupNames.length <= MIN_GROUPS) return;
+    const last = s.groupNames.length - 1;
+    patch({
+      groupNames: s.groupNames.slice(0, last),
+      pins: s.pins.filter((p) => p.group !== last),
+      activeGroup: Math.min(s.activeGroup, last - 1),
+    });
+  }
+  const slideOpts = { duration: 220 };
 </script>
 
 <aside class="panel" aria-label="Sua dock">
@@ -95,8 +113,14 @@
     <span>Ocultar sozinha</span>
     <button class="tg" aria-label="Ocultar sozinha" aria-pressed={s.autoHide} onclick={() => patch({ autoHide: !s.autoHide })}></button>
   </div>
+  {#if !s.autoHide && s.layout !== "island"}
+    <div class="prow" transition:slide={slideOpts}>
+      <span class="stack"><span>Empurrar as janelas</span><span class="sub">Janelas maximizadas terminam onde a dock começa</span></span>
+      <button class="tg" aria-label="Empurrar as janelas" aria-pressed={s.reserveSpace} onclick={() => patch({ reserveSpace: !s.reserveSpace })}></button>
+    </div>
+  {/if}
   {#if s.autoHide}
-    <div class="prow">
+    <div class="prow" transition:slide={slideOpts}>
       <label for="dly" class="muted">Esperar</label>
       <span class="range"><input id="dly" type="range" min="0" max="2000" step="100" value={s.hideDelay} onchange={(e) => patch({ hideDelay: num(e) })} /><span class="rv">{(s.hideDelay / 1000).toFixed(1)} s</span></span>
     </div>
@@ -128,28 +152,38 @@
     <button class="tg" aria-label="Mostrar favoritos" aria-pressed={s.favoritesEnabled} onclick={() => patch({ favoritesEnabled: !s.favoritesEnabled })}></button>
   </div>
   <div class="prow">
-    <span>Quatro grupos de apps</span>
+    <span class="stack"><span>Grupos de apps</span><span class="sub">De 4 a 9, um atalho Alt+número para cada</span></span>
     <button class="tg" aria-label="Usar grupos" aria-pressed={s.groupsEnabled} onclick={() => patch({ groupsEnabled: !s.groupsEnabled })}></button>
   </div>
   {#if s.groupsEnabled}
+  <div transition:slide={slideOpts}>
     <p class="hint">
       O grupo 1 tem os favoritos e tudo que está aberto. Os outros começam vazios: mande o app em foco para um
       deles com Alt+Shift+número, ou arraste o ícone até a bolinha do grupo.
     </p>
     <ol class="groups">
       {#each s.groupNames as name, i (i)}
-        <li class:current={i === s.activeGroup}>
+        <li class:current={i === s.activeGroup} transition:slide={slideOpts}>
           <button class="key" aria-label="Mostrar o grupo {name}" onclick={() => patch({ activeGroup: i })}>Alt+{i + 1}</button>
           <input aria-label="Nome do grupo {i + 1}" value={name} maxlength="24" onchange={(e) => renameGroup(i, val(e))} />
           <span class="count" title="Apps neste grupo">{i === 0 ? s.pins.filter((p) => p.group === 0).length : s.pins.filter((p) => p.group === i).length}</span>
         </li>
       {/each}
     </ol>
+    <div class="group-actions">
+      <button class="link" disabled={s.groupNames.length >= MAX_GROUPS} onclick={addGroup}>
+        {s.groupNames.length >= MAX_GROUPS ? "Limite de 9 grupos" : `Adicionar grupo (Alt+${s.groupNames.length + 1})`}
+      </button>
+      {#if s.groupNames.length > MIN_GROUPS}
+        <button class="link muted" onclick={removeGroup}>Remover o último</button>
+      {/if}
+    </div>
+  </div>
   {/if}
 
   <h3 class="ph">Widgets</h3>
   <div class="prow">
-    <span class="stack"><span>Tocando agora</span><span class="sub">Spotify, YouTube Music e outros players</span></span>
+    <span class="stack"><span>Tocando agora</span><span class="sub">Escolha os players em Configurações</span></span>
     <button class="tg" aria-label="Tocando agora" aria-pressed={s.widgetMedia} onclick={() => patch({ widgetMedia: !s.widgetMedia })}></button>
   </div>
   <div class="prow">
