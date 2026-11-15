@@ -78,7 +78,12 @@ h1, h2, h3 { margin: 0; }
 .panel {
   flex: none; width: 320px; overflow: auto; padding: 20px 24px 32px;
   background: var(--panel); border-right: 1px solid var(--line);
+  /* Putting it away: it slides out to the left and the page takes its place. */
+  transition: margin-left 360ms var(--ease), opacity 240ms var(--ease), visibility 0s;
 }
+.panel.closed { margin-left: -320px; opacity: 0; visibility: hidden; transition: margin-left 360ms var(--ease), opacity 240ms var(--ease), visibility 0s 360ms; }
+.panel-toggle { margin-right: -16px; }
+.gear.panel-toggle, .gear.panel-toggle:hover, .gear.panel-toggle.on { rotate: none; }
 .panel-title { font-size: 14px; font-weight: 600; }
 .panel-preview { margin-top: 12px; height: 152px; border-radius: 12px; overflow: hidden; }
 .ph { margin: 24px 0 8px; font-size: 13px; font-weight: 600; color: var(--text); }
@@ -97,6 +102,19 @@ h1, h2, h3 { margin: 0; }
 .seg.on { background: var(--raised-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-2), 0 1px 2px rgba(0, 0, 0, 0.4); }
 .seg:disabled { opacity: 0.35; cursor: default; }
 /* Each choice says what it chooses: three unlabeled rows read as one block. */
+/* The two rows of picture buttons (which edge, where on it) share one line. */
+.seg-pair { display: flex; gap: 8px; }
+.seg-pair .seg-group { flex: 1; }
+.seg-pair .seg-group:first-child { flex: 4 1 0; }
+.seg-pair .seg-group:last-child { flex: 3 1 0; }
+.ph + .seg-group { margin-top: 0; }
+.seg-pair { margin-top: 8px; }
+.seg-pair .seg-group { margin-top: 0; }
+.seg-pair + .prow { margin-top: 12px; }
+.seg.icon { display: grid; place-items: center; padding: 4px 0; }
+.seg.icon svg { transition: scale 200ms var(--ease); }
+.seg.icon:active:not(:disabled) svg { scale: 0.85; }
+.seg.icon.on { color: var(--accent); }
 .seg-label { margin-top: 12px; font-size: 12px; color: var(--text-3); }
 .ph + .seg-label { margin-top: 0; }
 .seg-label + .seg-group { margin-top: 4px; }
@@ -375,7 +393,8 @@ select {
 .pin-row:hover { background: rgba(255, 255, 255, 0.02); }
 .ico { transition: background 160ms var(--ease), color 160ms var(--ease); }
 
-@media (prefers-reduced-motion: reduce) {
+/* Animations off: by choice in Configurações, or following Windows. */
+:root[data-motion="off"] {
   .view > *, .view > .page > *, .panel > *, .error, .hero-stage, .hero-text > *, .hero::before, .in-use, .in-use::before { animation: none; }
-  .tab, .gear, .seg, .preset-pic, .card-pic, .btn, .tg, .tg::after, .search, .flt, .sw, .pin-row, .ico { transition: none; }
+  .panel, .panel.closed, .seg.icon svg, .tab, .gear, .seg, .preset-pic, .card-pic, .btn, .tg, .tg::after, .search, .flt, .sw, .pin-row, .ico { transition: none; }
 }
