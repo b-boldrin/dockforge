@@ -83,10 +83,20 @@
     const size = vertical
       ? { width: Math.ceil(rect.width + grow + lift + 240), height: Math.ceil(rect.height) + side * 2 }
       : { width: Math.ceil(width) + side * 2, height: Math.ceil(rect.height + grow + lift + 44 + 8) };
-    const key = `${size.width}x${size.height}/${settings.position}/${settings.layout}/${settings.align}`;
+    // How far the dock reaches from its screen edge, plus a small gap: the strip of screen an
+    // always-visible dock keeps for itself.
+    const gap = settings.layout === "bar" ? 0 : 6;
+    const reach = {
+      bottom: window.innerHeight - rect.top,
+      top: rect.bottom,
+      left: rect.right,
+      right: window.innerWidth - rect.left,
+    }[settings.position];
+    const thickness = Math.ceil(reach + gap);
+    const key = `${size.width}x${size.height}/${thickness}/${settings.position}/${settings.layout}/${settings.align}/${settings.autoHide}/${settings.reserveSpace}`;
     if (key === lastFit) return;
     lastFit = key;
-    invoke("fit_dock", size).catch((err) => console.error("fit_dock failed", err));
+    invoke("fit_dock", { ...size, thickness }).catch((err) => console.error("fit_dock failed", err));
   }
 
   function reportHitRect() {
@@ -101,6 +111,8 @@
     void settings.position;
     void settings.layout;
     void settings.align;
+    void settings.autoHide;
+    void settings.reserveSpace;
     void appsWidth;
     const observer = new ResizeObserver(() => {
       fitWindow();
