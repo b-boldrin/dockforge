@@ -21,7 +21,9 @@ pub struct Pin {
 }
 
 
-pub const GROUPS: usize = 4;
+/// A dock always has at least `MIN_GROUPS` groups and at most `MAX_GROUPS` (Alt+1 … Alt+9).
+pub const MIN_GROUPS: usize = 4;
+pub const MAX_GROUPS: usize = 9;
 
 /// Bumped when a saved settings file needs a one-time change on load (see `migrated`).
 pub const VERSION: u32 = 1;
@@ -38,6 +40,9 @@ pub struct Settings {
     pub icon_size: u32,
     pub magnify: f32,
     pub auto_hide: bool,
+    /// A dock that is always visible keeps its strip of the screen for itself, so maximized
+    /// windows end where the dock begins (like the Windows taskbar does).
+    pub reserve_space: bool,
     /// Milliseconds to wait before an auto-hidden dock slides away.
     pub hide_delay: u32,
     /// "both" | "pinned" | "open"
@@ -84,6 +89,7 @@ impl Default for Settings {
             icon_size: 48,
             magnify: 1.3,
             auto_hide: false,
+            reserve_space: true,
             hide_delay: 600,
             show_mode: "both".into(),
             click_action: "focus-min".into(),
@@ -112,6 +118,11 @@ fn default_group_names() -> Vec<String> {
     vec!["Principal".into(), "Estudo".into(), "Jogos".into(), "Criação".into()]
 }
 
+/// The name a group gets when the user has not typed one.
+fn default_group_name(index: usize) -> String {
+    default_group_names().get(index).cloned().unwrap_or_else(|| format!("Grupo {}", index + 1))
+}
+
 fn one_of(value: &str, allowed: &[&str], fallback: &str) -> String {
     if allowed.contains(&value) { value.to_string() } else { fallback.to_string() }
 }
@@ -124,16 +135,20 @@ impl Settings {
     /// Returns a copy that is safe to save and apply.
     pub fn sanitized(&self) -> Settings {
         let defaults = Settings::default();
+        // How many groups there are is how many names were saved.
+        let groups = self.group_names.len().clamp(MIN_GROUPS, MAX_GROUPS);
         let mut pins: Vec<Pin> = Vec::new();
         for pin in &self.pins {
             let name = pin.name.trim();
             let path = pin.path.trim();
             // An app lives in one place only: a favorite, or a member of one group.
             let duplicate = pins.iter().any(|p: &Pin| p.path.eq_ignore_ascii_case(path));
-            if name.is_empty() || path.is_empty() || name.len() > 120 || path.len() > 520 || duplicate {
+            // An app whose group was removed goes back to being a plain open app.
+            let orphan = pin.group as usize >= groups;
+            if name.is_empty() || path.is_empty() || name.len() > 120 || path.len() > 520 || duplicate || orphan {
                 continue;
             }
-            pins.push(Pin { name: name.to_string(), path: path.to_string(), group: pin.group.min(GROUPS as u8 - 1) });
+            pins.push(Pin { name: name.to_string(), path: path.to_string(), group: pin.group });
             if pins.len() >= MAX_PINS {
                 break;
             }
@@ -151,6 +166,7 @@ impl Settings {
             icon_size: self.icon_size.clamp(32, 72),
             magnify: if self.magnify.is_finite() { self.magnify.clamp(1.0, 1.6) } else { 1.3 },
             auto_hide: self.auto_hide,
+            reserve_space: self.reserve_space,
             hide_delay: self.hide_delay.min(2000),
             show_mode: one_of(&self.show_mode, &["both", "pinned", "open"], "both"),
             click_action: one_of(&self.click_action, &["focus-min", "cycle", "focus"], "focus-min"),
@@ -166,11 +182,11 @@ impl Settings {
             align: one_of(&self.align, &["start", "center", "end"], "center"),
             favorites_enabled: self.favorites_enabled,
             groups_enabled: self.groups_enabled,
-            active_group: self.active_group.min(GROUPS as u8 - 1),
-            group_names: (0..GROUPS)
+            active_group: self.active_group.min(groups as u8 - 1),
+            group_names: (0..groups)
                 .map(|i| {
                     let name: String = self.group_names.get(i).map(|n| n.trim().chars().take(24).collect()).unwrap_or_default();
-                    if name.is_empty() { default_group_names()[i].clone() } else { name }
+                    if name.is_empty() { default_group_name(i) } else { name }
                 })
                 .collect(),
             widget_media: self.widget_media,
@@ -189,7 +205,7 @@ impl Settings {
             self.pins.retain(|p| !(p.group > 0 && p.path.eq_ignore_ascii_case(path)));
         } else {
             self.pins.retain(|p| !p.path.eq_ignore_ascii_case(path));
-            self.pins.push(Pin { name: name.to_string(), path: path.to_string(), group: group.min(GROUPS as u8 - 1) });
+            self.pins.push(Pin { name: name.to_string(), path: path.to_string(), group: group.min(self.group_names.len().max(1) as u8 - 1) });
         }
         self.pins != before
     }
@@ -269,9 +285,9 @@ mod tests {
         .sanitized();
         assert_eq!(s.active_group, 3);
         assert_eq!(s.group_names, ["Principal", "Música", "Jogos", "Criação"]);
-        // An app is in one place only: the first entry wins.
+        // The entry for a group that does not exist is dropped; the other one stays.
         assert_eq!(s.pins.len(), 1);
-        assert_eq!(s.pins[0].group, 3);
+        assert_eq!(s.pins[0].group, 0);
     }
 
     #[test]
@@ -301,6 +317,26 @@ mod tests {
         .sanitized();
         assert_eq!(s.accent.as_deref(), Some("#5ee6e0"));
         assert_eq!(s.pins.len(), 2);
+    }
+
+    #[test]
+    fn groups_go_from_four_to_nine() {
+        let names = |n: usize| (0..n).map(|i| format!("G{i}")).collect::<Vec<_>>();
+        let pin = |group: u8| Pin { name: format!("p{group}"), path: format!("{group}.exe"), group };
+        let s = Settings { group_names: names(12), pins: vec![pin(8), pin(9)], active_group: 20, ..Settings::default() }.sanitized();
+        assert_eq!(s.group_names.len(), MAX_GROUPS);
+        assert_eq!(s.active_group, 8);
+        assert_eq!(s.pins.len(), 1);
+
+        // Removing a group sends its apps back and never goes below four.
+        let mut fewer = s.clone();
+        fewer.group_names.truncate(2);
+        fewer.group_names.push(String::new());
+        let fewer = fewer.sanitized();
+        assert_eq!(fewer.group_names, ["G0", "G1", "Jogos", "Criação"]);
+        assert!(fewer.pins.is_empty());
+        assert_eq!(fewer.active_group, 3);
+        assert_eq!(default_group_name(6), "Grupo 7");
     }
 
     #[test]
