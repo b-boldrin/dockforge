@@ -1,28 +1,46 @@
 name: Release
 
-# Builds the Windows installer and a portable .zip, and publishes them on the Releases page.
-# Runs when a tag like v0.4.0 is pushed, or by hand from the Actions tab for an existing tag.
+# Publishes the Windows installer, an MSI and a portable .zip on the Releases page.
+# It runs on every push to main, but only builds when the app version (tauri.conf.json) has no
+# release yet: bumping the version is all it takes to ship one. It can also be run by hand from
+# the Actions tab.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag a publicar (ex.: v0.4.0)"
-        required: true
 
 permissions:
   contents: write
 
 jobs:
-  windows:
-    runs-on: windows-latest
-    env:
-      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      release: ${{ steps.v.outputs.release }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TAG }}
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(jq -r .version src-tauri/tauri.conf.json)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "$tag já tem release; nada a fazer."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  windows:
+    needs: check
+    if: needs.check.outputs.release == 'true'
+    runs-on: windows-latest
+    env:
+      TAG: ${{ needs.check.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,12 +50,6 @@ jobs:
         with:
           workspaces: src-tauri
       - run: npm ci
-
-      - name: Check that the tag matches the app version
-        shell: pwsh
-        run: |
-          $v = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
-          if ("v$v" -ne $env:TAG) { throw "A tag $env:TAG não bate com a versão $v do tauri.conf.json" }
 
       - name: Build
         run: npx tauri build --ci
@@ -59,9 +71,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view $env:TAG *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $env:TAG (Get-ChildItem out).FullName --clobber
-          } else {
-            gh release create $env:TAG (Get-ChildItem out).FullName --title "DockForge $env:TAG" --generate-notes
-          }
+          gh release create $env:TAG (Get-ChildItem out).FullName --target $env:GITHUB_SHA --title "DockForge $env:TAG" --generate-notes

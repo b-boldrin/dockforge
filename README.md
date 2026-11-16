@@ -40,7 +40,8 @@ Get the latest version from [Releases](https://github.com/b-boldrin/dockforge/re
 The builds are not signed yet, so Windows SmartScreen may warn on first run ("More info" → "Run anyway").
 
 To publish a new version: bump the version in `package.json`, `src-tauri/Cargo.toml` and
-`src-tauri/tauri.conf.json`, then push a tag such as `v0.4.0`. GitHub Actions builds and uploads the files.
+`src-tauri/tauri.conf.json`, and push to `main`. GitHub Actions sees a version with no release yet, builds it and publishes it
+with the tag `v<version>`.
 
 ## Run it (Windows)
 
