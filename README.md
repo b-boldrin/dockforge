@@ -28,6 +28,20 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Twelve built-in themes, among them the looks people most often give their Windows taskbar: Barra clássica (flat, with app names), Transparente, Barra flutuante (rounded, off the edges), Segmentada (apps and widgets in separate blocks), Retrô cinza (90s bevels) and Prateleira (frosted glass shelf); any theme dropped in `%APPDATA%\DockForge\themes\`
 - Live reload: save a theme's `styles.css` and the dock updates within a second
 
+## Download
+
+Get the latest version from [Releases](https://github.com/b-boldrin/dockforge/releases/latest):
+
+- `DockForge_<version>_setup_x64.exe`: installer (recommended).
+- `DockForge_<version>_x64.msi`: the same, as an MSI.
+- `DockForge_<version>_portable_x64.zip`: no installer; unzip and open `DockForge.exe`. Needs the
+  Microsoft Edge WebView2 Runtime, which Windows 10 and 11 usually already have.
+
+The builds are not signed yet, so Windows SmartScreen may warn on first run ("More info" → "Run anyway").
+
+To publish a new version: bump the version in `package.json`, `src-tauri/Cargo.toml` and
+`src-tauri/tauri.conf.json`, then push a tag such as `v0.4.0`. GitHub Actions builds and uploads the files.
+
 ## Run it (Windows)
 
 Requirements: [Rust](https://rustup.rs) (stable, MSVC), [Node.js](https://nodejs.org) 22+, and the WebView2 runtime (already on Windows 11).
