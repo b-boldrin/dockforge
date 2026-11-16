@@ -97,6 +97,8 @@ export interface Settings {
   mediaBlocked: Array<"spotify" | "browsers" | "others">;
   widgetClock: boolean;
   widgetPomodoro: boolean;
+  widgetQuick: boolean;
+  modulesPlacement: "auto" | "inline" | "detached";
   widgetWorldClock: boolean;
   worldZone: string;
   widgetSystem: boolean;

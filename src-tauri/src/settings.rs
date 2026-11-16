@@ -134,6 +134,11 @@ pub struct Settings {
     pub widget_clock: bool,
     /// Processor, memory and battery.
     pub widget_system: bool,
+    /// The quick panel module: volume, battery and the Windows options, like the taskbar's corner.
+    pub widget_quick: bool,
+    /// Where the modules sit on a floating dock: "auto" (as the theme says), "inline" (inside
+    /// the dock) or "detached" (each in its own block). Bars and islands always keep them inside.
+    pub modules_placement: String,
     /// Pomodoro in the dock: 25 minutes of focus, then 5 of rest.
     pub widget_pomodoro: bool,
     /// The time in another city, shown in the dock.
@@ -208,6 +213,8 @@ impl Default for Settings {
 media_blocked: Vec::new(),
                         widget_clock: true,
             widget_system: false,
+            widget_quick: true,
+            modules_placement: "auto".into(),
             widget_pomodoro: false,
             widget_world_clock: false,
             world_zone: "America/Sao_Paulo".into(),
@@ -301,6 +308,8 @@ impl Settings {
             media_blocked: MEDIA_KINDS.iter().filter(|k| self.media_blocked.iter().any(|b| b == *k)).map(|k| k.to_string()).collect(),
             widget_clock: self.widget_clock,
             widget_system: self.widget_system,
+            widget_quick: self.widget_quick,
+            modules_placement: one_of(&self.modules_placement, &["auto", "inline", "detached"], "auto"),
             widget_pomodoro: self.widget_pomodoro,
             widget_world_clock: self.widget_world_clock,
             world_zone: one_of(&self.world_zone, WORLD_ZONES, "America/Sao_Paulo"),

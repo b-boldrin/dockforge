@@ -25,6 +25,8 @@ const clean: Partial<Settings> = {
   widgetMedia: false,
   widgetClock: false,
   widgetPomodoro: false,
+  widgetQuick: true,
+  modulesPlacement: "auto",
   widgetWorldClock: false,
   worldZone: "America/Sao_Paulo",
   widgetSystem: false,

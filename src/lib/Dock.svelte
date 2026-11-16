@@ -89,6 +89,45 @@
     }[settings.worldZone] ?? settings.worldZone,
   );
 
+  // ---- modules: inside the dock or each in its own block ---------------------------
+  // A theme can ask for split modules with --df-modules: detached. Only a floating dock can
+  // split them; bars and islands keep them inside.
+  let themeModules = $state<"inline" | "detached">("inline");
+  function readThemeModules() {
+    if (!dockEl) return;
+    themeModules = getComputedStyle(dockEl).getPropertyValue("--df-modules").trim() === "detached" ? "detached" : "inline";
+  }
+  $effect(() => {
+    void settings.theme;
+    const frame = requestAnimationFrame(readThemeModules);
+    // The theme's sheet can arrive a moment after the setting that names it.
+    const late = setTimeout(readThemeModules, 400);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(late);
+    };
+  });
+  const placement = $derived(
+    settings.layout !== "float" ? "inline" : settings.modulesPlacement === "auto" ? themeModules : settings.modulesPlacement,
+  );
+  const detached = $derived(placement === "detached");
+
+  // ---- quick panel module: the speakers' level, as the taskbar's corner shows it ----
+  let volume = $state<{ level: number; muted: boolean } | null>(null);
+  $effect(() => {
+    if (!settings.widgetQuick) return;
+    const read = () =>
+      invoke<{ level: number; muted: boolean } | null>("get_volume")
+        .then((v) => (volume = v ?? null))
+        .catch(() => (volume = null));
+    read();
+    const timer = setInterval(read, 2000);
+    return () => clearInterval(timer);
+  });
+  function openQuick() {
+    invoke("show_tray_menu").catch((err) => console.error("quick panel failed", err));
+  }
+
   // ---- window size and click-through --------------------------------------
   let dockEl: HTMLDivElement;
   let appsEl: HTMLDivElement;
@@ -338,8 +377,12 @@
   style:--df-app-gap={settings.gap != null ? `${settings.gap}px` : undefined}
   style:--df-app-scale={settings.appScale}
   data-indicator={settings.indicator}
+  data-modules={placement}
   style:--df-radius={settings.radius != null ? `${settings.radius}px` : undefined}
-  style:background={settings.opacity != null
+  style:background={settings.opacity != null && !detached
+    ? `color-mix(in srgb, var(--df-bg) ${settings.opacity}%, transparent)`
+    : undefined}
+  style:--df-segment-bg={settings.opacity != null && detached
     ? `color-mix(in srgb, var(--df-bg) ${settings.opacity}%, transparent)`
     : undefined}
 >
@@ -405,7 +448,7 @@
   <span class="df-spacer"></span>
 
   {#if settings.widgetMedia && media}
-    <div class="df-widget df-media" transition:scale={pop()} title="{media.title} — {media.artist} ({media.source})">
+    <div class="df-widget df-module df-media" data-module="media" transition:scale={pop()} title="{media.title} — {media.artist} ({media.source})">
       {#if media.thumbnail}
         <img class="df-media-cover" src={media.thumbnail} alt="" draggable="false" />
       {:else}
@@ -435,7 +478,8 @@
 
   {#if settings.widgetSystem && system}
     <div
-      class="df-widget df-system"
+      class="df-widget df-module df-system"
+      data-module="system"
       transition:scale={pop()}
       title={en
         ? `Processor ${system.cpu}% · Memory ${system.memory}%`
@@ -461,32 +505,55 @@
     </div>
   {/if}
 
-  {#if settings.widgetClock}
-    <div class="df-widget df-clock" transition:scale={pop()}>
-      <span class="df-clock-time">{time}</span>
-      <span class="df-clock-date">{date}</span>
-    </div>
-  {/if}
-
   {#if settings.widgetPomodoro}
-    <button class="df-widget df-pomo" transition:scale={pop()} class:is-running={pomoRunning} onclick={pomoClick} title={en ? "Pomodoro: click to start or pause" : "Pomodoro: clique para iniciar ou pausar"}>
+    <button class="df-widget df-module df-pomo" data-module="pomodoro" transition:scale={pop()} class:is-running={pomoRunning} onclick={pomoClick} title={en ? "Pomodoro: click to start or pause" : "Pomodoro: clique para iniciar ou pausar"}>
       <span class="df-clock-time">{pomoText}</span>
       <span class="df-clock-date">{pomoPhase}</span>
     </button>
   {/if}
 
   {#if settings.widgetWorldClock}
-    <div class="df-widget df-clock df-world" transition:scale={pop()}>
+    <div class="df-widget df-module df-clock df-world" data-module="world" transition:scale={pop()}>
       <span class="df-clock-time">{worldTime}</span>
       <span class="df-clock-date">{worldLabel}</span>
     </div>
   {/if}
 
-  <!-- With the Windows taskbar hidden, a bar that runs along the edge keeps its own arrow: it
-       opens the Windows options (sound, network, …) that the taskbar would have held. -->
-  {#if settings.hideTaskbar && settings.layout === "bar"}
-    <button class="df-tray" aria-label={en ? "Windows options" : "Opções do Windows"} title={en ? "Windows options" : "Opções do Windows"} onclick={() => invoke("show_tray_menu").catch((err) => console.error("tray menu failed", err))}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14l6-6 6 6" /></svg>
+  <!-- The quick panel: like the corner of the Windows taskbar, the speakers and the battery;
+       a click opens volume, media and the Windows options. -->
+  {#if settings.widgetQuick}
+    <button
+      class="df-widget df-module df-quick"
+      data-module="quick"
+      transition:scale={pop()}
+      aria-label={en ? "Quick settings" : "Painel rápido"}
+      title={en ? "Quick settings" : "Painel rápido"}
+      tabindex={interactive ? 0 : -1}
+      onclick={openQuick}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+        {#if volume?.muted || volume?.level === 0}
+          <path d="M16 9.5l5 5M21 9.5l-5 5" />
+        {:else}
+          {#if volume == null || volume.level > 0}<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" />{/if}
+          {#if volume == null || volume.level > 50}<path d="M18 7a7 7 0 0 1 0 10" />{/if}
+        {/if}
+      </svg>
+      {#if system?.battery != null}
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="df-quick-battery" class:is-low={system.battery <= 20 && !system.charging}>
+          <rect x="2.5" y="7.5" width="17" height="9" rx="2" />
+          <path d="M21.5 10.5v3" />
+          <rect class="df-quick-level" x="4.5" y="9.5" width={13 * system.battery / 100} height="5" rx="0.8" />
+        </svg>
+      {/if}
     </button>
+  {/if}
+
+  {#if settings.widgetClock}
+    <div class="df-widget df-module df-clock" data-module="clock" transition:scale={pop()}>
+      <span class="df-clock-time">{time}</span>
+      <span class="df-clock-date">{date}</span>
+    </div>
   {/if}
 </div>

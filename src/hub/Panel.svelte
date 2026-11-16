@@ -3,6 +3,7 @@
   import { slide } from "svelte/transition";
   import { hub, patch, previewApps } from "./store.svelte.js";
   import { motionOff } from "../lib/motion";
+  import { MODULES } from "../lib/modules";
   import type { Settings } from "../lib/types";
 
   const s = $derived(hub.settings!);
@@ -82,6 +83,11 @@
       activeGroup: Math.min(s.activeGroup, last - 1),
     });
   }
+  const placements: Array<[Settings["modulesPlacement"], string]> = [
+    ["auto", "Do tema"],
+    ["inline", "Juntos"],
+    ["detached", "Separados"],
+  ];
   const slideOpts = $derived({ duration: motionOff() || !hub.settings ? 0 : 220 });
 </script>
 
@@ -135,40 +141,39 @@
   </section>
 
   <section class="grp">
-  <h3 class="ph">Widgets</h3>
+  <h3 class="ph">Módulos</h3>
   <div class="box">
-  <div class="prow">
-    <span>Tocando agora</span>
-    <button class="tg" aria-label="Tocando agora" aria-pressed={s.widgetMedia} onclick={() => patch({ widgetMedia: !s.widgetMedia })}></button>
-  </div>
-  <div class="prow">
-    <span title="Processador, memória e bateria">Sistema</span>
-    <button class="tg" aria-label="Sistema" aria-pressed={s.widgetSystem} onclick={() => patch({ widgetSystem: !s.widgetSystem })}></button>
-  </div>
-  <div class="prow">
-    <span>Relógio</span>
-    <button class="tg" aria-label="Relógio" aria-pressed={s.widgetClock} onclick={() => patch({ widgetClock: !s.widgetClock })}></button>
-  </div>
-  <div class="prow">
-    <span title="25 minutos de foco e 5 de pausa">Pomodoro</span>
-    <button class="tg" aria-label="Pomodoro" aria-pressed={s.widgetPomodoro} onclick={() => patch({ widgetPomodoro: !s.widgetPomodoro })}></button>
-  </div>
-  <div class="prow">
-    <span>Hora em outra cidade</span>
-    <button class="tg" aria-label="Hora em outra cidade" aria-pressed={s.widgetWorldClock} onclick={() => patch({ widgetWorldClock: !s.widgetWorldClock })}></button>
-  </div>
-  {#if s.widgetWorldClock}
-    <div class="prow" transition:slide={slideOpts}>
-      <label for="zone" class="muted">Cidade</label>
-      <select id="zone" aria-label="Cidade do relógio" value={s.worldZone} onchange={(e) => patch({ worldZone: val(e) })}>
-        <option value="America/Sao_Paulo">São Paulo</option>
-        <option value="America/New_York">Nova York</option>
-        <option value="Europe/London">Londres</option>
-        <option value="Europe/Lisbon">Lisboa</option>
-        <option value="Asia/Tokyo">Tóquio</option>
-        <option value="Australia/Sydney">Sydney</option>
-      </select>
+  {#each MODULES as m (m.id)}
+    <div class="prow">
+      <span class="mod-name" title={m.about}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={m.icon}></path></svg>
+        {m.name}
+      </span>
+      <button class="tg" aria-label={m.name} aria-pressed={s[m.key] === true} onclick={() => patch({ [m.key]: !s[m.key] })}></button>
     </div>
+    {#if m.id === "world" && s.widgetWorldClock}
+      <div class="prow" transition:slide={slideOpts}>
+        <label for="zone" class="muted">Cidade</label>
+        <select id="zone" aria-label="Cidade do relógio" value={s.worldZone} onchange={(e) => patch({ worldZone: val(e) })}>
+          <option value="America/Sao_Paulo">São Paulo</option>
+          <option value="America/New_York">Nova York</option>
+          <option value="Europe/London">Londres</option>
+          <option value="Europe/Lisbon">Lisboa</option>
+          <option value="Asia/Tokyo">Tóquio</option>
+          <option value="Australia/Sydney">Sydney</option>
+        </select>
+      </div>
+    {/if}
+  {/each}
+  {#if s.layout === "float"}
+    <div class="seg-label">Onde ficam</div>
+    <div class="seg-group" role="group" aria-label="Onde ficam os módulos">
+      {#each placements as [id, label] (id)}
+        <button class="seg" class:on={s.modulesPlacement === id} aria-pressed={s.modulesPlacement === id} onclick={() => patch({ modulesPlacement: id })}>{label}</button>
+      {/each}
+    </div>
+  {:else}
+    <p class="hint">{s.layout === "bar" ? "Na barra inteira, os módulos ficam dentro da barra." : "Na ilha, os módulos ficam dentro dela."}</p>
   {/if}
 
   </div>

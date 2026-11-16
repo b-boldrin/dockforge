@@ -2,6 +2,7 @@
   import ThemePreview from "./ThemePreview.svelte";
   import { hub, applyBar, keepBar, lookOf, removeBar, saveBarEdit, previewApps } from "./store.svelte.js";
   import type { SavedBar, Settings } from "../lib/types";
+  import { INTEGRATIONS } from "../lib/modules";
 
   const s = $derived(hub.settings!);
   const bars = $derived(s.saved);
@@ -9,14 +10,8 @@
 
   /** Integrations a bar can show. A bar keeps at most MAX_INTEGRATIONS of them on. */
   const MAX_INTEGRATIONS = 4;
-  const integrations: Array<[keyof Settings, string, string]> = [
-    ["widgetMedia", "Tocando agora", "Música ou vídeo em reprodução."],
-    ["widgetSystem", "Sistema", "Processador, memória e bateria."],
-    ["widgetClock", "Relógio", "Hora e data."],
-    ["widgetPomodoro", "Pomodoro", "25 minutos de foco e 5 de pausa."],
-    ["widgetWorldClock", "Hora em outra cidade", "A hora de uma cidade escolhida."],
-  ];
-  const onCount = (look: Partial<Settings>) => integrations.filter(([key]) => look[key] === true).length;
+  const integrations = INTEGRATIONS;
+  const onCount = (look: Partial<Settings>) => integrations.filter((m) => look[m.key] === true).length;
 
   /** The card: the bar's look over the current dock, at the size of a card. */
   function card(bar: SavedBar): Settings {
@@ -83,7 +78,7 @@
     <h2>Integrações desta barra</h2>
     <p class="lead">Escolha até {MAX_INTEGRATIONS}. Hoje {onCount(draftLook)} de {MAX_INTEGRATIONS}.</p>
     <div class="box">
-      {#each integrations as [key, label, about] (key)}
+      {#each integrations as { key, name: label, about } (key)}
         {@const on = draftLook[key] === true}
         {@const blocked = !on && onCount(draftLook) >= MAX_INTEGRATIONS}
         <div class="srow" class:is-blocked={blocked}>

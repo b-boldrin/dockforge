@@ -38,7 +38,14 @@ window.addEventListener("error", (e) => {
 window.addEventListener("unhandledrejection", (e) => showFailure(e.reason));
 
 try {
-  if (view === "hub") {
+  if (view === "quick") {
+    await import("./quick/quick.css");
+    const { setMotion } = await import("./lib/motion");
+    const { invoke } = await import("@tauri-apps/api/core");
+    invoke<{ motion: string }>("get_settings").then((s) => setMotion(s.motion as never)).catch(() => {});
+    const { default: Quick } = await import("./quick/Quick.svelte");
+    mount(Quick, { target });
+  } else if (view === "hub") {
     await import("./hub/hub.css");
     const { default: Hub } = await import("./hub/Hub.svelte");
     mount(Hub, { target });

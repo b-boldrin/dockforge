@@ -188,21 +188,41 @@
   flex: none;
 }
 
-.df-tray {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: var(--df-icon-size);
-  padding: 0;
+.df-quick { gap: 8px; border: 0; font: inherit; cursor: pointer; }
+.df-quick:hover { background: color-mix(in srgb, var(--df-widget-bg), white 10%); }
+.df-quick svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.df-quick-battery { width: 20px !important; }
+.df-quick-level { fill: currentColor; stroke: none; }
+.df-quick-battery.is-low { color: #ff6b6b; }
+
+/* Modules split out: the dock itself has no surface; the apps and each module carry it. */
+.df-dock[data-modules="detached"] {
+  background: transparent !important;
   border: 0;
-  background: transparent;
-  color: var(--df-widget-color);
-  cursor: pointer;
-  opacity: 0.8;
+  box-shadow: none;
+  padding: 0;
+  gap: var(--df-module-gap, 10px);
 }
-.df-tray:hover { opacity: 1; }
-.df-tray svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.df-dock[data-modules="detached"] > .df-apps,
+.df-dock[data-modules="detached"] > .df-module {
+  background: var(--df-segment-bg, var(--df-bg));
+  border: var(--df-border);
+  box-shadow: var(--df-shadow);
+  border-radius: var(--df-radius);
+}
+.df-dock[data-modules="detached"] > .df-apps { padding: var(--df-padding); }
+.df-dock[data-modules="detached"] > .df-module {
+  height: calc(var(--df-icon-size) + var(--df-padding) * 2);
+  padding-inline: 14px;
+}
+.df-dock[data-modules="detached"]:is([data-position="left"], [data-position="right"]) > .df-module {
+  width: calc(var(--df-icon-size) + var(--df-padding) * 2);
+  height: auto;
+  padding: 12px 0;
+}
+.df-dock[data-modules="detached"] > .df-quick:hover {
+  background: color-mix(in srgb, var(--df-segment-bg, var(--df-bg)), white 8%);
+}
 .df-pomo { border: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 .df-pomo.is-running .df-clock-time { color: var(--df-indicator-active-color); }
 

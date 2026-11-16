@@ -946,3 +946,51 @@ pub fn fullscreen_active() -> bool {
 pub fn maximized_in_front() -> bool {
     front_app_window().is_some_and(|w| unsafe { IsZoomed(w) }.as_bool())
 }
+
+// ---------------------------------------------------------------------------
+// Volume: the default speakers, through Windows' Core Audio (the same level the
+// taskbar's volume slider shows).
+// ---------------------------------------------------------------------------
+
+fn speakers() -> windows::core::Result<windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume> {
+    use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
+    use windows::Win32::Media::Audio::{eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator};
+    use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_ALL};
+    unsafe {
+        // Already set up on this thread is fine; a different mode still lets COM work.
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+        let devices: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
+        let device = devices.GetDefaultAudioEndpoint(eRender, eConsole)?;
+        device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None)
+    }
+}
+
+/// The speakers' level, 0 to 100, and whether they are muted. None without speakers.
+pub fn volume() -> Option<(u8, bool)> {
+    let speakers = speakers().ok()?;
+    unsafe {
+        let level = speakers.GetMasterVolumeLevelScalar().ok()?;
+        let muted = speakers.GetMute().ok()?.as_bool();
+        Some(((level * 100.0).round().clamp(0.0, 100.0) as u8, muted))
+    }
+}
+
+pub fn set_volume(level: u8) {
+    if let Ok(speakers) = speakers() {
+        unsafe {
+            let _ = speakers.SetMasterVolumeLevelScalar(f32::from(level.min(100)) / 100.0, std::ptr::null());
+            // Turning the level up after a mute is meant to be heard, as on the taskbar.
+            if level > 0 {
+                let _ = speakers.SetMute(false, std::ptr::null());
+            }
+        }
+    }
+}
+
+pub fn set_mute(muted: bool) {
+    if let Ok(speakers) = speakers() {
+        unsafe {
+            let _ = speakers.SetMute(muted, std::ptr::null());
+        }
+    }
+}
