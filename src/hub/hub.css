@@ -349,6 +349,16 @@ select {
 .soon { flex: none; font-size: 12px; color: var(--text-3); padding: 4px 8px; background: var(--raised-2); border-radius: 6px; }
 .page h2 + .lead { margin: 0 0 4px; }
 
+/* ---- toast: bottom right, a white save icon on blue ---- */
+.toast {
+  position: fixed; right: 20px; bottom: 20px; z-index: 20; display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px 8px 8px; border-radius: 12px; background: var(--raised-2); font-size: 13px; font-weight: 500;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 0 0 1px var(--line-2);
+  animation: toast-in 320ms var(--ease) both;
+}
+.toast-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; background: #2f6bff; }
+@keyframes toast-in { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
+
 /* ---- motion -----------------------------------------------------------------
    One curve everywhere. A page arrives in a short cascade; cards lift a little under the
    pointer and sink when pressed; switches and the search field move when you use them.
@@ -410,6 +420,6 @@ select {
 
 /* Animations off: by choice in Configurações, or following Windows. */
 :root[data-motion="off"] {
-  .view > *, .view > .page > *, .panel > *, .error, .hero-stage, .hero-text > *, .hero::before, .in-use, .in-use::before { animation: none; }
+  .view > *, .view > .page > *, .panel > *, .error, .hero-stage, .hero-text > *, .hero::before, .in-use, .in-use::before, .toast { animation: none; }
   .panel, .panel.closed, .seg.icon svg, .tab, .gear, .seg, .preset-pic, .card-pic, .btn, .tg, .tg::after, .search, .flt, .sw, .pin-row, .ico { transition: none; }
 }

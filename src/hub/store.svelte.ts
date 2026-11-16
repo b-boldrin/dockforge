@@ -10,7 +10,16 @@ export const hub = $state({
   apps: [] as AppEntry[],
   themes: [] as ThemeSummary[],
   error: "",
+  toast: null as { id: number; text: string } | null,
 });
+
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+/** A small note in the bottom-right corner that goes away by itself. */
+export function showToast(text: string) {
+  hub.toast = { id: Date.now(), text };
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (hub.toast = null), 2800);
+}
 
 /** Runs one startup step; if it fails, the error says which step. */
 async function step<T>(name: string, run: () => Promise<T>): Promise<T> {
@@ -79,7 +88,11 @@ const sameLook = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringif
 export function keepBar(name: string) {
   if (!hub.settings) return;
   const look = lookOf(hub.settings);
-  if (hub.settings.saved.some((b) => sameLook(b.look, look))) return;
+  if (hub.settings.saved.some((b) => sameLook(b.look, look))) {
+    showToast("Já está em Minhas barras");
+    return;
+  }
+  showToast("Salva em Minhas barras");
   const id = `bar-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   return patch({ saved: [{ id, name, look }, ...$state.snapshot(hub.settings.saved)] });
 }
