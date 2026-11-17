@@ -51,6 +51,13 @@
     <button class="tg" aria-label="Esconder a barra de tarefas do Windows" aria-pressed={s.hideTaskbar} onclick={() => patch({ hideTaskbar: !s.hideTaskbar })}></button>
   </div>
   <div class="srow">
+    <div><label class="lbl" for="hubtheme">Aparência desta janela</label><div class="sub">Claro natalino é o padrão. O escuro deixa a janela grafite.</div></div>
+    <select id="hubtheme" value={s.hubTheme} onchange={(e) => patch({ hubTheme: (e.currentTarget as HTMLSelectElement).value as Settings["hubTheme"] })}>
+      <option value="light">Claro</option>
+      <option value="dark">Escuro</option>
+    </select>
+  </div>
+  <div class="srow">
     <div><label class="lbl" for="lang">Idioma</label><div class="sub">Vale para a dock e para os menus. Esta janela ainda está só em português.</div></div>
     <select id="lang" value={s.language} onchange={(e) => patch({ language: (e.currentTarget as HTMLSelectElement).value as Settings["language"] })}>
       <option value="pt">Português (Brasil)</option>

@@ -12,6 +12,7 @@ export interface Preset {
 /** What every preset resets, so nothing is left over from the previous dock. */
 const clean: Partial<Settings> = {
   accent: null,
+  fill: null,
   radius: null,
   opacity: null,
   gap: null,

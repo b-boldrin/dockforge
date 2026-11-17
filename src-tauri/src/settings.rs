@@ -98,6 +98,8 @@ pub struct Settings {
     pub labels: bool,
     /// Optional tweaks on top of the theme. `None` means "whatever the theme says".
     pub accent: Option<String>,
+    /// The dock's own fill color, over the theme's. `None` = the theme's.
+    pub fill: Option<String>,
     pub radius: Option<u32>,
     pub opacity: Option<u32>,
     /// Space between the apps, in pixels. `None` = the theme's own.
@@ -113,6 +115,8 @@ pub struct Settings {
     pub hide_taskbar: bool,
     /// "pt" | "en"
     pub language: String,
+    /// The settings window's look: "light" (white with Christmas red, the default) or "dark".
+    pub hub_theme: String,
     /// Animations: "on", "off", or "system" (follow the Windows "animation effects" switch).
     pub motion: String,
     /// "float": a dock sized to its icons. "bar": edge to edge, with the clock at the end.
@@ -193,6 +197,7 @@ impl Default for Settings {
             separator: true,
             labels: false,
             accent: None,
+            fill: None,
             radius: None,
             opacity: None,
             gap: None,
@@ -202,6 +207,7 @@ impl Default for Settings {
             start_with_windows: false,
             hide_taskbar: true,
             language: "pt".into(),
+            hub_theme: "light".into(),
             motion: "on".into(),
             layout: "float".into(),
             align: "center".into(),
@@ -283,6 +289,7 @@ impl Settings {
             separator: self.separator,
             labels: self.labels,
             accent: self.accent.clone().filter(|c| is_hex_color(c)),
+            fill: self.fill.clone().filter(|c| is_hex_color(c)),
             radius: self.radius.map(|r| r.min(32)),
             opacity: self.opacity.map(|o| o.clamp(30, 100)),
             gap: self.gap.map(|g| g.min(24)),
@@ -292,6 +299,7 @@ impl Settings {
             start_with_windows: self.start_with_windows,
             hide_taskbar: self.hide_taskbar,
             language: one_of(&self.language, &["pt", "en"], "pt"),
+            hub_theme: one_of(&self.hub_theme, &["light", "dark"], "light"),
             motion: one_of(&self.motion, &["on", "system", "off"], "on"),
             layout,
             align: one_of(&self.align, &["start", "center", "end"], "center"),

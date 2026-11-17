@@ -5,29 +5,71 @@
 /* Settings window. Near-black neutral surfaces with hairlines, so the docks and their
    wallpapers carry the color. Christmas lives in the accents: ice for what is selected,
    holly red for the one festive mark, and the snowy night in the hero. */
+/* The settings window has two looks. Light is the default: white, with Christmas red for
+   what can be acted on. Dark keeps near-black surfaces with the same red. */
 :root {
-  --bg: #08090a;
-  --panel: #0c0d0f;
-  --raised: #141518;
-  --raised-2: #1c1d21;
-  --text: #f4f5f6;
-  --text-2: #a4a8ae;
-  --text-3: #7d8189;
-  --accent: #9be4ea;
-  --accent-hover: #c2f0f4;
+  --bg: #ffffff;
+  --panel: #fafaf9;
+  --raised: #f3f2f1;
+  --raised-2: #e8e6e4;
+  --text: #1a1a1e;
+  --text-2: #55555c;
+  --text-3: #6b6b72;
+  --accent: #c8102e;
+  --accent-hover: #a50d26;
+  --on-accent: #ffffff;
+  --holly: #c8102e;
+  --line: rgba(0, 0, 0, 0.07);
+  --line-2: rgba(0, 0, 0, 0.12);
+  --coral: #b4232f;
+  --error-bg: #fdecee;
+  --hover: rgba(0, 0, 0, 0.04);
+  --hover-2: rgba(0, 0, 0, 0.07);
+  --hover-faint: rgba(0, 0, 0, 0.025);
+  --edge: rgba(0, 0, 0, 0.16);
+  --edge-2: rgba(0, 0, 0, 0.28);
+  --scroll: rgba(0, 0, 0, 0.14);
+  --scroll-2: rgba(0, 0, 0, 0.28);
+  --pri-bg: #c8102e;
+  --pri-fg: #ffffff;
+  --grid-dot: #d5d2cf;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
+}
+:root[data-hub="dark"] {
+  --bg: #121215;
+  --panel: #17171b;
+  --raised: #1f1f24;
+  --raised-2: #2a2a31;
+  --text: #f1f1f3;
+  --text-2: #a7a7b0;
+  --text-3: #8a8a94;
+  --accent: #e5484d;
+  --accent-hover: #ff6b70;
+  --on-accent: #ffffff;
   --holly: #e5484d;
   --line: rgba(255, 255, 255, 0.07);
   --line-2: rgba(255, 255, 255, 0.12);
   --coral: #ff9c96;
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --error-bg: #2a1213;
+  --hover: rgba(255, 255, 255, 0.04);
+  --hover-2: rgba(255, 255, 255, 0.08);
+  --hover-faint: rgba(255, 255, 255, 0.03);
+  --edge: rgba(255, 255, 255, 0.18);
+  --edge-2: rgba(255, 255, 255, 0.3);
+  --scroll: rgba(255, 255, 255, 0.12);
+  --scroll-2: rgba(255, 255, 255, 0.26);
+  --pri-bg: #e5484d;
+  --pri-fg: #ffffff;
+  --grid-dot: #33333b;
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 
 /* Scrollbars: thin, no arrows, a faint thumb that gets clearer when its area is pointed at. */
-* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.12) transparent; }
-*:hover { scrollbar-color: rgba(255, 255, 255, 0.26) transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
+*:hover { scrollbar-color: var(--scroll-2) transparent; }
 
 html, body {
   margin: 0;
@@ -59,7 +101,7 @@ h1, h2, h3 { margin: 0; }
   font-size: 13px; font-weight: 500; cursor: pointer;
   transition: background 160ms var(--ease), color 160ms var(--ease);
 }
-.tab:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+.tab:hover { color: var(--text); background: var(--hover); }
 .tab.on { color: var(--text); background: var(--raised-2); box-shadow: inset 0 0 0 1px var(--line); }
 .tab:active, .gear:active { scale: 0.97; }
 .gear {
@@ -67,10 +109,10 @@ h1, h2, h3 { margin: 0; }
   background: transparent; color: var(--text-2); cursor: pointer;
   transition: background 160ms var(--ease), color 160ms var(--ease), rotate 500ms var(--ease);
 }
-.gear:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); rotate: 60deg; }
+.gear:hover { color: var(--text); background: var(--hover); rotate: 60deg; }
 .gear.on { color: var(--text); background: var(--raised-2); box-shadow: inset 0 0 0 1px var(--line); rotate: 120deg; }
 
-.error { margin: 0; padding: 12px 20px; background: #2a1213; color: var(--coral); font-size: 13px; }
+.error { margin: 0; padding: 12px 20px; background: var(--error-bg); color: var(--coral); font-size: 13px; }
 
 .body { flex: 1; min-height: 0; display: flex; }
 .main { flex: 1; min-width: 0; overflow: auto; padding: 24px 32px 40px; }
@@ -158,7 +200,7 @@ select {
   background: var(--text-2); transition: translate 200ms var(--ease), background 160ms var(--ease), scale 120ms var(--ease);
 }
 .tg[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
-.tg[aria-pressed="true"]::after { translate: 16px 0; background: #06282b; }
+.tg[aria-pressed="true"]::after { translate: 16px 0; background: var(--on-accent); }
 .tg { transition: background 160ms var(--ease), border-color 160ms var(--ease); }
 .tg:active::after { scale: 0.85; }
 
@@ -168,13 +210,13 @@ select {
   flex: 1; min-width: 0; background: transparent; border: 1px solid transparent; border-radius: 6px;
   padding: 4px 8px; font-size: 13px;
 }
-.groups input:hover, .groups input:focus { border-color: rgba(255, 255, 255, 0.18); }
+.groups input:hover, .groups input:focus { border-color: var(--edge); }
 .key {
-  flex: none; width: 52px; padding: 4px 0; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.18);
+  flex: none; width: 52px; padding: 4px 0; border-radius: 6px; border: 1px solid var(--edge);
   background: transparent; color: var(--text-2); font-size: 12px; font-weight: 500; cursor: pointer;
   font-variant-numeric: tabular-nums;
 }
-.groups li.current .key { background: var(--accent); border-color: var(--accent); color: #06282b; }
+.groups li.current .key { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .group-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 4px; }
 .link:disabled { color: var(--text-3); cursor: default; text-decoration: none; }
 
@@ -190,14 +232,14 @@ select {
 /* ---- shared controls ------------------------------------------------------- */
 .btn {
   border: 1px solid var(--line-2); background: var(--raised); padding: 0 12px; height: 32px; border-radius: 8px;
-  font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: inset 0 1px 0 var(--hover);
 }
 .btn { transition: background 140ms var(--ease), scale 120ms var(--ease); }
 .btn:hover:not(:disabled) { background: var(--raised-2); }
 .btn:active:not(:disabled) { scale: 0.97; }
 /* The main action is an off-white button, the way a light switch is the brightest thing on a dark wall. */
-.btn.pri { background: #e9eaec; border-color: #e9eaec; color: #0a0b0c; font-weight: 500; }
-.btn.pri:hover:not(:disabled) { background: #ffffff; }
+.btn.pri { background: var(--pri-bg); border-color: var(--pri-bg); color: var(--pri-fg); font-weight: 500; }
+.btn.pri:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn.danger { color: var(--coral); border-color: rgba(229, 72, 77, 0.4); }
 .link { border: 0; background: transparent; color: var(--text); padding: 0; font-size: 13px; font-weight: 500; cursor: pointer; }
 .link:hover { text-decoration: underline; }
@@ -206,7 +248,7 @@ select {
   border: 0; background: transparent; color: var(--text-3); width: 32px; height: 32px; border-radius: 6px;
   display: grid; place-items: center; cursor: pointer;
 }
-.ico:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+.ico:hover:not(:disabled) { background: var(--hover-2); color: var(--text); }
 .ico:disabled { opacity: 0.3; cursor: default; }
 .empty { color: var(--text-3); font-size: 14px; margin: 16px 0; }
 .row-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
@@ -240,6 +282,7 @@ select {
 .hero-stage { position: absolute; inset: 0; }
 .hero-stage .df-preview { padding: 0 40px 28px 0; justify-content: flex-end; }
 .hero-text {
+  color: #f4f5f6;
   position: absolute; inset: 0 auto 0 0; width: 62%; padding: 32px;
   background: linear-gradient(90deg, rgba(8, 9, 10, 0.82), rgba(8, 9, 10, 0.35) 65%, rgba(8, 9, 10, 0));
 }
@@ -259,6 +302,8 @@ select {
 
 /* ---- ready-made docks ------------------------------------------------------- */
 .presets { margin-top: 32px; }
+.presets-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.presets-head .create { display: inline-flex; align-items: center; gap: 7px; flex: none; }
 .presets-head h2 { font-size: 18px; font-weight: 600; }
 .presets-head .sub { font-size: 13px; margin-top: 4px; }
 .preset-row {
@@ -273,7 +318,7 @@ select {
 }
 .preset-pic {
   display: block; height: 136px; border-radius: 12px; overflow: hidden; margin-bottom: 4px;
-  outline: 1px solid rgba(255, 255, 255, 0.08); outline-offset: -1px;
+  outline: 1px solid var(--hover-2); outline-offset: -1px;
   transition: outline-color 160ms var(--ease);
 }
 .preset.on .preset-pic { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -303,7 +348,7 @@ select {
 .card { display: flex; flex-direction: column; gap: 8px; }
 .card-pic {
   height: 132px; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: pointer;
-  outline: 1px solid rgba(255, 255, 255, 0.08); outline-offset: -1px; background: var(--panel);
+  outline: 1px solid var(--hover-2); outline-offset: -1px; background: var(--panel);
 }
 .card-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .card-name { font-size: 14px; font-weight: 600; }
@@ -346,7 +391,7 @@ select {
 .page h1 + .box { margin-top: 20px; }
 .lbl { font-size: 14px; font-weight: 500; }
 
-.nested { margin: 2px 0 6px; padding: 2px 16px; border-radius: 10px; background: rgba(255, 255, 255, 0.03); }
+.nested { margin: 2px 0 6px; padding: 2px 16px; border-radius: 10px; background: var(--hover-faint); }
 .srow.is-soon .lbl { color: var(--text-2); }
 .soon { flex: none; font-size: 12px; color: var(--text-3); padding: 4px 8px; background: var(--raised-2); border-radius: 6px; }
 .page h2 + .lead { margin: 0 0 4px; }
@@ -407,7 +452,7 @@ select {
 
 .preset-pic, .card-pic { transition: translate 240ms var(--ease), outline-color 160ms var(--ease), box-shadow 240ms var(--ease); }
 .preset:hover .preset-pic, .card-pic:hover { translate: 0 -2px; }
-.preset:not(.on):hover .preset-pic, .card-pic:hover { outline-color: rgba(255, 255, 255, 0.3); }
+.preset:not(.on):hover .preset-pic, .card-pic:hover { outline-color: var(--edge-2); }
 .preset:hover .preset-pic, .card-pic:hover { box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45); }
 .preset:active .preset-pic, .card-pic:active { translate: 0 0; scale: 0.985; }
 .in-use { animation: rise 240ms var(--ease) both; }
@@ -417,7 +462,7 @@ select {
   to { width: 12px; }
 }
 .pin-row { transition: background 160ms var(--ease); }
-.pin-row:hover { background: rgba(255, 255, 255, 0.04); }
+.pin-row:hover { background: var(--hover); }
 .ico { transition: background 160ms var(--ease), color 160ms var(--ease); }
 
 /* Animations off: by choice in Configurações, or following Windows. */

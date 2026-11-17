@@ -5,6 +5,21 @@ import type { Preset } from "./presets";
 import { refreshPreviewTheme } from "./themes.svelte.js";
 
 /** Everything the settings window shows, kept in sync with the Rust side. */
+/** Which page of the window is open. The creator can be opened from the Loja and Minhas barras. */
+export const nav = $state({
+  tab: "store" as "store" | "pins" | "bars" | "settings" | "create",
+  /** The saved bar the creator edits; null = a new one. */
+  editBar: null as string | null,
+  /** The page the creator goes back to. */
+  from: "store" as "store" | "bars",
+});
+
+export function openCreator(from: "store" | "bars", barId: string | null = null) {
+  nav.from = from;
+  nav.editBar = barId;
+  nav.tab = "create";
+}
+
 export const hub = $state({
   settings: null as Settings | null,
   apps: [] as AppEntry[],
@@ -105,6 +120,14 @@ export function useTheme(id: string) {
 
 export function usePreset(preset: Preset) {
   return patch(preset.settings).then(() => keepBar(preset.name));
+}
+
+/** Adds a bar made in the creator to the top of "Minhas barras". */
+export function addBar(name: string, look: Partial<Settings>) {
+  if (!hub.settings) return;
+  const id = `bar-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  showToast("Salva em Minhas barras");
+  return patch({ saved: [{ id, name: name.trim().slice(0, 40) || "Minha barra", look }, ...$state.snapshot(hub.settings.saved)] }).then(() => id);
 }
 
 /** Applies a kept bar. Its look replaces the dock's look; the favorites stay as they are. */

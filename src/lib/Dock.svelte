@@ -378,6 +378,7 @@
   style:--df-app-scale={settings.appScale}
   data-indicator={settings.indicator}
   data-modules={placement}
+  style:--df-bg={settings.fill ?? undefined}
   style:--df-radius={settings.radius != null ? `${settings.radius}px` : undefined}
   style:background={settings.opacity != null && !detached
     ? `color-mix(in srgb, var(--df-bg) ${settings.opacity}%, transparent)`

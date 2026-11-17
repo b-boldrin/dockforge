@@ -5,11 +5,12 @@
   import Pins from "./Pins.svelte";
   import Settings from "./Settings.svelte";
   import Bars from "./Bars.svelte";
-  import { hub, start } from "./store.svelte.js";
+  import Creator from "./Creator.svelte";
+  import { hub, nav, start } from "./store.svelte.js";
   import { setMotion } from "../lib/motion";
 
   type Tab = "store" | "pins" | "bars" | "settings";
-  let tab = $state<Tab>("store");
+  const tab = $derived(nav.tab);
   // Minhas barras comes first in the row; the window still opens on the Loja.
   const tabs: Array<[Exclude<Tab, "settings">, string]> = [
     ["bars", "Minhas barras"],
@@ -60,6 +61,7 @@
 
   $effect(() => {
     if (hub.settings) setMotion(hub.settings.motion);
+    if (hub.settings) document.documentElement.dataset.hub = hub.settings.hubTheme;
   });
 
   onMount(() => {
@@ -69,6 +71,9 @@
 
 {#if hub.settings}
   <div class="hub">
+    {#if tab === "create"}
+      <Creator />
+    {:else}
     <header class="top">
       <button
         class="gear panel-toggle"
@@ -89,7 +94,7 @@
       </div>
       <nav aria-label="Seções" class="tabs">
         {#each tabs as [id, label] (id)}
-          <button class="tab" class:on={tab === id} aria-current={tab === id ? "page" : undefined} onclick={() => (tab = id)}>
+          <button class="tab" class:on={tab === id} aria-current={tab === id ? "page" : undefined} onclick={() => (nav.tab = id)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={marks[id]}></path></svg>
             {label}
           </button>
@@ -101,7 +106,7 @@
         aria-label="Configurações"
         title="Configurações"
         aria-current={tab === "settings" ? "page" : undefined}
-        onclick={() => (tab = "settings")}
+        onclick={() => (nav.tab = "settings")}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
@@ -135,6 +140,7 @@
         {/key}
       </main>
     </div>
+    {/if}
     {#if hub.toast}
       {#key hub.toast.id}
         <div class="toast" role="status">

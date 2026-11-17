@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import ThemePreview from "./ThemePreview.svelte";
-  import { hub, previewApps, usePreset, useTheme } from "./store.svelte.js";
+  import { hub, previewApps, usePreset, useTheme, openCreator } from "./store.svelte.js";
   import { PRESETS, matches } from "./presets";
   import type { Settings } from "../lib/types";
 
@@ -85,8 +85,14 @@
 
 <section class="presets" aria-labelledby="presets-title">
   <div class="presets-head">
-    <h2 id="presets-title">Docks prontas</h2>
-    <p class="sub">Tema, lugar na tela e widgets já escolhidos. Um clique aplica tudo, e depois você muda o que quiser.</p>
+    <div>
+      <h2 id="presets-title">Docks prontas</h2>
+      <p class="sub">Tema, lugar na tela e widgets já escolhidos. Um clique aplica tudo, e depois você muda o que quiser.</p>
+    </div>
+    <button class="btn pri create" onclick={() => openCreator("store")}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      Criar barra
+    </button>
   </div>
   <div class="preset-row">
     {#each PRESETS as preset (preset.id)}

@@ -73,6 +73,7 @@ export interface Settings {
   /** Each open app's name next to its icon (horizontal docks). */
   labels: boolean;
   accent: string | null;
+  fill: string | null;
   radius: number | null;
   opacity: number | null;
   /** Space between the apps in pixels, or null for the theme's own. */
@@ -83,6 +84,7 @@ export interface Settings {
   saved: SavedBar[];
   startWithWindows: boolean;
   hideTaskbar: boolean;
+  hubTheme: "light" | "dark";
   language: "pt" | "en";
   /** Animations: on, off, or follow the Windows setting. */
   motion: "on" | "system" | "off";
