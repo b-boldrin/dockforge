@@ -21,7 +21,7 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::Storage::FileSystem::{
     GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW, FILE_FLAGS_AND_ATTRIBUTES,
 };
-use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
+use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED, COINIT_MULTITHREADED};
 use windows::Win32::System::Threading::{
     OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
 };
@@ -38,7 +38,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     WINEVENT_SKIPOWNPROCESS, WM_CLOSE, WS_EX_APPWINDOW, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
 };
 
-use crate::model::{AppEntry, MediaInfo, SystemStats, WindowInfo};
+use crate::model::{AppEntry, WindowInfo};
 
 /// The last window of another app that was in front. Clicking the dock brings the dock
 /// itself to the front, so this is how we know what the user was looking at before.
@@ -565,158 +565,6 @@ fn encode_png(img: &Rgba) -> Option<Vec<u8>> {
         writer.write_image_data(&img.pixels).ok()?;
     }
     Some(bytes)
-}
-
-// ---------------------------------------------------------------------------
-// Now playing (Windows media controls)
-// ---------------------------------------------------------------------------
-
-use std::cell::RefCell;
-use windows::Media::Control::{
-    GlobalSystemMediaTransportControlsSession as MediaSession,
-    GlobalSystemMediaTransportControlsSessionManager as MediaManager,
-    GlobalSystemMediaTransportControlsSessionPlaybackStatus as PlaybackStatus,
-};
-use windows::Storage::Streams::{DataReader, IRandomAccessStreamReference};
-use windows::Win32::System::Com::COINIT_MULTITHREADED;
-
-const MAX_COVER_BYTES: u64 = 2 * 1024 * 1024;
-
-thread_local! {
-    static MEDIA: RefCell<Option<MediaManager>> = const { RefCell::new(None) };
-    /// (title + artist, cover) so the cover is read once per song, not every second.
-    static COVER: RefCell<(String, Option<String>)> = const { RefCell::new((String::new(), None)) };
-}
-
-fn media_session() -> Option<MediaSession> {
-    MEDIA.with(|cell| {
-        let mut slot = cell.borrow_mut();
-        if slot.is_none() {
-            unsafe {
-                let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-            }
-            *slot = MediaManager::RequestAsync().ok()?.join().ok();
-        }
-        slot.as_ref()?.GetCurrentSession().ok()
-    })
-}
-
-fn read_cover(reference: &IRandomAccessStreamReference) -> Option<String> {
-    use base64::Engine;
-    let stream = reference.OpenReadAsync().ok()?.join().ok()?;
-    let size = stream.Size().ok()?;
-    if size == 0 || size > MAX_COVER_BYTES {
-        return None;
-    }
-    let reader = DataReader::CreateDataReader(&stream).ok()?;
-    reader.LoadAsync(size as u32).ok()?.join().ok()?;
-    let mut bytes = vec![0u8; size as usize];
-    reader.ReadBytes(&mut bytes).ok()?;
-    let mime = if bytes.starts_with(&[0x89, b'P', b'N', b'G']) { "image/png" } else { "image/jpeg" };
-    Some(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)))
-}
-
-fn friendly_source(id: &str) -> String {
-    let last = id.rsplit(['\\', '!']).next().unwrap_or(id);
-    let name = last.strip_suffix(".exe").or_else(|| last.strip_suffix(".EXE")).unwrap_or(last);
-    let name = name.split('.').next_back().unwrap_or(name);
-    let mut chars = name.chars();
-    match chars.next() {
-        Some(first) => first.to_uppercase().chain(chars).collect(),
-        None => String::new(),
-    }
-}
-
-/// The current media session, or `None` if nothing is playing or paused. Call it from one
-/// background thread: it keeps a per-thread connection to Windows.
-pub fn media_now() -> Option<MediaInfo> {
-    let session = media_session()?;
-    let props = session.TryGetMediaPropertiesAsync().ok()?.join().ok()?;
-    let title = props.Title().ok()?.to_string();
-    if title.is_empty() {
-        return None;
-    }
-    let artist = props.Artist().map(|a| a.to_string()).unwrap_or_default();
-    let playing = session
-        .GetPlaybackInfo()
-        .and_then(|info| info.PlaybackStatus())
-        .map(|s| s == PlaybackStatus::Playing)
-        .unwrap_or(false);
-    let source = session.SourceAppUserModelId().map(|s| friendly_source(&s.to_string())).unwrap_or_default();
-
-    let song = format!("{title}\u{1f}{artist}");
-    let thumbnail = COVER.with(|cell| {
-        let mut cache = cell.borrow_mut();
-        if cache.0 != song {
-            let cover = props.Thumbnail().ok().and_then(|r| read_cover(&r));
-            *cache = (song, cover);
-        }
-        cache.1.clone()
-    });
-
-    Some(MediaInfo { title, artist, source, playing, thumbnail })
-}
-
-/// "toggle", "next" or "previous" on whatever is playing.
-pub fn media_command(command: &str) -> Result<(), String> {
-    let session = media_session().ok_or("nothing is playing")?;
-    let op = match command {
-        "toggle" => session.TryTogglePlayPauseAsync(),
-        "next" => session.TrySkipNextAsync(),
-        "previous" => session.TrySkipPreviousAsync(),
-        _ => return Err("unknown media command".into()),
-    };
-    op.map_err(|e| e.to_string())?.join().map(|_| ()).map_err(|e| e.to_string())
-}
-
-// ---------------------------------------------------------------------------
-// System widget: processor, memory, battery
-// ---------------------------------------------------------------------------
-
-use windows::Win32::Foundation::FILETIME;
-use windows::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
-use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
-use windows::Win32::System::Threading::GetSystemTimes;
-
-/// Idle and total processor time at the previous call: usage is the change between two calls.
-static CPU_LAST: Mutex<Option<(u64, u64)>> = Mutex::new(None);
-
-fn ticks(t: FILETIME) -> u64 {
-    ((t.dwHighDateTime as u64) << 32) | t.dwLowDateTime as u64
-}
-
-fn cpu_percent() -> u8 {
-    let (mut idle, mut kernel, mut user) = (FILETIME::default(), FILETIME::default(), FILETIME::default());
-    if unsafe { GetSystemTimes(Some(&mut idle), Some(&mut kernel), Some(&mut user)) }.is_err() {
-        return 0;
-    }
-    // Kernel time already includes idle time.
-    let (idle, total) = (ticks(idle), ticks(kernel) + ticks(user));
-    let Ok(mut last) = CPU_LAST.lock() else { return 0 };
-    let percent = match *last {
-        Some((last_idle, last_total)) if total > last_total => {
-            let span = total - last_total;
-            let idle_span = idle.saturating_sub(last_idle).min(span);
-            100 - idle_span * 100 / span
-        }
-        // First call: nothing to compare with yet.
-        _ => 0,
-    };
-    *last = Some((idle, total));
-    percent.min(100) as u8
-}
-
-pub fn system_stats() -> SystemStats {
-    let mut memory = MEMORYSTATUSEX { dwLength: std::mem::size_of::<MEMORYSTATUSEX>() as u32, ..Default::default() };
-    let memory_load = if unsafe { GlobalMemoryStatusEx(&mut memory) }.is_ok() { memory.dwMemoryLoad.min(100) as u8 } else { 0 };
-
-    let mut power = SYSTEM_POWER_STATUS::default();
-    let has_power = unsafe { GetSystemPowerStatus(&mut power) }.is_ok();
-    // BatteryFlag 128 = no battery; 255 = unknown. BatteryLifePercent 255 = unknown.
-    let battery = (has_power && power.BatteryFlag & 128 == 0 && power.BatteryFlag != 255 && power.BatteryLifePercent <= 100)
-        .then_some(power.BatteryLifePercent);
-
-    SystemStats { cpu: cpu_percent(), memory: memory_load, battery, charging: has_power && power.ACLineStatus == 1 }
 }
 
 // ---------------------------------------------------------------------------

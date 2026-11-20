@@ -2,7 +2,6 @@
   import Dock from "../lib/Dock.svelte";
   import type { AppEntry, Settings } from "../lib/types";
   import { loadPreviewTheme } from "./themes.svelte.js";
-  import { SAMPLE_MEDIA, SAMPLE_SYSTEM } from "./store.svelte.js";
   import { wallpaper } from "./walls";
 
   let {
@@ -49,6 +48,6 @@
 
 <div bind:this={box} class="df-preview" data-theme={theme} data-position={settings.position} data-layout={settings.layout} data-align={settings.align} style:background-image={wallpaper(wall)}>
   <div bind:this={fit} class="df-fit" style:zoom={zoom}>
-    <Dock {apps} {settings} media={SAMPLE_MEDIA} system={SAMPLE_SYSTEM} interactive={false} />
+    <Dock {apps} {settings} interactive={false} />
   </div>
 </div>

@@ -4,21 +4,17 @@
   import { invoke } from "@tauri-apps/api/core";
   import { motionOff } from "./motion";
   import { scale } from "svelte/transition";
-  import type { AppEntry, MediaInfo, Settings, SystemStats } from "./types";
+  import type { AppEntry, Settings } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
   let {
     apps,
     settings,
-    media = null,
-    system = null,
     interactive = true,
     received = null,
   }: {
     apps: AppEntry[];
     settings: Settings;
-    media?: MediaInfo | null;
-    system?: SystemStats | null;
     /** false for the previews in the settings window: nothing is clickable, the window is not resized. */
     interactive?: boolean;
     /** The group that just got an app (its dot blinks once). */
@@ -42,52 +38,13 @@
   // ---- clock -------------------------------------------------------------
   let now = $state(new Date());
   $effect(() => {
-    if (!settings.widgetClock && !settings.widgetWorldClock) return;
+    if (!settings.widgetClock) return;
     const timer = setInterval(() => (now = new Date()), 10_000);
     return () => clearInterval(timer);
   });
   const locale = $derived(en ? "en-US" : "pt-BR");
   const time = $derived(now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }));
   const date = $derived(now.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: vertical ? undefined : "numeric" }));
-
-  // ---- pomodoro: 25 minutes of focus, then 5 of rest; a click starts, pauses or goes on ----
-  const POMO_FOCUS = 25 * 60;
-  const POMO_REST = 5 * 60;
-  let pomoLeft = $state(POMO_FOCUS);
-  let pomoRunning = $state(false);
-  let pomoResting = $state(false);
-  $effect(() => {
-    if (!pomoRunning) return;
-    const timer = setInterval(() => {
-      pomoLeft = Math.max(0, pomoLeft - 1);
-      if (pomoLeft === 0) pomoRunning = false;
-    }, 1000);
-    return () => clearInterval(timer);
-  });
-  function pomoClick() {
-    if (pomoLeft === 0) {
-      pomoResting = !pomoResting;
-      pomoLeft = pomoResting ? POMO_REST : POMO_FOCUS;
-    }
-    pomoRunning = !pomoRunning;
-  }
-  const pomoText = $derived(`${String(Math.floor(pomoLeft / 60)).padStart(2, "0")}:${String(pomoLeft % 60).padStart(2, "0")}`);
-  const pomoPhase = $derived(pomoResting ? (en ? "Rest" : "Pausa") : en ? "Focus" : "Foco");
-
-  // ---- world clock: the time in one of the cities the user picked ----
-  const worldTime = $derived(
-    new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone: settings.worldZone }).format(now),
-  );
-  const worldLabel = $derived(
-    {
-      "America/Sao_Paulo": "São Paulo",
-      "America/New_York": "Nova York",
-      "Europe/London": "Londres",
-      "Europe/Lisbon": "Lisboa",
-      "Asia/Tokyo": "Tóquio",
-      "Australia/Sydney": "Sydney",
-    }[settings.worldZone] ?? settings.worldZone,
-  );
 
   // ---- modules: inside the dock or each in its own block ---------------------------
   // A theme can ask for split modules with --df-modules: detached. Only a floating dock can
@@ -321,10 +278,6 @@
     drag = null;
   }
 
-  function mediaControl(command: "toggle" | "next" | "previous") {
-    if (!interactive) return;
-    invoke("media_control", { command }).catch((err) => console.error("media_control failed", err));
-  }
 </script>
 
 {#snippet item(app: AppEntry, index: number)}
@@ -448,80 +401,8 @@
 
   <span class="df-spacer"></span>
 
-  {#if settings.widgetMedia && media}
-    <div class="df-widget df-module df-media" data-module="media" transition:scale={pop()} title="{media.title} — {media.artist} ({media.source})">
-      {#if media.thumbnail}
-        <img class="df-media-cover" src={media.thumbnail} alt="" draggable="false" />
-      {:else}
-        <span class="df-media-cover"></span>
-      {/if}
-      <span class="df-media-text">
-        <span class="df-media-title">{media.title}</span>
-        <span class="df-media-artist">{media.artist || media.source}</span>
-      </span>
-      <span class="df-media-buttons">
-        <button class="df-media-button" aria-label={en ? "Previous" : "Anterior"} tabindex={interactive ? 0 : -1} onclick={() => mediaControl("previous")}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6h2v12H7zM10 12l9-6v12z" /></svg>
-        </button>
-        <button class="df-media-button is-toggle" aria-label={media.playing ? (en ? "Pause" : "Pausar") : en ? "Play" : "Tocar"} tabindex={interactive ? 0 : -1} onclick={() => mediaControl("toggle")}>
-          {#if media.playing}
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
-          {:else}
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z" /></svg>
-          {/if}
-        </button>
-        <button class="df-media-button" aria-label={en ? "Next" : "Próxima"} tabindex={interactive ? 0 : -1} onclick={() => mediaControl("next")}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6h2v12h-2zM14 12L5 18V6z" /></svg>
-        </button>
-      </span>
-    </div>
-  {/if}
-
-  {#if settings.widgetSystem && system}
-    <div
-      class="df-widget df-module df-system"
-      data-module="system"
-      transition:scale={pop()}
-      title={en
-        ? `Processor ${system.cpu}% · Memory ${system.memory}%`
-        : `Processador ${system.cpu}% · Memória ${system.memory}%`}
-    >
-      <span class="df-meter" style:--df-meter={system.cpu}>
-        <span class="df-meter-ring"></span>
-        <span class="df-meter-text"><span class="df-meter-label">CPU</span><span class="df-meter-value">{system.cpu}%</span></span>
-      </span>
-      <span class="df-meter" style:--df-meter={system.memory}>
-        <span class="df-meter-ring"></span>
-        <span class="df-meter-text"><span class="df-meter-label">RAM</span><span class="df-meter-value">{system.memory}%</span></span>
-      </span>
-      {#if system.battery != null}
-        <span class="df-meter" class:is-low={system.battery <= 20 && !system.charging} style:--df-meter={system.battery}>
-          <span class="df-meter-ring"></span>
-          <span class="df-meter-text">
-            <span class="df-meter-label">{system.charging ? (en ? "Charging" : "Carregando") : en ? "Battery" : "Bateria"}</span>
-            <span class="df-meter-value">{system.battery}%</span>
-          </span>
-        </span>
-      {/if}
-    </div>
-  {/if}
-
-  {#if settings.widgetPomodoro}
-    <button class="df-widget df-module df-pomo" data-module="pomodoro" transition:scale={pop()} class:is-running={pomoRunning} onclick={pomoClick} title={en ? "Pomodoro: click to start or pause" : "Pomodoro: clique para iniciar ou pausar"}>
-      <span class="df-clock-time">{pomoText}</span>
-      <span class="df-clock-date">{pomoPhase}</span>
-    </button>
-  {/if}
-
-  {#if settings.widgetWorldClock}
-    <div class="df-widget df-module df-clock df-world" data-module="world" transition:scale={pop()}>
-      <span class="df-clock-time">{worldTime}</span>
-      <span class="df-clock-date">{worldLabel}</span>
-    </div>
-  {/if}
-
-  <!-- The quick panel: like the corner of the Windows taskbar, the speakers and the battery;
-       a click opens volume, media and the Windows options. -->
+  <!-- The quick panel: like the corner of the Windows taskbar, the speakers;
+       a click opens volume and the Windows options. -->
   {#if settings.widgetQuick}
     <button
       class="df-widget df-module df-quick"
@@ -541,13 +422,6 @@
           {#if volume == null || volume.level > 50}<path d="M18 7a7 7 0 0 1 0 10" />{/if}
         {/if}
       </svg>
-      {#if system?.battery != null}
-        <svg viewBox="0 0 24 24" aria-hidden="true" class="df-quick-battery" class:is-low={system.battery <= 20 && !system.charging}>
-          <rect x="2.5" y="7.5" width="17" height="9" rx="2" />
-          <path d="M21.5 10.5v3" />
-          <rect class="df-quick-level" x="4.5" y="9.5" width={13 * system.battery / 100} height="5" rx="0.8" />
-        </svg>
-      {/if}
     </button>
   {/if}
 

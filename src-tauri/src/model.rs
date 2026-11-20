@@ -37,25 +37,3 @@ pub struct ThemeSummary {
     pub built_in: bool,
 }
 
-/// What is playing right now, as reported by Windows' media controls (the same source as
-/// the volume flyout): Spotify, YouTube Music in a browser, any player that integrates.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct MediaInfo {
-    pub title: String,
-    pub artist: String,
-    /// The app that is playing, e.g. "Spotify" or "Chrome".
-    pub source: String,
-    pub playing: bool,
-    /// Cover art as a data: URL, when the player provides one.
-    pub thumbnail: Option<String>,
-}
-
-/// Numbers for the system widget. All percentages are 0–100.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
-pub struct SystemStats {
-    pub cpu: u8,
-    pub memory: u8,
-    /// `None` on a computer without a battery.
-    pub battery: Option<u8>,
-    pub charging: bool,
-}

@@ -23,14 +23,9 @@ const clean: Partial<Settings> = {
   separator: true,
   labels: false,
   groupsEnabled: false,
-  widgetMedia: false,
   widgetClock: false,
-  widgetPomodoro: false,
   widgetQuick: true,
   modulesPlacement: "auto",
-  widgetWorldClock: false,
-  worldZone: "America/Sao_Paulo",
-  widgetSystem: false,
 };
 
 /** The first ones are the styles people most often give their Windows taskbar. */
@@ -51,13 +46,13 @@ export const PRESETS: Preset[] = [
     id: "barra-flutuante",
     name: "Barra flutuante",
     about: "De ponta a ponta, mas solta das bordas da tela e com os cantos arredondados.",
-    settings: { ...clean, theme: "barra-flutuante", layout: "bar", autoHide: false, reserveSpace: true, position: "bottom", iconSize: 40, magnify: 1.1, widgetMedia: true, widgetClock: true },
+    settings: { ...clean, theme: "barra-flutuante", layout: "bar", autoHide: false, reserveSpace: true, position: "bottom", iconSize: 40, magnify: 1.1, widgetClock: true },
   },
   {
     id: "segmentada",
     name: "Segmentada",
     about: "Os apps num bloco e cada widget no seu, com espaço entre eles.",
-    settings: { ...clean, theme: "segmentada", layout: "float", position: "bottom", iconSize: 40, magnify: 1.15, widgetSystem: true, widgetClock: true },
+    settings: { ...clean, theme: "segmentada", layout: "float", position: "bottom", iconSize: 40, magnify: 1.15, widgetClock: true },
   },
   {
     id: "retro",
@@ -75,7 +70,7 @@ export const PRESETS: Preset[] = [
     id: "ilha",
     name: "Ilha",
     about: "Uma pílula no topo com a música e a hora. Os apps aparecem quando você aponta para ela.",
-    settings: { ...clean, theme: "midnight-pill", layout: "island", position: "top", iconSize: 36, magnify: 1.15, widgetMedia: true, widgetClock: true },
+    settings: { ...clean, theme: "midnight-pill", layout: "island", position: "top", iconSize: 36, magnify: 1.15, widgetClock: true },
   },
   {
     id: "coluna",
@@ -87,7 +82,7 @@ export const PRESETS: Preset[] = [
     id: "terminal",
     name: "Terminal",
     about: "Barra âmbar no topo, com cara de monitor antigo e os números da máquina.",
-    settings: { ...clean, theme: "ambar-crt", layout: "bar", autoHide: false, reserveSpace: true, position: "top", align: "start", iconSize: 36, magnify: 1, widgetSystem: true, widgetClock: true },
+    settings: { ...clean, theme: "ambar-crt", layout: "bar", autoHide: false, reserveSpace: true, position: "top", align: "start", iconSize: 36, magnify: 1, widgetClock: true },
   },
   {
     id: "mesas",

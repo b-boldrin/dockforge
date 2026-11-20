@@ -151,19 +151,6 @@
       </span>
       <button class="tg" aria-label={m.name} aria-pressed={s[m.key] === true} onclick={() => patch({ [m.key]: !s[m.key] })}></button>
     </div>
-    {#if m.id === "world" && s.widgetWorldClock}
-      <div class="prow" transition:slide={slideOpts}>
-        <label for="zone" class="muted">Cidade</label>
-        <select id="zone" aria-label="Cidade do relógio" value={s.worldZone} onchange={(e) => patch({ worldZone: val(e) })}>
-          <option value="America/Sao_Paulo">São Paulo</option>
-          <option value="America/New_York">Nova York</option>
-          <option value="Europe/London">Londres</option>
-          <option value="Europe/Lisbon">Lisboa</option>
-          <option value="Asia/Tokyo">Tóquio</option>
-          <option value="Australia/Sydney">Sydney</option>
-        </select>
-      </div>
-    {/if}
   {/each}
   {#if s.layout === "float"}
     <div class="seg-label">Onde ficam</div>

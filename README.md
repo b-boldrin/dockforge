@@ -2,7 +2,7 @@
 
 An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, but for docks*: the community makes the themes, and installing one takes a click.
 
-> **Status: v0.3 preview.** A working dock with favorites, groups, widgets, ready-made docks and a settings window. It has only been compiled and screenshot-tested so far; it does not replace the Windows taskbar yet.
+> **Status: v0.3 preview.** A working dock with favorites, groups, modules, ready-made docks and a settings window. It has only been compiled and screenshot-tested so far; it does not replace the Windows taskbar yet.
 
 ## What works today
 
@@ -19,11 +19,11 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Gets out of the way of anything in full screen (games, videos, F11): the dock is hidden until full screen ends
 - Auto-hide (on by default): the dock slides out through the screen edge and comes back when the mouse touches it. By default it only hides while the window in front is maximized, and stays in view over smaller windows and the desktop
 - Click-through: the empty space around the dock (room for the hover zoom and the tooltips) does not block clicks
-- Widgets: **now playing** (anything in Windows' media controls: Spotify, YouTube Music in a browser, most players), **system** (processor, memory, battery) and a clock
+- Modules: a **clock** and a **quick panel** (volume and shortcuts to the Windows settings). Integrations (now playing, system stats, pomodoro, world clock) were removed for now, to be rethought
 - Motion: icons pop in when they appear, a starting app bounces, the group that receives an app blinks. All of it is off when Windows is set to reduce motion
 
 **The settings window** (tray icon → *Abrir o DockForge…*, or start DockForge again)
-- Ready-made docks: ten combinations of theme, place on screen and widgets, applied with one click and still fully editable
+- Ready-made docks: ten combinations of theme, place on screen and modules, applied with one click and still fully editable
 - Store with live previews of every installed theme, settings for your dock on the left, favorites and groups, start with Windows, language
 - Twelve built-in themes, among them the looks people most often give their Windows taskbar: Barra clássica (flat, with app names), Transparente, Barra flutuante (rounded, off the edges), Segmentada (apps and widgets in separate blocks), Retrô cinza (90s bevels) and Prateleira (frosted glass shelf); any theme dropped in `%APPDATA%\DockForge\themes\`
 - Live reload: save a theme's `styles.css` and the dock updates within a second
@@ -81,7 +81,7 @@ Themes live in a separate repository: **[dockforge-themes](https://github.com/do
 
 1. ~~Technical prototype~~
 2. **Dock MVP** (now): ~~favorites, groups, auto-hide, layouts, island, widgets, settings window~~; still to do: multi-monitor, window previews
-3. **Community**: in-app gallery from the themes repository, agent usage widget (Claude Code, OpenCode, Codex), sandboxed JS widgets
+3. **Community**: in-app gallery from the themes repository, integrations again (now playing, system, agent usage for Claude Code, OpenCode and Codex), sandboxed JS widgets
 4. **v1.0**: signed installer, winget, website
 5. **Ecosystem**: visual theme editor, publish themes from the app (optional GitHub sign-in)
 

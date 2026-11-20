@@ -10,16 +10,6 @@ use std::path::{Path, PathBuf};
 
 pub const DEFAULT_THEME: &str = "forge-glass";
 pub const MAX_PINS: usize = 40;
-/// The cities the world clock can show.
-pub const WORLD_ZONES: &[&str] = &[
-    "America/Sao_Paulo",
-    "America/New_York",
-    "Europe/London",
-    "Europe/Lisbon",
-    "Asia/Tokyo",
-    "Australia/Sydney",
-];
-
 /// How many docks can be kept in "Minhas barras".
 pub const MAX_SAVED: usize = 30;
 
@@ -47,22 +37,6 @@ pub struct SavedBar {
 /// A dock always has at least `MIN_GROUPS` groups and at most `MAX_GROUPS` (Alt+1 … Alt+9).
 pub const MIN_GROUPS: usize = 4;
 pub const MAX_GROUPS: usize = 9;
-
-/// The kinds of players the user can turn on and off one by one.
-pub const MEDIA_KINDS: [&str; 3] = ["spotify", "browsers", "others"];
-
-/// Which kind a player is, from the name Windows gives for it.
-pub fn media_kind(source: &str) -> &'static str {
-    const BROWSERS: [&str; 8] = ["chrome", "msedge", "edge", "firefox", "brave", "opera", "vivaldi", "arc"];
-    let name = source.to_lowercase();
-    if name.contains("spotify") {
-        "spotify"
-    } else if BROWSERS.iter().any(|b| name.contains(b)) {
-        "browsers"
-    } else {
-        "others"
-    }
-}
 
 /// Bumped when a saved settings file needs a one-time change on load (see `migrated`).
 pub const VERSION: u32 = 2;
@@ -132,23 +106,12 @@ pub struct Settings {
     pub groups_enabled: bool,
     pub active_group: u8,
     pub group_names: Vec<String>,
-    pub widget_media: bool,
-    /// Kinds of players the "now playing" widget ignores: "spotify", "browsers", "others".
-    pub media_blocked: Vec<String>,
     pub widget_clock: bool,
-    /// Processor, memory and battery.
-    pub widget_system: bool,
-    /// The quick panel module: volume, battery and the Windows options, like the taskbar's corner.
+    /// The quick panel module: volume and the Windows options, like the taskbar's corner.
     pub widget_quick: bool,
     /// Where the modules sit on a floating dock: "auto" (as the theme says), "inline" (inside
     /// the dock) or "detached" (each in its own block). Bars and islands always keep them inside.
     pub modules_placement: String,
-    /// Pomodoro in the dock: 25 minutes of focus, then 5 of rest.
-    pub widget_pomodoro: bool,
-    /// The time in another city, shown in the dock.
-    pub widget_world_clock: bool,
-    /// The city for the world clock, an IANA zone name from a short list.
-    pub world_zone: String,
 }
 
 /// Keeps the saved docks that have a usable id, a name and a look that is an object. Drops
@@ -215,15 +178,9 @@ impl Default for Settings {
             groups_enabled: false,
             active_group: 0,
             group_names: default_group_names(),
-            widget_media: false,
-media_blocked: Vec::new(),
-                        widget_clock: true,
-            widget_system: false,
+            widget_clock: true,
             widget_quick: true,
             modules_placement: "auto".into(),
-            widget_pomodoro: false,
-            widget_world_clock: false,
-            world_zone: "America/Sao_Paulo".into(),
         }
     }
 }
@@ -312,15 +269,9 @@ impl Settings {
                     if name.is_empty() { default_group_name(i) } else { name }
                 })
                 .collect(),
-            widget_media: self.widget_media,
-            media_blocked: MEDIA_KINDS.iter().filter(|k| self.media_blocked.iter().any(|b| b == *k)).map(|k| k.to_string()).collect(),
             widget_clock: self.widget_clock,
-            widget_system: self.widget_system,
             widget_quick: self.widget_quick,
             modules_placement: one_of(&self.modules_placement, &["auto", "inline", "detached"], "auto"),
-            widget_pomodoro: self.widget_pomodoro,
-            widget_world_clock: self.widget_world_clock,
-            world_zone: one_of(&self.world_zone, WORLD_ZONES, "America/Sao_Paulo"),
         }
     }
 }
@@ -452,17 +403,6 @@ mod tests {
         .sanitized();
         assert_eq!(s.accent.as_deref(), Some("#5ee6e0"));
         assert_eq!(s.pins.len(), 2);
-    }
-
-    #[test]
-    fn players_are_sorted_into_kinds() {
-        assert_eq!(media_kind("Spotify"), "spotify");
-        assert_eq!(media_kind("SpotifyAB.SpotifyMusic_zpdnekdrzrea0"), "spotify");
-        assert_eq!(media_kind("Msedge"), "browsers");
-        assert_eq!(media_kind("Chrome"), "browsers");
-        assert_eq!(media_kind("Vlc"), "others");
-        let s = Settings { media_blocked: vec!["others".into(), "radio".into(), "spotify".into(), "spotify".into()], ..Settings::default() }.sanitized();
-        assert_eq!(s.media_blocked, ["spotify", "others"]);
     }
 
     #[test]

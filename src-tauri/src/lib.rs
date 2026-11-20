@@ -31,7 +31,7 @@ use tauri::{
     WebviewWindowBuilder, Wry,
 };
 
-use model::{AppEntry, MediaInfo, SystemStats, ThemePayload, ThemeSummary};
+use model::{AppEntry, ThemePayload, ThemeSummary};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use settings::{Pin, Settings};
 
@@ -280,33 +280,6 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
         window.show().map_err(|e| e.to_string())?;
     }
     Ok(())
-}
-
-/// What is playing, unless the widget is off or that kind of player was turned off.
-fn media_for(settings: &Settings) -> Option<MediaInfo> {
-    if !settings.widget_media {
-        return None;
-    }
-    platform::media_now().filter(|m| !settings.media_blocked.iter().any(|b| b == settings::media_kind(&m.source)))
-}
-
-#[tauri::command]
-async fn get_media(state: State<'_, AppState>) -> Result<Option<MediaInfo>, String> {
-    let settings = state.settings();
-    tauri::async_runtime::spawn_blocking(move || media_for(&settings)).await.map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn get_system(state: State<'_, AppState>) -> Option<SystemStats> {
-    state.settings().widget_system.then(platform::system_stats)
-}
-
-/// Play/pause, next, previous. Runs off the main thread: Windows answers asynchronously.
-#[tauri::command]
-async fn media_control(command: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || platform::media_command(&command))
-        .await
-        .map_err(|e| e.to_string())?
 }
 
 /// The web side tells where the dock is drawn, so the rest of the window can let clicks through.
@@ -1053,25 +1026,6 @@ fn start_mouse_watcher(app: AppHandle) {
         .expect("failed to start the mouse thread");
 }
 
-/// Asks Windows what is playing once a second, while the widget is on, and tells the dock
-/// when it changes.
-fn start_media_watcher(app: AppHandle) {
-    std::thread::Builder::new()
-        .name("dockforge-media".into())
-        .spawn(move || {
-            let mut last: Option<MediaInfo> = None;
-            loop {
-                std::thread::sleep(Duration::from_millis(1000));
-                let now = media_for(&app.state::<AppState>().settings());
-                if now != last {
-                    let _ = app.emit("media-changed", &now);
-                    last = now;
-                }
-            }
-        })
-        .expect("failed to start the media thread");
-}
-
 // ---------------------------------------------------------------------------
 // Hiding the Windows taskbar while DockForge runs
 // ---------------------------------------------------------------------------
@@ -1117,25 +1071,6 @@ fn start_taskbar_keeper(app: AppHandle) {
         .expect("failed to start the taskbar thread");
 }
 
-/// Reads processor, memory and battery every 2 s while the system widget is on.
-fn start_system_watcher(app: AppHandle) {
-    std::thread::Builder::new()
-        .name("dockforge-system".into())
-        .spawn(move || {
-            let mut last: Option<SystemStats> = None;
-            loop {
-                std::thread::sleep(Duration::from_millis(2000));
-                let enabled = app.state::<AppState>().settings().widget_system;
-                let now = enabled.then(platform::system_stats);
-                if now != last {
-                    let _ = app.emit("system-changed", now);
-                    last = now;
-                }
-            }
-        })
-        .expect("failed to start the system thread");
-}
-
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
@@ -1173,8 +1108,6 @@ pub fn run() {
             start_window_events(app.handle().clone());
             start_theme_watcher(app.handle().clone());
             start_mouse_watcher(app.handle().clone());
-            start_media_watcher(app.handle().clone());
-            start_system_watcher(app.handle().clone());
             start_taskbar_keeper(app.handle().clone());
             sync_shortcuts(app.handle(), &app.state::<AppState>().settings());
             if first_run {
@@ -1202,9 +1135,6 @@ pub fn run() {
             set_mute,
             open_windows_settings,
             lock_computer,
-            get_media,
-            get_system,
-            media_control,
             load_theme,
             open_themes_folder,
             open_link,

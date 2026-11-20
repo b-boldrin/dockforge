@@ -61,14 +61,8 @@
   // ---- layers ---------------------------------------------------------------------
   type Layer = "bar" | "apps" | "marks" | (typeof MODULES)[number]["id"];
   let layer = $state<Layer>("bar");
-  const MAX_INTEGRATIONS = 4;
-  const onCount = $derived(MODULES.filter((m) => m.integration && view[m.key] === true).length);
   function toggleModule(m: (typeof MODULES)[number]) {
     const on = view[m.key] === true;
-    if (!on && m.integration && onCount >= MAX_INTEGRATIONS) {
-      showToast(`Esta barra já tem ${MAX_INTEGRATIONS} integrações`);
-      return;
-    }
     set({ [m.key]: !on } as Partial<Settings>);
     if (!on) layer = m.id;
   }
@@ -187,11 +181,6 @@
           </button>
         </div>
       {/each}
-      <div class="c-quota">
-        <span>Integrações desta barra</span>
-        <span class="muted">{onCount} de {MAX_INTEGRATIONS} em uso</span>
-        <span class="c-meter"><span style:width="{(onCount / MAX_INTEGRATIONS) * 100}%"></span></span>
-      </div>
     </aside>
 
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -426,9 +415,6 @@
   .c-eye { width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; color: var(--text-3); }
   .c-eye svg { width: 15px; height: 15px; }
   .c-eye:hover { background: var(--hover-2); color: var(--text); }
-  .c-quota { margin-top: auto; padding: 12px 8px 4px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
-  .c-meter { height: 6px; border-radius: 3px; background: var(--raised-2); overflow: hidden; }
-  .c-meter span { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width 240ms var(--ease); }
 
   .c-canvas {
     flex: 1; min-width: 0; position: relative; overflow: hidden;
@@ -458,10 +444,6 @@
   .c-desk[data-sel="bar"] :global(.df-dock) { outline: 1.5px solid #2f6bff; outline-offset: 5px; }
   .c-desk[data-sel="apps"] :global(.df-apps) { outline: 1.5px solid #2f6bff; outline-offset: 3px; border-radius: 8px; }
   .c-desk[data-sel="marks"] :global(.df-indicator) { outline: 1.5px solid #2f6bff; outline-offset: 2px; }
-  .c-desk[data-sel="media"] :global([data-module="media"]),
-  .c-desk[data-sel="system"] :global([data-module="system"]),
-  .c-desk[data-sel="pomodoro"] :global([data-module="pomodoro"]),
-  .c-desk[data-sel="world"] :global([data-module="world"]),
   .c-desk[data-sel="quick"] :global([data-module="quick"]),
   .c-desk[data-sel="clock"] :global([data-module="clock"]) { outline: 1.5px solid #2f6bff; outline-offset: 3px; }
 

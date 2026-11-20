@@ -191,9 +191,6 @@
 .df-quick { gap: 8px; border: 0; font: inherit; cursor: pointer; }
 .df-quick:hover { background: color-mix(in srgb, var(--df-widget-bg), white 10%); }
 .df-quick svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.df-quick-battery { width: 20px !important; }
-.df-quick-level { fill: currentColor; stroke: none; }
-.df-quick-battery.is-low { color: #ff6b6b; }
 
 /* Modules split out: the dock itself has no surface; the apps and each module carry it. */
 .df-dock[data-modules="detached"] {
@@ -223,8 +220,6 @@
 .df-dock[data-modules="detached"] > .df-quick:hover {
   background: color-mix(in srgb, var(--df-segment-bg, var(--df-bg)), white 8%);
 }
-.df-pomo { border: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
-.df-pomo.is-running .df-clock-time { color: var(--df-indicator-active-color); }
 
 .df-icon {
   width: var(--df-icon-size);
@@ -476,49 +471,6 @@
   padding: 8px 0;
 }
 
-/* System widget: one small ring per number. */
-.df-system {
-  gap: 12px;
-}
-.df-meter {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.df-meter-ring {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: conic-gradient(var(--df-indicator-active-color) calc(var(--df-meter, 0) * 1%), var(--df-separator-color) 0);
-  /* Punch the middle out so only the ring is left. */
-  mask: radial-gradient(circle, transparent 6px, #000 6.5px);
-}
-.df-meter.is-low .df-meter-ring {
-  background: conic-gradient(#ff6b5e calc(var(--df-meter, 0) * 1%), var(--df-separator-color) 0);
-}
-.df-meter-text {
-  display: flex;
-  flex-direction: column;
-  font-variant-numeric: tabular-nums;
-}
-.df-meter-label {
-  font-size: 10px;
-  opacity: 0.7;
-}
-.df-meter-value {
-  font-size: 12px;
-  font-weight: 600;
-}
-.df-dock[data-position="left"] .df-system,
-.df-dock[data-position="right"] .df-system {
-  gap: 8px;
-}
-.df-dock[data-position="left"] .df-meter-text,
-.df-dock[data-position="right"] .df-meter-text {
-  display: none;
-}
-
 .df-clock {
   flex-direction: column;
   align-items: flex-end;
@@ -538,68 +490,6 @@
 .df-dock[data-position="left"] .df-clock,
 .df-dock[data-position="right"] .df-clock {
   align-items: center;
-}
-
-.df-media {
-  max-width: 260px;
-  padding-left: 4px;
-}
-.df-media-cover {
-  width: calc(var(--df-icon-size) - 8px);
-  height: calc(var(--df-icon-size) - 8px);
-  border-radius: calc(var(--df-radius) * 0.35);
-  object-fit: cover;
-  flex: none;
-  background: var(--df-separator-color);
-}
-.df-media-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.df-media-title,
-.df-media-artist {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 140px;
-}
-.df-media-title {
-  font-weight: 600;
-}
-.df-media-artist {
-  opacity: 0.7;
-}
-.df-media-buttons {
-  display: flex;
-  gap: 2px;
-}
-.df-media-button {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  cursor: default;
-}
-.df-media-button:hover {
-  background: var(--df-widget-bg);
-}
-.df-media-button svg {
-  width: 14px;
-  height: 14px;
-  fill: currentColor;
-}
-/* On a side dock the song text does not fit: keep the cover and play/pause. */
-.df-dock[data-position="left"] .df-media-text,
-.df-dock[data-position="right"] .df-media-text,
-.df-dock[data-position="left"] .df-media-button:not(.is-toggle),
-.df-dock[data-position="right"] .df-media-button:not(.is-toggle) {
-  display: none;
 }
 
 .df-empty {

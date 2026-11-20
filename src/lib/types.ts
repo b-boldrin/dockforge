@@ -31,22 +31,6 @@ export interface ThemeSummary {
   built_in: boolean;
 }
 
-export interface MediaInfo {
-  title: string;
-  artist: string;
-  source: string;
-  playing: boolean;
-  thumbnail: string | null;
-}
-
-export interface SystemStats {
-  cpu: number;
-  memory: number;
-  /** null on a computer without a battery. */
-  battery: number | null;
-  charging: boolean;
-}
-
 export interface Pin {
   name: string;
   path: string;
@@ -94,16 +78,9 @@ export interface Settings {
   groupsEnabled: boolean;
   activeGroup: number;
   groupNames: string[];
-  widgetMedia: boolean;
-  /** Kinds of players the "now playing" widget ignores. */
-  mediaBlocked: Array<"spotify" | "browsers" | "others">;
   widgetClock: boolean;
-  widgetPomodoro: boolean;
   widgetQuick: boolean;
   modulesPlacement: "auto" | "inline" | "detached";
-  widgetWorldClock: boolean;
-  worldZone: string;
-  widgetSystem: boolean;
 }
 
 /** A dock kept in "Minhas barras": its name and every setting except the favorites. */

@@ -1,6 +1,6 @@
 //! Stand-in for non-Windows systems: fake apps so the dock can be styled anywhere.
 
-use crate::model::{AppEntry, MediaInfo, SystemStats, WindowInfo};
+use crate::model::{AppEntry, WindowInfo};
 
 fn sample(key: &str, name: &str, windows: usize, active: bool) -> AppEntry {
     AppEntry {
@@ -36,26 +36,6 @@ pub fn icon_data_url(_exe: &str) -> Option<String> {
 }
 
 pub fn start_watcher(_notify: impl Fn() + Send + Sync + 'static) {}
-
-/// A fixed sample so the "now playing" widget can be styled on any system.
-pub fn media_now() -> Option<MediaInfo> {
-    Some(MediaInfo {
-        title: "Dozing Off Again".into(),
-        artist: "Sample Artist".into(),
-        source: "Spotify".into(),
-        playing: true,
-        thumbnail: None,
-    })
-}
-
-pub fn media_command(_command: &str) -> Result<(), String> {
-    Ok(())
-}
-
-/// Fixed sample numbers so the system widget can be styled on any system.
-pub fn system_stats() -> SystemStats {
-    SystemStats { cpu: 18, memory: 54, battery: Some(82), charging: false }
-}
 
 // The Windows taskbar only exists on Windows.
 pub fn taskbar_state() -> u32 {

@@ -48,12 +48,10 @@
     position: "bottom",
     layout: "float",
     align: "center",
-    widgetSystem: false,
     accent: null,
     radius: null,
     opacity: null,
     groupsEnabled: false,
-    widgetMedia: false,
   });
   const heroSettings = $derived<Settings>({ ...base, iconSize: 44, widgetClock: true });
   const cardSettings = $derived<Settings>({ ...base, iconSize: 22, widgetClock: false, separator: false });
