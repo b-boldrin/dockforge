@@ -40,6 +40,43 @@ export interface Pin {
 
 export type Position = "bottom" | "top" | "left" | "right";
 
+/** The part of a MyStyle bar an element flows in. */
+export type Zone = "start" | "center" | "end";
+
+interface ElementBase {
+  /** Short ascii, unique on the bar. */
+  id: string;
+  zone: Zone;
+  /** true = out of the flow, kept at `offset` px from the start of its zone; neighbours don't move. */
+  free: boolean;
+  /** px, used only when `free`. */
+  offset: number;
+  /** Own background; null = none (the bar shows through). */
+  fill: string | null;
+  /** 0–100, of the fill. */
+  opacity: number;
+  /** px, 0–40. */
+  radius: number;
+  /** px, 0–24. */
+  padding: number;
+  /** Border color; null = none. */
+  border: string | null;
+}
+
+/** A field of app icons: it grows with its icons and pushes its neighbours aside. */
+export interface IconsElement extends ElementBase {
+  kind: "icons";
+  /** Which apps the field shows: favorites and open, only favorites, or only the open ones. */
+  source: "all" | "pinned" | "open";
+  /** px, 24–72. */
+  iconSize: number;
+  /** px between icons, 0–24. */
+  gap: number;
+}
+
+/** One thing on a MyStyle bar. A new kind (clock, volume…) adds one variant here and in settings.rs. */
+export type BarElement = IconsElement;
+
 export interface Settings {
   version: number;
   theme: string;
@@ -78,6 +115,8 @@ export interface Settings {
   groupsEnabled: boolean;
   activeGroup: number;
   groupNames: string[];
+  /** The elements of a bar made in MyStyle. null = the classic dock. */
+  elements: BarElement[] | null;
 }
 
 /** A dock kept in "Minhas barras": its name and every setting except the favorites. */

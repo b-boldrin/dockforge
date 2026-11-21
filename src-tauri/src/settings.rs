@@ -4,7 +4,7 @@
 //! web side are never trusted: [`Settings::sanitized`] clamps numbers and rejects unknown
 //! words before anything is saved or applied.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -32,6 +32,70 @@ pub struct SavedBar {
     pub id: String,
     pub name: String,
     pub look: serde_json::Value,
+}
+
+/// How many elements a custom bar (MyStyle) can have.
+pub const MAX_ELEMENTS: usize = 16;
+
+/// What every element of the bar has: where it flows and how it is painted. The words and
+/// numbers are checked in [`sanitize_elements`], so a wrong value becomes a safe one.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ElementBase {
+    pub id: String,
+    /// "start" | "center" | "end": the part of the bar it flows in.
+    pub zone: String,
+    /// Out of the flow: kept `offset` pixels from the start of its zone; neighbours ignore it.
+    pub free: bool,
+    pub offset: f64,
+    pub fill: Option<String>,
+    /// 0..=100, of the fill.
+    pub opacity: f64,
+    pub radius: f64,
+    pub padding: f64,
+    pub border: Option<String>,
+}
+
+impl Default for ElementBase {
+    fn default() -> Self {
+        Self { id: String::new(), zone: "start".into(), free: false, offset: 0.0, fill: None, opacity: 100.0, radius: 12.0, padding: 0.0, border: None }
+    }
+}
+
+/// A field of app icons.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct IconsElement {
+    #[serde(flatten)]
+    pub base: ElementBase,
+    /// "all" | "pinned" | "open": which apps the field shows.
+    pub source: String,
+    pub icon_size: f64,
+    pub gap: f64,
+}
+
+impl Default for IconsElement {
+    fn default() -> Self {
+        Self { base: ElementBase::default(), source: "all".into(), icon_size: 48.0, gap: 8.0 }
+    }
+}
+
+/// One thing on a custom bar. A new kind (clock, volume…) is a new variant here and in
+/// `BarElement` of `src/lib/types.ts`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum BarElement {
+    Icons(IconsElement),
+}
+
+/// Reads the elements one by one: an entry this version does not know (a newer kind, a broken
+/// shape) is dropped instead of failing the whole settings file.
+fn lenient_elements<'de, D: Deserializer<'de>>(de: D) -> Result<Option<Vec<BarElement>>, D::Error> {
+    let raw = Option::<serde_json::Value>::deserialize(de)?;
+    Ok(match raw {
+        Some(serde_json::Value::Array(items)) => Some(items.into_iter().filter_map(|v| serde_json::from_value(v).ok()).collect()),
+        _ => None,
+    })
 }
 
 /// A dock always has at least `MIN_GROUPS` groups and at most `MAX_GROUPS` (Alt+1 … Alt+9).
@@ -106,6 +170,9 @@ pub struct Settings {
     pub groups_enabled: bool,
     pub active_group: u8,
     pub group_names: Vec<String>,
+    /// The elements of a bar made in MyStyle. `None` = the classic dock.
+    #[serde(deserialize_with = "lenient_elements")]
+    pub elements: Option<Vec<BarElement>>,
 }
 
 /// Keeps the saved docks that have a usable id, a name and a look that is an object. Drops
@@ -172,6 +239,7 @@ impl Default for Settings {
             groups_enabled: false,
             active_group: 0,
             group_names: default_group_names(),
+            elements: None,
         }
     }
 }
@@ -191,6 +259,45 @@ fn one_of(value: &str, allowed: &[&str], fallback: &str) -> String {
 
 fn is_hex_color(s: &str) -> bool {
     s.len() == 7 && s.starts_with('#') && s[1..].chars().all(|c| c.is_ascii_hexdigit())
+}
+
+fn clamp_px(value: f64, min: f64, max: f64, fallback: f64) -> f64 {
+    if value.is_finite() { value.clamp(min, max).round() } else { fallback }
+}
+
+/// Keeps at most `MAX_ELEMENTS` elements with a short ascii id nobody else has, clamps every
+/// number and drops colors that are not `#rrggbb`. An unknown word falls back to its default.
+fn sanitize_elements(elements: &[BarElement]) -> Vec<BarElement> {
+    let mut seen: Vec<String> = Vec::new();
+    let mut out: Vec<BarElement> = Vec::new();
+    for BarElement::Icons(el) in elements {
+        let id = el.base.id.trim();
+        if id.is_empty() || id.len() > 24 || !id.is_ascii() || seen.iter().any(|s| s == id) {
+            continue;
+        }
+        seen.push(id.to_string());
+        let base = ElementBase {
+            id: id.to_string(),
+            zone: one_of(&el.base.zone, &["start", "center", "end"], "start"),
+            free: el.base.free,
+            offset: clamp_px(el.base.offset, 0.0, 4000.0, 0.0),
+            fill: el.base.fill.clone().filter(|c| is_hex_color(c)),
+            opacity: clamp_px(el.base.opacity, 0.0, 100.0, 100.0),
+            radius: clamp_px(el.base.radius, 0.0, 40.0, 12.0),
+            padding: clamp_px(el.base.padding, 0.0, 24.0, 0.0),
+            border: el.base.border.clone().filter(|c| is_hex_color(c)),
+        };
+        out.push(BarElement::Icons(IconsElement {
+            base,
+            source: one_of(&el.source, &["all", "pinned", "open"], "all"),
+            icon_size: clamp_px(el.icon_size, 24.0, 72.0, 48.0),
+            gap: clamp_px(el.gap, 0.0, 24.0, 8.0),
+        }));
+        if out.len() == MAX_ELEMENTS {
+            break;
+        }
+    }
+    out
 }
 
 impl Settings {
@@ -260,6 +367,7 @@ impl Settings {
                     if name.is_empty() { default_group_name(i) } else { name }
                 })
                 .collect(),
+            elements: self.elements.as_deref().map(sanitize_elements),
         }
     }
 }
@@ -466,5 +574,41 @@ mod tests {
         assert!(s.saved[0].look.get("pins").is_none());
         assert!(s.saved[0].look.get("saved").is_none());
         assert!(s.saved[0].look.get("version").is_none());
+    }
+
+    #[test]
+    fn elements_are_clamped_and_unknown_ones_dropped() {
+        let raw = r##"{"elements":[
+            {"kind":"icons","id":"a","zone":"middle","free":true,"offset":-5,"fill":"#112233","opacity":900,"radius":99,"padding":99,"border":"red","source":"x","iconSize":500,"gap":99},
+            {"kind":"icons","id":"a","zone":"end"},
+            {"kind":"icons","id":"","zone":"end"},
+            {"kind":"icons","id":"não-ascii"},
+            {"kind":"clock","id":"future"},
+            {"kind":"icons","id":"b","zone":"end","iconSize":40.4,"source":"open"}
+        ]}"##;
+        let s: Settings = serde_json::from_str(raw).unwrap();
+        // The clock this version does not know is dropped on load; the rest is kept.
+        assert_eq!(s.elements.as_ref().unwrap().len(), 5);
+        let els = s.sanitized().elements.unwrap();
+        assert_eq!(els.len(), 2);
+        let BarElement::Icons(a) = &els[0];
+        assert_eq!((a.base.zone.as_str(), a.base.free, a.base.offset), ("start", true, 0.0));
+        assert_eq!((a.base.fill.as_deref(), a.base.border.as_deref()), (Some("#112233"), None));
+        assert_eq!((a.base.opacity, a.base.radius, a.base.padding), (100.0, 40.0, 24.0));
+        assert_eq!((a.source.as_str(), a.icon_size, a.gap), ("all", 72.0, 24.0));
+        let BarElement::Icons(b) = &els[1];
+        assert_eq!((b.base.zone.as_str(), b.source.as_str(), b.icon_size), ("end", "open", 40.0));
+
+        // At most 16, and a file without the field is the classic dock.
+        let icons = |i: usize| BarElement::Icons(IconsElement { base: ElementBase { id: format!("e{i}"), ..ElementBase::default() }, ..IconsElement::default() });
+        let many = Settings { elements: Some((0..30).map(icons).collect()), ..Settings::default() }.sanitized();
+        assert_eq!(many.elements.unwrap().len(), MAX_ELEMENTS);
+        assert_eq!(serde_json::from_str::<Settings>("{}").unwrap().elements, None);
+
+        // What goes out comes back in, with the camelCase names the web side uses.
+        let json = serde_json::to_string(&Settings { elements: Some(vec![icons(1)]), ..Settings::default() }).unwrap();
+        assert!(json.contains(r#""kind":"icons""#) && json.contains(r#""iconSize":48.0"#), "{json}");
+        let back: Settings = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.elements.unwrap().len(), 1);
     }
 }
