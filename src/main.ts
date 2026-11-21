@@ -1,6 +1,12 @@
 import { mount } from "svelte";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
+// In a plain browser during development there is no Tauri runtime: answer its commands with
+// sample data. The condition is a build-time constant, so the production bundle drops this.
+if (import.meta.env.DEV && !(window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
+  await import("./dev-mock");
+}
+
 // One bundle, two windows: the dock itself, and the settings window ("hub").
 // The window label says which one this is (the ?view=hub address is for browser previews).
 function currentView(): string | null {
