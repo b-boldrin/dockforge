@@ -15,8 +15,6 @@
   --df-tooltip-bg: #2b2620;
   --df-tooltip-color: #f6f2ea;
   --df-separator-color: rgba(60, 48, 30, 0.2);
-  --df-widget-bg: rgba(60, 48, 30, 0.07);
-  --df-widget-color: #2b2620;
 }
 
 /* The open app is underlined like a word marked with a pen. */

@@ -14,8 +14,6 @@
   --df-tooltip-bg: rgba(12, 12, 14, 0.85);
   --df-tooltip-color: #ffffff;
   --df-separator-color: rgba(255, 255, 255, 0.25);
-  --df-widget-bg: transparent;
-  --df-widget-color: #ffffff;
 }
 
 /* Floating instead of edge to edge: a clear pane with a full outline. */
@@ -25,7 +23,7 @@
 }
 
 /* Without a solid background, text and marks need their own contrast. */
-.df-widget, .df-label { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
+.df-label { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
 .df-icon { filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35)); }
 
 .df-item.is-running .df-indicator { width: 6px; height: 3px; border-radius: 2px; }

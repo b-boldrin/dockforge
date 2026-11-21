@@ -2,7 +2,6 @@
   import { onMount } from "svelte";
   import ThemePreview from "./ThemePreview.svelte";
   import { hub, nav, patch, lookOf, addBar, saveBarEdit, removeBar, showToast, previewApps } from "./store.svelte.js";
-  import { MODULES } from "../lib/modules";
   import type { Settings } from "../lib/types";
 
   // The bar creator: a canvas with a dotted grid, the dock in the middle, tools on the left,
@@ -59,14 +58,8 @@
   }
 
   // ---- layers ---------------------------------------------------------------------
-  type Layer = "bar" | "apps" | "marks" | (typeof MODULES)[number]["id"];
+  type Layer = "bar" | "apps" | "marks";
   let layer = $state<Layer>("bar");
-  function toggleModule(m: (typeof MODULES)[number]) {
-    const on = view[m.key] === true;
-    set({ [m.key]: !on } as Partial<Settings>);
-    if (!on) layer = m.id;
-  }
-
   // ---- inspector ------------------------------------------------------------------
   let tab = $state<"design" | "anim" | "behav">("design");
   const fills: Array<[string | null, string]> = [
@@ -166,21 +159,6 @@
       <button class="c-layer d2" class:on={layer === "marks"} onclick={() => (layer = "marks")}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 18h8" /></svg>Marca de app aberto
       </button>
-      {#each MODULES as m (m.id)}
-        {@const on = view[m.key] === true}
-        <div class="c-layer-row d1" class:off={!on}>
-          <button class="c-layer" class:on={layer === m.id} disabled={!on} onclick={() => (layer = m.id)}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={m.icon} /></svg>{m.name}
-          </button>
-          <button class="c-eye" aria-label={on ? `Esconder ${m.name}` : `Mostrar ${m.name}`} aria-pressed={on} onclick={() => toggleModule(m)}>
-            {#if on}
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
-            {:else}
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.6 9.6 0 0 0 5.4-1.6" /></svg>
-            {/if}
-          </button>
-        </div>
-      {/each}
     </aside>
 
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -223,15 +201,6 @@
         </div>
       </div>
 
-      <div class="c-insert" role="toolbar" aria-label="Inserir na barra">
-        <span class="muted">Inserir</span>
-        {#each MODULES as m (m.id)}
-          {@const on = view[m.key] === true}
-          <button disabled={on} title={on ? `${m.name} já está na barra` : m.about} onclick={() => toggleModule(m)}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={m.icon} /></svg>{m.name}
-          </button>
-        {/each}
-      </div>
     </main>
 
     <aside class="c-inspector" aria-label="Propriedades">
@@ -264,15 +233,6 @@
                 <button class:on={view.position === id} aria-pressed={view.position === id} onclick={() => set({ position: id })}>{label}</button>
               {/each}
             </div>
-            {#if view.layout === "float"}
-              <label class="c-row"><span>Módulos</span>
-                <select value={view.modulesPlacement} onchange={(e) => set({ modulesPlacement: (e.currentTarget as HTMLSelectElement).value as Settings["modulesPlacement"] })}>
-                  <option value="auto">Como o tema</option>
-                  <option value="inline">Juntos na barra</option>
-                  <option value="detached">Separados</option>
-                </select>
-              </label>
-            {/if}
           </section>
 
           <section class:hl={layer === "bar"}>
@@ -346,7 +306,7 @@
               <button class:on={view.motion === "system"} onclick={() => set({ motion: "system" })}>Do Windows</button>
               <button class:on={view.motion === "off"} onclick={() => set({ motion: "off" })}>Desligadas</button>
             </div>
-            <p class="c-hint">Entrada dos módulos, esconder e mostrar e a marca dos apps abertos.</p>
+            <p class="c-hint">A marca dos apps abertos.</p>
           </section>
         {:else}
           <section>
@@ -409,12 +369,6 @@
   .d1 { padding-left: 16px; }
   .c-layer.d1 { padding-left: 24px; }
   .c-layer.d2 { padding-left: 40px; }
-  .c-layer-row { display: flex; align-items: center; gap: 2px; padding-left: 16px; }
-  .c-layer-row .c-layer { flex: 1; }
-  .c-layer-row.off .c-layer { color: var(--text-3); }
-  .c-eye { width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; color: var(--text-3); }
-  .c-eye svg { width: 15px; height: 15px; }
-  .c-eye:hover { background: var(--hover-2); color: var(--text); }
 
   .c-canvas {
     flex: 1; min-width: 0; position: relative; overflow: hidden;
@@ -444,19 +398,6 @@
   .c-desk[data-sel="bar"] :global(.df-dock) { outline: 1.5px solid #2f6bff; outline-offset: 5px; }
   .c-desk[data-sel="apps"] :global(.df-apps) { outline: 1.5px solid #2f6bff; outline-offset: 3px; border-radius: 8px; }
   .c-desk[data-sel="marks"] :global(.df-indicator) { outline: 1.5px solid #2f6bff; outline-offset: 2px; }
-  .c-desk[data-sel="quick"] :global([data-module="quick"]),
-  .c-desk[data-sel="clock"] :global([data-module="clock"]) { outline: 1.5px solid #2f6bff; outline-offset: 3px; }
-
-  .c-insert {
-    position: absolute; left: 50%; bottom: 18px; translate: -50% 0; z-index: 2;
-    display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 14px; max-width: calc(100% - 40px); overflow-x: auto;
-    background: var(--bg); box-shadow: 0 0 0 1px var(--line-2), 0 8px 24px rgba(0, 0, 0, 0.12); font-size: 13px;
-  }
-  .c-insert > .muted { padding: 0 8px; }
-  .c-insert button { height: 34px; padding: 0 12px; border-radius: 9px; background: var(--raised); display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
-  .c-insert button svg { width: 15px; height: 15px; }
-  .c-insert button:hover:not(:disabled) { background: var(--raised-2); }
-  .c-insert button:disabled { opacity: 0.4; cursor: default; }
 
   .c-inspector { width: 320px; flex: none; border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
   .c-tabs { display: flex; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
@@ -484,7 +425,6 @@
   .c-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .c-row > span:first-child { width: 118px; flex: none; }
   .c-row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
-  .c-row select { flex: 1; }
   .c-val { width: 40px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
   .c-hint { margin: 0; font-size: 12px; color: var(--text-3); }
   .c-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; }

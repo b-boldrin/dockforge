@@ -15,8 +15,6 @@
   --df-tooltip-bg: #ffb000;
   --df-tooltip-color: #150d02;
   --df-separator-color: rgba(255, 176, 0, 0.4);
-  --df-widget-bg: rgba(255, 176, 0, 0.1);
-  --df-widget-color: #ffcf66;
   --df-font: Consolas, "Cascadia Mono", "Courier New", monospace;
 }
 
@@ -43,11 +41,6 @@
   to { opacity: 0.25; }
 }
 
-.df-widget {
-  border-radius: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
 .df-tooltip {
   border-radius: 0;
 }

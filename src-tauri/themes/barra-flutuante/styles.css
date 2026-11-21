@@ -14,8 +14,6 @@
   --df-tooltip-bg: #2a2d34;
   --df-tooltip-color: #ffffff;
   --df-separator-color: rgba(255, 255, 255, 0.12);
-  --df-widget-bg: rgba(255, 255, 255, 0.05);
-  --df-widget-color: #e8eaee;
 }
 
 /* Edge to edge keeps its corners and gets a margin instead of going flat. */

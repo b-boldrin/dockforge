@@ -4,8 +4,7 @@
   "description": "The dock and settings windows may call the app's own commands and listen to events. Nothing else: no file system, shell or HTTP access from the web side.",
   "windows": [
     "dock",
-    "hub",
-    "quick"
+    "hub"
   ],
   "permissions": [
     "core:default"

@@ -13,7 +13,7 @@
 
   $effect(() => loadPreviewTheme(theme));
 
-  // A dock with widgets can be bigger than a small preview: shrink it to fit.
+  // A big dock can be bigger than a small preview: shrink it to fit.
   let box: HTMLDivElement;
   let fit: HTMLDivElement;
   let zoom = $state(1);
@@ -29,7 +29,7 @@
         return;
       }
       // A bar is as long as the preview, so measure what it holds instead.
-      const parts = [...dock.querySelectorAll<HTMLElement>(".df-item, .df-widget, .df-separator, .df-group")];
+      const parts = [...dock.querySelectorAll<HTMLElement>(".df-item, .df-separator, .df-group")];
       const css = getComputedStyle(dock);
       const gap = parseFloat(css.columnGap) || 0;
       const padding = upright

@@ -17,7 +17,6 @@ const WALLS: Record<string, Wall> = {
   "barra-classica": { sky: ["#0f3f73", "#3b8fd4"], hill: "#0c2f57", ground: "#0a2646" },
   transparente: { sky: ["#3a2a5c", "#e58a6b"], hill: "#2a1d44", ground: "#1c1330", moon: true },
   "barra-flutuante": { sky: ["#16202e", "#34506b"], hill: "#101a26", ground: "#0b131c", moon: true },
-  segmentada: { sky: ["#1b1530", "#5a3f8f"], hill: "#150f26", ground: "#0e0a1a", moon: true },
   "retro-cinza": { sky: ["#008080", "#008080"], hill: "#008080", ground: "#008080" },
   prateleira: { sky: ["#7fb6e8", "#f3d9c4"], hill: "#5d8fb8", ground: "#3f6f95" },
   papel: { sky: ["#f1d9b8", "#f7ecd9"], hill: "#c9b08a", ground: "#a98f6b" },

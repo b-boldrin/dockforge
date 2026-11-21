@@ -15,8 +15,6 @@
   --df-tooltip-bg: #ffffe1;
   --df-tooltip-color: #000000;
   --df-separator-color: #808080;
-  --df-widget-bg: #c0c0c0;
-  --df-widget-color: #000000;
   --df-font: Tahoma, "MS Sans Serif", "Segoe UI", sans-serif;
   --raised: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf;
   --sunken: inset -1px -1px 0 #ffffff, inset 1px 1px 0 #808080;
@@ -40,7 +38,6 @@
 .df-label { color: #000000; font-size: 11px; }
 .df-indicator { display: none; }
 
-.df-widget { border-radius: 0; box-shadow: var(--sunken); font-size: 11px; }
 .df-tooltip { border-radius: 0; border: 1px solid #000000; font-size: 11px; }
 .df-separator { box-shadow: 1px 0 0 #ffffff; }
 .df-group-dot { border-radius: 0; background: #808080; }

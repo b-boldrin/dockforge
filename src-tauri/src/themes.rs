@@ -66,11 +66,6 @@ pub const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../themes/barra-flutuante/styles.css"),
     ),
     (
-        "segmentada",
-        include_str!("../themes/segmentada/theme.json"),
-        include_str!("../themes/segmentada/styles.css"),
-    ),
-    (
         "retro-cinza",
         include_str!("../themes/retro-cinza/theme.json"),
         include_str!("../themes/retro-cinza/styles.css"),

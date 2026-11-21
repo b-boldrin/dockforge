@@ -1,9 +1,6 @@
 <script lang="ts">
-  /** A widget that is added grows in from a little smaller, and shrinks out the same way. */
-  const pop = () => ({ duration: motionOff() ? 0 : 240, start: 0.82 });
   import { invoke } from "@tauri-apps/api/core";
   import { motionOff } from "./motion";
-  import { scale } from "svelte/transition";
   import type { AppEntry, Settings } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
@@ -34,56 +31,6 @@
   $effect(() => {
     for (const app of apps) requestIcon(app.exe);
   });
-
-  // ---- clock -------------------------------------------------------------
-  let now = $state(new Date());
-  $effect(() => {
-    if (!settings.widgetClock) return;
-    const timer = setInterval(() => (now = new Date()), 10_000);
-    return () => clearInterval(timer);
-  });
-  const locale = $derived(en ? "en-US" : "pt-BR");
-  const time = $derived(now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }));
-  const date = $derived(now.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: vertical ? undefined : "numeric" }));
-
-  // ---- modules: inside the dock or each in its own block ---------------------------
-  // A theme can ask for split modules with --df-modules: detached. Only a floating dock can
-  // split them; bars and islands keep them inside.
-  let themeModules = $state<"inline" | "detached">("inline");
-  function readThemeModules() {
-    if (!dockEl) return;
-    themeModules = getComputedStyle(dockEl).getPropertyValue("--df-modules").trim() === "detached" ? "detached" : "inline";
-  }
-  $effect(() => {
-    void settings.theme;
-    const frame = requestAnimationFrame(readThemeModules);
-    // The theme's sheet can arrive a moment after the setting that names it.
-    const late = setTimeout(readThemeModules, 400);
-    return () => {
-      cancelAnimationFrame(frame);
-      clearTimeout(late);
-    };
-  });
-  const placement = $derived(
-    settings.layout !== "float" ? "inline" : settings.modulesPlacement === "auto" ? themeModules : settings.modulesPlacement,
-  );
-  const detached = $derived(placement === "detached");
-
-  // ---- quick panel module: the speakers' level, as the taskbar's corner shows it ----
-  let volume = $state<{ level: number; muted: boolean } | null>(null);
-  $effect(() => {
-    if (!settings.widgetQuick) return;
-    const read = () =>
-      invoke<{ level: number; muted: boolean } | null>("get_volume")
-        .then((v) => (volume = v ?? null))
-        .catch(() => (volume = null));
-    read();
-    const timer = setInterval(read, 2000);
-    return () => clearInterval(timer);
-  });
-  function openQuick() {
-    invoke("show_tray_menu").catch((err) => console.error("quick panel failed", err));
-  }
 
   // ---- window size and click-through --------------------------------------
   let dockEl: HTMLDivElement;
@@ -330,13 +277,9 @@
   style:--df-app-gap={settings.gap != null ? `${settings.gap}px` : undefined}
   style:--df-app-scale={settings.appScale}
   data-indicator={settings.indicator}
-  data-modules={placement}
   style:--df-bg={settings.fill ?? undefined}
   style:--df-radius={settings.radius != null ? `${settings.radius}px` : undefined}
-  style:background={settings.opacity != null && !detached
-    ? `color-mix(in srgb, var(--df-bg) ${settings.opacity}%, transparent)`
-    : undefined}
-  style:--df-segment-bg={settings.opacity != null && detached
+  style:background={settings.opacity != null
     ? `color-mix(in srgb, var(--df-bg) ${settings.opacity}%, transparent)`
     : undefined}
 >
@@ -400,35 +343,4 @@
   </div>
 
   <span class="df-spacer"></span>
-
-  <!-- The quick panel: like the corner of the Windows taskbar, the speakers;
-       a click opens volume and the Windows options. -->
-  {#if settings.widgetQuick}
-    <button
-      class="df-widget df-module df-quick"
-      data-module="quick"
-      transition:scale={pop()}
-      aria-label={en ? "Quick settings" : "Painel rápido"}
-      title={en ? "Quick settings" : "Painel rápido"}
-      tabindex={interactive ? 0 : -1}
-      onclick={openQuick}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
-        {#if volume?.muted || volume?.level === 0}
-          <path d="M16 9.5l5 5M21 9.5l-5 5" />
-        {:else}
-          {#if volume == null || volume.level > 0}<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" />{/if}
-          {#if volume == null || volume.level > 50}<path d="M18 7a7 7 0 0 1 0 10" />{/if}
-        {/if}
-      </svg>
-    </button>
-  {/if}
-
-  {#if settings.widgetClock}
-    <div class="df-widget df-module df-clock" data-module="clock" transition:scale={pop()}>
-      <span class="df-clock-time">{time}</span>
-      <span class="df-clock-date">{date}</span>
-    </div>
-  {/if}
 </div>

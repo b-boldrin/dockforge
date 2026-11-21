@@ -421,172 +421,6 @@ fn menu_icon(id: &str) -> Option<Image<'static>> {
     Image::from_bytes(png).ok()
 }
 
-// ---------------------------------------------------------------------------
-// Quick panel: volume, battery, media and the Windows options, in a small window
-// that opens next to the dock's corner, as the taskbar's own corner does.
-// ---------------------------------------------------------------------------
-
-const QUICK_WIDTH: f64 = 360.0;
-const QUICK_HEIGHT: f64 = 520.0;
-/// When the quick panel last closed by losing focus. A click on the dock's quick module also
-/// takes the focus away; without this, that click would close the panel and open it again.
-static QUICK_CLOSED: Mutex<Option<Instant>> = Mutex::new(None);
-
-fn quick_open(app: &AppHandle) -> bool {
-    app.get_webview_window("quick").is_some_and(|w| w.is_visible().unwrap_or(false))
-}
-
-/// Puts the panel in the corner of the dock's screen, on the side of the dock.
-fn place_quick(app: &AppHandle, quick: &WebviewWindow) -> tauri::Result<()> {
-    let Some(dock) = app.get_webview_window("dock") else { return Ok(()) };
-    let Some(mon) = dock.current_monitor()? else { return Ok(()) };
-    let scale = mon.scale_factor();
-    let (w, h) = ((QUICK_WIDTH * scale) as i32, (QUICK_HEIGHT * scale) as i32);
-    let gap = (10.0 * scale) as i32;
-    let (mx, my) = (mon.position().x, mon.position().y);
-    let (mw, mh) = (mon.size().width as i32, mon.size().height as i32);
-    let at = dock.outer_position()?;
-    // The dock's own rectangle inside its window, in screen pixels.
-    let (hx, hy, hw, hh) = app
-        .state::<AppState>()
-        .hit
-        .lock()
-        .ok()
-        .and_then(|h| *h)
-        .map(|(x, y, w, h)| ((x * scale) as i32, (y * scale) as i32, (w * scale) as i32, (h * scale) as i32))
-        .unwrap_or((0, 0, 0, 0));
-    let (left, top) = (at.x + hx, at.y + hy);
-    let (right, bottom) = (left + hw, top + hh);
-    let (x, y) = match app.state::<AppState>().settings().position.as_str() {
-        "top" => (mx + mw - w - gap, bottom + gap),
-        "left" => (right + gap, my + mh - h - gap),
-        "right" => (left - w - gap, my + mh - h - gap),
-        _ => (mx + mw - w - gap, top - h - gap),
-    };
-    let x = x.clamp(mx, (mx + mw - w).max(mx));
-    let y = y.clamp(my, (my + mh - h).max(my));
-    quick.set_position(PhysicalPosition::new(x, y))
-}
-
-/// Opens the quick panel, or closes it when it is open.
-fn toggle_quick(app: &AppHandle) -> tauri::Result<()> {
-    if let Some(quick) = app.get_webview_window("quick") {
-        if quick.is_visible()? {
-            return quick.hide();
-        }
-        let just_closed = QUICK_CLOSED.lock().ok().and_then(|t| *t).is_some_and(|t| t.elapsed() < Duration::from_millis(350));
-        if just_closed {
-            return Ok(());
-        }
-        place_quick(app, &quick)?;
-        quick.show()?;
-        quick.set_focus()?;
-        return quick.emit("quick-opened", ());
-    }
-    let quick = WebviewWindowBuilder::new(app, "quick", WebviewUrl::App("index.html".into()))
-        .title("DockForge")
-        .inner_size(QUICK_WIDTH, QUICK_HEIGHT)
-        .decorations(false)
-        .transparent(true)
-        .shadow(false)
-        .resizable(false)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .visible(false)
-        .build()?;
-    quick.on_window_event({
-        let quick = quick.clone();
-        move |event| {
-            if let tauri::WindowEvent::Focused(false) = event {
-                if let Ok(mut closed) = QUICK_CLOSED.lock() {
-                    *closed = Some(Instant::now());
-                }
-                let _ = quick.hide();
-            }
-        }
-    });
-    place_quick(app, &quick)?;
-    quick.show()?;
-    quick.set_focus()
-}
-
-/// Opened from the quick module in the dock.
-#[tauri::command]
-fn show_tray_menu(app: AppHandle) -> Result<(), String> {
-    toggle_quick(&app).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn hide_quick(app: AppHandle) {
-    if let Some(quick) = app.get_webview_window("quick") {
-        let _ = quick.hide();
-    }
-}
-
-#[derive(serde::Serialize)]
-struct Volume {
-    level: u8,
-    muted: bool,
-}
-
-#[tauri::command]
-fn get_volume() -> Option<Volume> {
-    platform::volume().map(|(level, muted)| Volume { level, muted })
-}
-
-#[tauri::command]
-fn set_volume(level: u8) {
-    platform::set_volume(level);
-}
-
-#[tauri::command]
-fn set_mute(muted: bool) {
-    platform::set_mute(muted);
-}
-
-/// Opens a Windows settings page from the quick panel and closes the panel.
-#[tauri::command]
-fn open_windows_settings(app: AppHandle, page: String) {
-    if page == "personalize" {
-        let _ = open_hub(&app);
-    } else {
-        open_windows_page(&page);
-    }
-    hide_quick(app);
-}
-
-/// Locks the computer, as Windows+L does.
-#[tauri::command]
-fn lock_computer(app: AppHandle) {
-    hide_quick(app);
-    #[cfg(windows)]
-    {
-        let _ = std::process::Command::new("rundll32.exe").args(["user32.dll,LockWorkStation"]).spawn();
-    }
-}
-
-/// Opens one of Windows' settings pages. Only the pages named here can be opened.
-fn open_windows_page(id: &str) {
-    let uri = match id {
-        "sound" => "ms-settings:sound",
-        "network" => "ms-settings:network",
-        "bluetooth" => "ms-settings:bluetooth",
-        "display" => "ms-settings:display",
-        "battery" => "ms-settings:batterysaver",
-        "datetime" => "ms-settings:dateandtime",
-        "notifications" => "ms-settings:notifications",
-        "settings" => "ms-settings:",
-        "taskbar" => "ms-settings:taskbar",
-        _ => return,
-    };
-    #[cfg(windows)]
-    {
-        let _ = std::process::Command::new("explorer").arg(uri).spawn();
-    }
-    #[cfg(not(windows))]
-    let _ = uri;
-}
-
 /// The menu for a right click on the dock itself, away from any app.
 #[tauri::command]
 fn show_dock_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppState>) -> Result<(), String> {
@@ -922,8 +756,6 @@ fn start_mouse_watcher(app: AppHandle) {
             let mut last_inside = Instant::now();
             let mut ignoring = false;
             // The screen corner that stands in for the Windows options when there is no bar.
-            let mut corner_since: Option<Instant> = None;
-            let mut corner_shown = false;
             loop {
                 std::thread::sleep(Duration::from_millis(80));
                 let state = app.state::<AppState>();
@@ -950,31 +782,6 @@ fn start_mouse_watcher(app: AppHandle) {
                 let (x1, y1) = (x0 + size.width as f64, y0 + size.height as f64);
                 let in_window = cursor.x >= x0 && cursor.x <= x1 && cursor.y >= y0 && cursor.y <= y1;
 
-                // Taskbar hidden and no bar along an edge: resting the pointer in the bottom-right
-                // corner for half a second opens the Windows options. Leaving the corner re-arms it.
-                let in_corner = settings.hide_taskbar
-                    && matches!(window.current_monitor(), Ok(Some(ref mon)) if {
-                        let reach = 6.0 * scale;
-                        let right = mon.position().x as f64 + mon.size().width as f64;
-                        let bottom = mon.position().y as f64 + mon.size().height as f64;
-                        cursor.x >= right - reach && cursor.y >= bottom - reach
-                    });
-                if !in_corner {
-                    corner_since = None;
-                    corner_shown = false;
-                } else if !menu_open && !corner_shown {
-                    let since = *corner_since.get_or_insert_with(Instant::now);
-                    if since.elapsed() >= Duration::from_millis(500) {
-                        corner_shown = true;
-                        let handle = app.clone();
-                        let _ = app.run_on_main_thread(move || {
-                            if !quick_open(&handle) {
-                                let _ = toggle_quick(&handle);
-                            }
-                        });
-                    }
-                }
-
                 // The dock's own rectangle, reported by the web side in CSS pixels.
                 let over_dock = match state.hit.lock().ok().and_then(|h| *h) {
                     Some((hx, hy, hw, hh)) => {
@@ -997,7 +804,7 @@ fn start_mouse_watcher(app: AppHandle) {
                         };
                     // Nothing maximized in front: the dock can stay out, if the user asked for that.
                     let room = settings.hide_only_maximized && !platform::maximized_in_front();
-                    let wants_visible = menu_open || room || quick_open(&app) || if hidden { touching_edge } else { over_dock };
+                    let wants_visible = menu_open || room || if hidden { touching_edge } else { over_dock };
                     if wants_visible {
                         last_inside = Instant::now();
                     }
@@ -1128,13 +935,6 @@ pub fn run() {
             open_settings,
             show_app_menu,
             show_dock_menu,
-            show_tray_menu,
-            hide_quick,
-            get_volume,
-            set_volume,
-            set_mute,
-            open_windows_settings,
-            lock_computer,
             load_theme,
             open_themes_folder,
             open_link,

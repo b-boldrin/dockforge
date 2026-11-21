@@ -14,8 +14,6 @@
   --df-tooltip-bg: rgba(245, 246, 248, 0.94);
   --df-tooltip-color: #14161c;
   --df-separator-color: rgba(20, 22, 28, 0.2);
-  --df-widget-bg: rgba(255, 255, 255, 0.3);
-  --df-widget-color: #14161c;
 }
 
 /* The reflection on the shelf. Only on docks along the bottom, where a shelf makes sense. */

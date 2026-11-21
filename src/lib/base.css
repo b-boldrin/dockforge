@@ -26,8 +26,6 @@
   --df-tooltip-bg: rgba(20, 20, 26, 0.92);
   --df-tooltip-color: #f2f2f5;
   --df-separator-color: rgba(255, 255, 255, 0.18);
-  --df-widget-bg: rgba(255, 255, 255, 0.07);
-  --df-widget-color: var(--df-tooltip-color);
   --df-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
 
   display: flex;
@@ -47,7 +45,7 @@
   flex-direction: column;
 }
 
-/* Edge to edge: icons start at the beginning, widgets go to the end. */
+/* Edge to edge: icons start at the beginning. */
 .df-dock[data-layout="bar"] {
   border-radius: 0;
 }
@@ -65,7 +63,7 @@
 .df-dock[data-layout="bar"][data-position="right"] { border-width: 0 0 0 1px; }
 
 /* The app icons sit in their own block, so the space between apps is set apart from the space
-   between modules (groups, separator, widgets), which stays on the dock's own gap. */
+   between the groups and the separator, which stays on the dock's own gap. */
 .df-apps {
   flex: none;
   display: flex;
@@ -76,7 +74,7 @@
   flex-direction: column;
 }
 
-/* Island: closed, it shows the app in front and the widgets. Pointing at it (or reaching it
+/* Island: closed, it shows the app in front. Pointing at it (or reaching it
    with the keyboard) opens the app icons. */
 .df-dock[data-layout="island"] .df-apps {
   display: flex;
@@ -147,7 +145,7 @@
 .df-label {
   min-width: 0;
   font-size: 12px;
-  color: var(--df-widget-color);
+  color: var(--df-tooltip-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -186,39 +184,6 @@
   cursor: default;
   outline: none;
   flex: none;
-}
-
-.df-quick { gap: 8px; border: 0; font: inherit; cursor: pointer; }
-.df-quick:hover { background: color-mix(in srgb, var(--df-widget-bg), white 10%); }
-.df-quick svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-
-/* Modules split out: the dock itself has no surface; the apps and each module carry it. */
-.df-dock[data-modules="detached"] {
-  background: transparent !important;
-  border: 0;
-  box-shadow: none;
-  padding: 0;
-  gap: var(--df-module-gap, 10px);
-}
-.df-dock[data-modules="detached"] > .df-apps,
-.df-dock[data-modules="detached"] > .df-module {
-  background: var(--df-segment-bg, var(--df-bg));
-  border: var(--df-border);
-  box-shadow: var(--df-shadow);
-  border-radius: var(--df-radius);
-}
-.df-dock[data-modules="detached"] > .df-apps { padding: var(--df-padding); }
-.df-dock[data-modules="detached"] > .df-module {
-  height: calc(var(--df-icon-size) + var(--df-padding) * 2);
-  padding-inline: 14px;
-}
-.df-dock[data-modules="detached"]:is([data-position="left"], [data-position="right"]) > .df-module {
-  width: calc(var(--df-icon-size) + var(--df-padding) * 2);
-  height: auto;
-  padding: 12px 0;
-}
-.df-dock[data-modules="detached"] > .df-quick:hover {
-  background: color-mix(in srgb, var(--df-segment-bg, var(--df-bg)), white 8%);
 }
 
 .df-icon {
@@ -447,51 +412,6 @@
 .df-item.is-dragged .df-tooltip,
 .df-dock.is-dragging .df-tooltip { display: none; }
 
-/* Widgets: small panels that live at the end of the dock. */
-.df-widget {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: var(--df-icon-size);
-  padding: 0 10px;
-  border-radius: calc(var(--df-radius) * 0.5);
-  background: var(--df-widget-bg);
-  color: var(--df-widget-color);
-  font-size: 12px;
-  line-height: 1.25;
-  box-sizing: border-box;
-}
-.df-dock[data-position="left"] .df-widget,
-.df-dock[data-position="right"] .df-widget {
-  flex-direction: column;
-  justify-content: center;
-  width: var(--df-icon-size);
-  height: auto;
-  padding: 8px 0;
-}
-
-.df-clock {
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 0;
-  background: none;
-  font-variant-numeric: tabular-nums;
-}
-.df-clock-time {
-  font-size: 13px;
-  font-weight: 600;
-}
-.df-clock-date {
-  font-size: 11px;
-  opacity: 0.7;
-}
-.df-dock[data-position="left"] .df-clock,
-.df-dock[data-position="right"] .df-clock {
-  align-items: center;
-}
-
 .df-empty {
   padding: 0 12px;
   line-height: var(--df-icon-size);
@@ -534,17 +454,10 @@
   0%, 100% { translate: 0 0; }
   40% { translate: calc(var(--df-icon-size) * -0.28) 0; }
 }
-.df-widget {
-  animation: df-fade-in 240ms ease both;
-}
-@keyframes df-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
 /* Animations off: by choice in Configurações, or following Windows. */
 :root[data-motion="off"] {
-  .df-item, .df-widget, .df-item.is-launching .df-icon { animation: none; }
+  .df-item, .df-item.is-launching .df-icon { animation: none; }
   .df-dock[data-layout="island"] .df-apps, .df-island-now { transition: none; }
   .df-group-dot.is-received { animation: none; }
 }

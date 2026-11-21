@@ -78,9 +78,6 @@ export interface Settings {
   groupsEnabled: boolean;
   activeGroup: number;
   groupNames: string[];
-  widgetClock: boolean;
-  widgetQuick: boolean;
-  modulesPlacement: "auto" | "inline" | "detached";
 }
 
 /** A dock kept in "Minhas barras": its name and every setting except the favorites. */

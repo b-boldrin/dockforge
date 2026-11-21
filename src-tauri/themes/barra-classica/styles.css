@@ -14,8 +14,6 @@
   --df-tooltip-bg: #2b2b2c;
   --df-tooltip-color: #ffffff;
   --df-separator-color: rgba(255, 255, 255, 0.14);
-  --df-widget-bg: transparent;
-  --df-widget-color: #ffffff;
 }
 
 /* Each app is a button as tall as the bar, lit when pointed at and when in front. */
@@ -36,4 +34,3 @@
   border-radius: 0;
 }
 .df-item.is-active .df-indicator { left: 0; right: 0; }
-.df-widget { border-radius: 0; }

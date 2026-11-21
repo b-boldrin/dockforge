@@ -93,8 +93,8 @@ pub struct Settings {
     pub hub_theme: String,
     /// Animations: "on", "off", or "system" (follow the Windows "animation effects" switch).
     pub motion: String,
-    /// "float": a dock sized to its icons. "bar": edge to edge, with the clock at the end.
-    /// "island": a small pill (clock, music) that opens to show the apps when pointed at.
+    /// "float": a dock sized to its icons. "bar": edge to edge.
+    /// "island": a small pill with the app in front that opens to show the apps when pointed at.
     pub layout: String,
     /// Where along its edge a float or island dock sits: "start" | "center" | "end".
     /// "start" is left for a horizontal dock and top for a vertical one.
@@ -106,12 +106,6 @@ pub struct Settings {
     pub groups_enabled: bool,
     pub active_group: u8,
     pub group_names: Vec<String>,
-    pub widget_clock: bool,
-    /// The quick panel module: volume and the Windows options, like the taskbar's corner.
-    pub widget_quick: bool,
-    /// Where the modules sit on a floating dock: "auto" (as the theme says), "inline" (inside
-    /// the dock) or "detached" (each in its own block). Bars and islands always keep them inside.
-    pub modules_placement: String,
 }
 
 /// Keeps the saved docks that have a usable id, a name and a look that is an object. Drops
@@ -178,9 +172,6 @@ impl Default for Settings {
             groups_enabled: false,
             active_group: 0,
             group_names: default_group_names(),
-            widget_clock: true,
-            widget_quick: true,
-            modules_placement: "auto".into(),
         }
     }
 }
@@ -269,9 +260,6 @@ impl Settings {
                     if name.is_empty() { default_group_name(i) } else { name }
                 })
                 .collect(),
-            widget_clock: self.widget_clock,
-            widget_quick: self.widget_quick,
-            modules_placement: one_of(&self.modules_placement, &["auto", "inline", "detached"], "auto"),
         }
     }
 }

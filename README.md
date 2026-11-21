@@ -2,12 +2,12 @@
 
 An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, but for docks*: the community makes the themes, and installing one takes a click.
 
-> **Status: v0.3 preview.** A working dock with favorites, groups, modules, ready-made docks and a settings window. It has only been compiled and screenshot-tested so far; it does not replace the Windows taskbar yet.
+> **Status: v0.3 preview.** A working dock with favorites, groups, ready-made docks and a settings window. It has only been compiled and screenshot-tested so far; it does not replace the Windows taskbar yet.
 
 ## What works today
 
 **The dock**
-- Three layouts: *floating* (sized to its icons), *edge to edge* (like the Windows 10 taskbar) or *island* (a small pill with the app in front and the widgets; the other apps appear when the pointer is over it)
+- Three layouts: *floating* (sized to its icons), *edge to edge* (like the Windows 10 taskbar) or *island* (a small pill with the app in front; the other apps appear when the pointer is over it)
 - Any screen edge, and for floating docks and islands the start, middle or end of that edge (so a dock can live in a corner)
 - Favorites that stay when closed (click to start them), then the other open apps, with an optional line between them. Favorites can be imported from the Windows taskbar, or turned off
 - Groups, switched from anywhere with **Alt+1 … Alt+9** (four groups to start, up to nine). Group 1 has the favorites and everything open; groups 2 to 4 start empty. Move the app in front to a group with **Alt+Shift+number**, drag its icon onto a group dot, or use the right-click menu
@@ -19,13 +19,12 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Gets out of the way of anything in full screen (games, videos, F11): the dock is hidden until full screen ends
 - Auto-hide (on by default): the dock slides out through the screen edge and comes back when the mouse touches it. By default it only hides while the window in front is maximized, and stays in view over smaller windows and the desktop
 - Click-through: the empty space around the dock (room for the hover zoom and the tooltips) does not block clicks
-- Modules: a **clock** and a **quick panel** (volume and shortcuts to the Windows settings). Integrations (now playing, system stats, pomodoro, world clock) were removed for now, to be rethought
 - Motion: icons pop in when they appear, a starting app bounces, the group that receives an app blinks. All of it is off when Windows is set to reduce motion
 
 **The settings window** (tray icon → *Abrir o DockForge…*, or start DockForge again)
-- Ready-made docks: ten combinations of theme, place on screen and modules, applied with one click and still fully editable
+- Ready-made docks: ten combinations of theme, place on screen and behavior, applied with one click and still fully editable
 - Store with live previews of every installed theme, settings for your dock on the left, favorites and groups, start with Windows, language
-- Twelve built-in themes, among them the looks people most often give their Windows taskbar: Barra clássica (flat, with app names), Transparente, Barra flutuante (rounded, off the edges), Segmentada (apps and widgets in separate blocks), Retrô cinza (90s bevels) and Prateleira (frosted glass shelf); any theme dropped in `%APPDATA%\DockForge\themes\`
+- Eleven built-in themes, among them the looks people most often give their Windows taskbar: Barra clássica (flat, with app names), Transparente, Barra flutuante (rounded, off the edges), Retrô cinza (90s bevels) and Prateleira (frosted glass shelf); any theme dropped in `%APPDATA%\DockForge\themes\`
 - Live reload: save a theme's `styles.css` and the dock updates within a second
 
 ## Download
@@ -80,8 +79,8 @@ Themes live in a separate repository: **[dockforge-themes](https://github.com/do
 ## Roadmap
 
 1. ~~Technical prototype~~
-2. **Dock MVP** (now): ~~favorites, groups, auto-hide, layouts, island, widgets, settings window~~; still to do: multi-monitor, window previews
-3. **Community**: in-app gallery from the themes repository, integrations again (now playing, system, agent usage for Claude Code, OpenCode and Codex), sandboxed JS widgets
+2. **Dock MVP** (now): ~~favorites, groups, auto-hide, layouts, island, settings window~~; still to do: multi-monitor, window previews
+3. **Community**: in-app gallery from the themes repository, integrations and modules again, once rethought (now playing, system, agent usage for Claude Code, OpenCode and Codex), sandboxed JS widgets
 4. **v1.0**: signed installer, winget, website
 5. **Ecosystem**: visual theme editor, publish themes from the app (optional GitHub sign-in)
 

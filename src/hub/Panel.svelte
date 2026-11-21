@@ -3,7 +3,6 @@
   import { slide } from "svelte/transition";
   import { hub, patch, previewApps } from "./store.svelte.js";
   import { motionOff } from "../lib/motion";
-  import { MODULES } from "../lib/modules";
   import type { Settings } from "../lib/types";
 
   const s = $derived(hub.settings!);
@@ -83,11 +82,6 @@
       activeGroup: Math.min(s.activeGroup, last - 1),
     });
   }
-  const placements: Array<[Settings["modulesPlacement"], string]> = [
-    ["auto", "Do tema"],
-    ["inline", "Juntos"],
-    ["detached", "Separados"],
-  ];
   const slideOpts = $derived({ duration: motionOff() || !hub.settings ? 0 : 220 });
 </script>
 
@@ -136,32 +130,6 @@
       {/each}
     </div>
   </div>
-
-  </div>
-  </section>
-
-  <section class="grp">
-  <h3 class="ph">Módulos</h3>
-  <div class="box">
-  {#each MODULES as m (m.id)}
-    <div class="prow">
-      <span class="mod-name" title={m.about}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={m.icon}></path></svg>
-        {m.name}
-      </span>
-      <button class="tg" aria-label={m.name} aria-pressed={s[m.key] === true} onclick={() => patch({ [m.key]: !s[m.key] })}></button>
-    </div>
-  {/each}
-  {#if s.layout === "float"}
-    <div class="seg-label">Onde ficam</div>
-    <div class="seg-group" role="group" aria-label="Onde ficam os módulos">
-      {#each placements as [id, label] (id)}
-        <button class="seg" class:on={s.modulesPlacement === id} aria-pressed={s.modulesPlacement === id} onclick={() => patch({ modulesPlacement: id })}>{label}</button>
-      {/each}
-    </div>
-  {:else}
-    <p class="hint">{s.layout === "bar" ? "Na barra inteira, os módulos ficam dentro da barra." : "Na ilha, os módulos ficam dentro dela."}</p>
-  {/if}
 
   </div>
   </section>

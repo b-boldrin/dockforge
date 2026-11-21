@@ -57,12 +57,3 @@ pub fn fullscreen_active() -> bool {
 pub fn maximized_in_front() -> bool {
     false
 }
-
-/// No volume control outside Windows.
-pub fn volume() -> Option<(u8, bool)> {
-    None
-}
-
-pub fn set_volume(_level: u8) {}
-
-pub fn set_mute(_muted: bool) {}

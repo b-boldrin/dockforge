@@ -268,7 +268,7 @@ select {
 .df-preview:is([data-position="left"], [data-position="right"])[data-align="end"] { align-items: flex-end; }
 .df-preview[data-layout="bar"] { padding: 0; }
 /* Icons in previews do not pop in: a wall of previews all animating at once is noise. */
-.df-preview .df-item, .df-preview .df-widget { animation: none; }
+.df-preview .df-item { animation: none; }
 .df-preview .df-tooltip { display: none; }
 .df-fit { display: flex; }
 .df-preview[data-layout="bar"] .df-fit { flex: 1; align-self: stretch; }
