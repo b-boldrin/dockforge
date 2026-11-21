@@ -421,6 +421,56 @@
   white-space: nowrap;
 }
 
+/* ---- MyStyle bars -----------------------------------------------------------
+   When a bar has elements the dock holds three zones (start, center, end) and each element is
+   a field inside one of them. Neutral on purpose: a theme still styles .df-dock and .df-item,
+   and a field only carries what the user chose (fill, corners, padding, border). */
+.df-zone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--df-gap);
+  /* A zone with only free fields still has the height of the biggest icon to center them in. */
+  min-height: var(--df-icon-size);
+}
+.df-dock:is([data-position="left"], [data-position="right"]) .df-zone {
+  flex-direction: column;
+  min-height: 0;
+  min-width: var(--df-icon-size);
+}
+/* In a bar the first and last zones share what is left equally, so the middle zone stays in
+   the middle until a side grows past its half; then it is pushed. */
+.df-dock[data-layout="bar"] .df-zone { flex: 1 1 0; }
+.df-dock[data-layout="bar"] .df-zone[data-zone="center"] { flex: none; justify-content: center; }
+.df-dock[data-layout="bar"] .df-zone[data-zone="end"] { justify-content: flex-end; }
+.df-dock[data-zoned][data-layout="bar"]::before { display: none; }
+
+.df-field {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--df-field-gap, var(--df-gap));
+  box-sizing: border-box;
+}
+.df-dock:is([data-position="left"], [data-position="right"]) .df-field {
+  flex-direction: column;
+}
+/* A field with nothing to show (no open apps) takes no room on the real dock. */
+.df-field:empty { display: none; }
+/* Free: out of the flow, kept at its offset from the start of its zone. The offset is set
+   inline (left on a horizontal bar, top on a vertical one); the other axis is centered. */
+.df-field[data-free] { position: absolute; left: 0; top: 50%; translate: 0 -50%; }
+.df-dock:is([data-position="left"], [data-position="right"]) .df-field[data-free] { top: 0; left: 50%; translate: -50% 0; }
+/* The editor shows an empty field as a slot, so it can still be found and selected. */
+.df-field-ghost {
+  width: var(--df-icon-size);
+  height: var(--df-icon-size);
+  box-sizing: border-box;
+  border: 1.5px dashed currentColor;
+  border-radius: 12px;
+  opacity: 0.3;
+}
+
 /* ---- motion ---------------------------------------------------------------
    Icons pop in one after the other when they appear (a new app, or a group switch),
    and a just-clicked closed app bounces while it starts. */

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { motionOff } from "./motion";
-  import type { AppEntry, Settings } from "./types";
+  import type { AppEntry, BarElement, Settings, Zone } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
   let {
@@ -28,13 +28,28 @@
   const front = $derived(apps.find((a) => a.active) ?? null);
   const showSeparator = $derived(settings.separator && pinned.length > 0 && others.length > 0);
 
+  // A bar made in MyStyle: three zones, each holding the fields (elements) that flow in it. With
+  // no elements (or as an island) the dock below renders exactly as it always did.
+  const elements = $derived(settings.elements ?? []);
+  const zoned = $derived(!island && elements.length > 0);
+  const zoneNames: Zone[] = ["start", "center", "end"];
+  const inZone = (zone: Zone) => elements.filter((el) => el.zone === zone);
+  // In a bar the three zones always exist (so the middle stays in the middle); otherwise only
+  // the ones that hold something.
+  const shownZones = $derived(zoneNames.filter((z) => settings.layout === "bar" || inZone(z).length > 0));
+  // The group dots go once, before the first field.
+  const dotsZone = $derived(zoneNames.find((z) => inZone(z).length > 0));
+  const appsOf = (el: BarElement) => (el.source === "pinned" ? pinned : el.source === "open" ? others : apps);
+  // Hover room and the window's size follow the biggest icons on the bar.
+  const dockIconSize = $derived(zoned ? Math.max(...elements.map((el) => el.iconSize)) : settings.iconSize);
+
   $effect(() => {
     for (const app of apps) requestIcon(app.exe);
   });
 
   // ---- window size and click-through --------------------------------------
   let dockEl: HTMLDivElement;
-  let appsEl: HTMLDivElement;
+  let appsEl = $state<HTMLDivElement>();
   /** Full width of the app icons: how far the island opens. */
   let appsWidth = $state(0);
   let lastFit = "";
@@ -43,6 +58,7 @@
     void apps.length;
     void settings.iconSize;
     void settings.groupsEnabled;
+    void zoned;
     void showSeparator;
     if (!island || !appsEl) return;
     // Sum of the children: the wrapper itself is squeezed shut while the island is closed.
@@ -258,6 +274,58 @@
   </button>
 {/snippet}
 
+{#snippet groupDots()}
+  {#if settings.groupsEnabled}
+    <span class="df-group" role="group" aria-label={en ? "Groups" : "Grupos"}>
+      {#each settings.groupNames as name, i (i)}
+        {#key received?.group === i ? received.at : 0}
+          <button
+            class="df-group-dot"
+            class:is-current={i === settings.activeGroup}
+            class:is-over={drag?.over === i}
+            class:is-received={received?.group === i}
+            data-group={i}
+            data-n={i + 1}
+            title="{name} (Alt+{i + 1})"
+            aria-label="{name} (Alt+{i + 1})"
+            aria-pressed={i === settings.activeGroup}
+            tabindex={interactive ? 0 : -1}
+            onclick={() => showGroup(i)}
+          ></button>
+        {/key}
+      {/each}
+    </span>
+  {/if}
+{/snippet}
+
+<!-- One element of a MyStyle bar. A new kind of element is a new branch here. -->
+{#snippet field(el: BarElement)}
+  {@const list = appsOf(el)}
+  <div
+    class="df-field"
+    data-el={el.id}
+    data-kind={el.kind}
+    data-free={el.free ? "" : undefined}
+    style:--df-icon-size="{el.iconSize}px"
+    style:--df-field-gap="{el.gap}px"
+    style:padding="{el.padding}px"
+    style:border-radius="{el.radius}px"
+    style:background={el.fill ? `color-mix(in srgb, ${el.fill} ${el.opacity}%, transparent)` : undefined}
+    style:border={el.border ? `1px solid ${el.border}` : undefined}
+    style:left={el.free && !vertical ? `${el.offset}px` : undefined}
+    style:top={el.free && vertical ? `${el.offset}px` : undefined}
+  >
+    {#if el.kind === "icons"}
+      {#each list as app, i (app.key)}
+        {@render item(app, i)}
+      {/each}
+      {#if list.length === 0 && !interactive}
+        <span class="df-field-ghost" aria-hidden="true"></span>
+      {/if}
+    {/if}
+  </div>
+{/snippet}
+
 <svelte:window onpointermove={pointerMove} onpointerup={pointerEnd} onpointercancel={() => pointerEnd(null)} />
 
 <!-- A right click on the dock itself, away from the apps, opens the dock's own menu. -->
@@ -271,7 +339,8 @@
   data-layout={settings.layout}
   data-align={settings.align}
   bind:this={dockEl}
-  style:--df-icon-size="{settings.iconSize}px"
+  data-zoned={zoned ? "" : undefined}
+  style:--df-icon-size="{dockIconSize}px"
   style:--df-hover-scale={labels ? 1 : settings.magnify}
   style:--df-indicator-active-color={settings.accent ?? undefined}
   style:--df-app-gap={settings.gap != null ? `${settings.gap}px` : undefined}
@@ -296,30 +365,20 @@
     </span>
   {/if}
 
+  {#if zoned}
+    {#each shownZones as zone (zone)}
+      <div class="df-zone" data-zone={zone}>
+        {#if zone === dotsZone}{@render groupDots()}{/if}
+        {#each inZone(zone) as el (el.id)}
+          {@render field(el)}
+        {/each}
+      </div>
+    {/each}
+  {:else}
   <!-- The app icons. Outside the island layout this wrapper does not exist for the layout
        (display: contents); in the island it is what opens and closes. -->
   <div class="df-apps" bind:this={appsEl} style:--df-apps-width="{appsWidth}px">
-    {#if settings.groupsEnabled}
-      <span class="df-group" role="group" aria-label={en ? "Groups" : "Grupos"}>
-        {#each settings.groupNames as name, i (i)}
-          {#key received?.group === i ? received.at : 0}
-            <button
-              class="df-group-dot"
-              class:is-current={i === settings.activeGroup}
-              class:is-over={drag?.over === i}
-              class:is-received={received?.group === i}
-              data-group={i}
-              data-n={i + 1}
-              title="{name} (Alt+{i + 1})"
-              aria-label="{name} (Alt+{i + 1})"
-              aria-pressed={i === settings.activeGroup}
-              tabindex={interactive ? 0 : -1}
-              onclick={() => showGroup(i)}
-            ></button>
-          {/key}
-        {/each}
-      </span>
-    {/if}
+    {@render groupDots()}
 
     {#each pinned as app, i (app.key)}
       {@render item(app, i)}
@@ -343,4 +402,5 @@
   </div>
 
   <span class="df-spacer"></span>
+  {/if}
 </div>

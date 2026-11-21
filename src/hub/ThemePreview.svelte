@@ -29,7 +29,12 @@
         return;
       }
       // A bar is as long as the preview, so measure what it holds instead.
-      const parts = [...dock.querySelectorAll<HTMLElement>(".df-item, .df-separator, .df-group")];
+      // A MyStyle bar is measured by its fields (with their padding), a classic one by its icons.
+      const parts = [
+        ...dock.querySelectorAll<HTMLElement>(
+          dock.querySelector(".df-field") ? ".df-field:not([data-free]), .df-group" : ".df-item, .df-separator, .df-group",
+        ),
+      ];
       const css = getComputedStyle(dock);
       const gap = parseFloat(css.columnGap) || 0;
       const padding = upright
