@@ -4,20 +4,19 @@ import type { AppEntry, SavedBar, Settings, ThemeSummary } from "../lib/types";
 import type { Preset } from "./presets";
 import { refreshPreviewTheme } from "./themes.svelte.js";
 
-/** Everything the settings window shows, kept in sync with the Rust side. */
-/** Which page of the window is open. The creator can be opened from the Loja and Minhas barras. */
+/** Which page of the window is open. MyStyle can be opened from the Loja and Minhas barras. */
 export const nav = $state({
-  tab: "store" as "store" | "pins" | "bars" | "settings" | "create",
-  /** The saved bar the creator edits; null = a new one. */
+  tab: "store" as "store" | "pins" | "bars" | "mystyle" | "settings",
+  /** The saved bar MyStyle edits; null = a new one. */
   editBar: null as string | null,
-  /** The page the creator goes back to. */
-  from: "store" as "store" | "bars",
+  /** Set by openMyStyle(null): start a blank bar even if an unsaved new one is open. */
+  fresh: false,
 });
 
-export function openCreator(from: "store" | "bars", barId: string | null = null) {
-  nav.from = from;
+export function openMyStyle(barId: string | null) {
   nav.editBar = barId;
-  nav.tab = "create";
+  nav.fresh = barId === null;
+  nav.tab = "mystyle";
 }
 
 export const hub = $state({
@@ -97,7 +96,14 @@ export function lookOf(s: Settings): Partial<Settings> {
   return look as Partial<Settings>;
 }
 
-const sameLook = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+/** A look as comparable text: keys in order at every depth, and a look from before MyStyle has no elements. */
+const lookKey = (look: unknown) =>
+  JSON.stringify({ elements: null, ...(look as object) }, (_key, value) =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value).sort(([x], [y]) => (x < y ? -1 : 1)))
+      : value,
+  );
+export const sameLook = (a: unknown, b: unknown) => lookKey(a) === lookKey(b);
 
 /** Puts a dock as it is now into "Minhas barras", at the top. A look already there is not repeated. */
 export function keepBar(name: string) {
@@ -115,14 +121,14 @@ export function keepBar(name: string) {
 export function useTheme(id: string) {
   // A new theme starts clean: tweaks made on the old one do not carry over.
   const name = hub.themes.find((t) => t.id === id)?.name ?? id;
-  return patch({ theme: id, accent: null, radius: null, opacity: null }).then(() => keepBar(name));
+  return patch({ theme: id, accent: null, radius: null, opacity: null, elements: null }).then(() => keepBar(name));
 }
 
 export function usePreset(preset: Preset) {
   return patch(preset.settings).then(() => keepBar(preset.name));
 }
 
-/** Adds a bar made in the creator to the top of "Minhas barras". */
+/** Adds a bar made in MyStyle to the top of "Minhas barras". */
 export function addBar(name: string, look: Partial<Settings>) {
   if (!hub.settings) return;
   const id = `bar-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -132,7 +138,8 @@ export function addBar(name: string, look: Partial<Settings>) {
 
 /** Applies a kept bar. Its look replaces the dock's look; the favorites stay as they are. */
 export function applyBar(bar: SavedBar) {
-  return patch(bar.look);
+  // A bar made before MyStyle has no elements: it must not keep the ones the dock has now.
+  return patch({ elements: null, ...bar.look });
 }
 
 /** Saves what the bar editor changed: the name and the look, only when the user asks for it. */

@@ -1,6 +1,6 @@
 <script lang="ts">
   import ThemePreview from "./ThemePreview.svelte";
-  import { hub, applyBar, lookOf, previewApps, openCreator } from "./store.svelte.js";
+  import { hub, applyBar, lookOf, previewApps, openMyStyle, sameLook } from "./store.svelte.js";
   import type { SavedBar, Settings } from "../lib/types";
 
   const s = $derived(hub.settings!);
@@ -10,10 +10,12 @@
 
   /** The card: the bar's look over the current dock, at the size of a card. */
   function card(bar: SavedBar): Settings {
-    const merged = { ...s, ...bar.look } as Settings;
-    return { ...merged, iconSize: Math.round((merged.iconSize ?? 44) * 0.5) };
+    const merged = { ...s, elements: null, ...bar.look } as Settings;
+    // Half size, elements included: each one carries its own icon size.
+    const elements = merged.elements?.map((el) => ({ ...el, iconSize: Math.round(el.iconSize * 0.5), gap: Math.round(el.gap * 0.5) })) ?? null;
+    return { ...merged, elements, iconSize: Math.round((merged.iconSize ?? 44) * 0.5) };
   }
-  const inUse = (bar: SavedBar) => JSON.stringify(bar.look) === JSON.stringify(lookOf(s));
+  const inUse = (bar: SavedBar) => sameLook(bar.look, lookOf(s));
 
 </script>
 
@@ -23,7 +25,7 @@
         <h1>Minhas barras</h1>
         <p class="lead">As docks que você usou na Loja ficam aqui. Clique numa imagem para usar.</p>
       </div>
-      <button class="btn pri" onclick={() => openCreator("bars")}>Criar barra</button>
+      <button class="btn pri" onclick={() => openMyStyle(null)}>Criar barra</button>
     </div>
 
     {#if bars.length === 0}
@@ -39,7 +41,7 @@
               <div class="bar-name">{bar.name}</div>
               <div class="bar-actions">
                 {#if inUse(bar)}<span class="in-use">Em uso</span>{/if}
-                <button class="link muted" onclick={() => openCreator("bars", bar.id)}>Configurar</button>
+                <button class="link muted" onclick={() => openMyStyle(bar.id)}>Configurar</button>
               </div>
             </div>
           </article>

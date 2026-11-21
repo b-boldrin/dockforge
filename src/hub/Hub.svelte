@@ -5,16 +5,17 @@
   import Pins from "./Pins.svelte";
   import Settings from "./Settings.svelte";
   import Bars from "./Bars.svelte";
-  import Creator from "./Creator.svelte";
+  import MyStyle from "./MyStyle.svelte";
   import { hub, nav, start } from "./store.svelte.js";
   import { setMotion } from "../lib/motion";
 
-  type Tab = "store" | "pins" | "bars" | "settings";
+  type Tab = "store" | "pins" | "bars" | "mystyle" | "settings";
   const tab = $derived(nav.tab);
   // Minhas barras comes first in the row; the window still opens on the Loja.
   const tabs: Array<[Exclude<Tab, "settings">, string]> = [
     ["bars", "Minhas barras"],
     ["store", "Loja"],
+    ["mystyle", "MyStyle"],
     ["pins", "Favoritos e grupos"],
   ];
   // Small marks for the three sections, so each tab is found by its shape as well as its name.
@@ -22,6 +23,7 @@
     store: "M4 9l1.5-5h13L20 9M4 9h16v10H4zM9 19v-5h6v5",
     pins: "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9-4.3-4.1 5.9-.8z",
     bars: "M4 7h16M4 12h16M4 17h10",
+    mystyle: "M4 4h16v5H4zM4 13h7v7H4zM15 13h5v7h-5z",
   };
 
   // The "Sua dock" panel slides away to the left when it is not needed. The choice is
@@ -71,10 +73,8 @@
 
 {#if hub.settings}
   <div class="hub">
-    {#if tab === "create"}
-      <Creator />
-    {:else}
     <header class="top">
+      {#if tab !== "mystyle"}
       <button
         class="gear panel-toggle"
         class:on={panelOpen}
@@ -88,6 +88,7 @@
           <path d="M9 4v16"></path>
         </svg>
       </button>
+      {/if}
       <div class="brand">
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" class="brand-bg"></rect><rect x="4" y="12" width="12" height="4" rx="2" class="brand-dock"></rect></svg>
         <span>DockForge</span>
@@ -120,27 +121,31 @@
     {/if}
 
     <div class="body">
-      <Panel open={panelOpen} />
-      <!-- Clicking anywhere outside the panel puts it away, and that click does nothing else,
-           so a theme is not applied by accident. -->
-      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <main class="main" onpointerdown={dismissPanel} onclickcapture={swallowDismissClick}>
-        {#key tab}
-          <div class="view">
-            {#if tab === "store"}
-              <Store />
-            {:else if tab === "pins"}
-              <Pins />
-            {:else if tab === "bars"}
-              <Bars />
-            {:else}
-              <Settings />
-            {/if}
-          </div>
-        {/key}
-      </main>
+      {#if tab === "mystyle"}
+        <!-- MyStyle takes the whole body: no "Sua dock" panel, no page padding. -->
+        <MyStyle />
+      {:else}
+        <Panel open={panelOpen} />
+        <!-- Clicking anywhere outside the panel puts it away, and that click does nothing else,
+             so a theme is not applied by accident. -->
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <main class="main" onpointerdown={dismissPanel} onclickcapture={swallowDismissClick}>
+          {#key tab}
+            <div class="view">
+              {#if tab === "store"}
+                <Store />
+              {:else if tab === "pins"}
+                <Pins />
+              {:else if tab === "bars"}
+                <Bars />
+              {:else}
+                <Settings />
+              {/if}
+            </div>
+          {/key}
+        </main>
+      {/if}
     </div>
-    {/if}
     {#if hub.toast}
       {#key hub.toast.id}
         <div class="toast" role="status">

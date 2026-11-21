@@ -23,6 +23,7 @@ const clean: Partial<Settings> = {
   separator: true,
   labels: false,
   groupsEnabled: false,
+  elements: null,
 };
 
 /** The first ones are the styles people most often give their Windows taskbar. */
