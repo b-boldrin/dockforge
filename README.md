@@ -22,7 +22,7 @@ An open-source, themeable dock for Windows 10 and 11. Think *Wallpaper Engine, b
 - Motion: icons pop in when they appear, a starting app bounces, the group that receives an app blinks. All of it is off when Windows is set to reduce motion
 
 **The settings window** (tray icon → *Abrir o DockForge…*, or start DockForge again)
-- MyStyle: a builder for your own bar, like a drawing tool. Put fields of icons on a canvas, drag them between the start, middle and end of the bar, and style each one (size, fill, corners, border). A field grows with its icons and pushes its neighbours aside, unless you set it to free position. "Usar na minha dock" applies it, "Salvar" keeps it in Minhas barras
+- Forja: a builder for your own bar, like a drawing tool. Put fields of icons on a canvas, drag them between the start, middle and end of the bar, and style each one (size, fill, corners, border). A field grows with its icons and pushes its neighbours aside, unless you set it to free position. "Usar na minha dock" applies it, "Salvar" keeps it in Minhas barras
 - Ready-made docks: ten combinations of theme, place on screen and behavior, applied with one click and still fully editable
 - Store with live previews of every installed theme, settings for your dock on the left, favorites and groups, start with Windows, language
 - Eleven built-in themes, among them the looks people most often give their Windows taskbar: Barra clássica (flat, with app names), Transparente, Barra flutuante (rounded, off the edges), Retrô cinza (90s bevels) and Prateleira (frosted glass shelf); any theme dropped in `%APPDATA%\DockForge\themes\`
@@ -68,7 +68,7 @@ On macOS or Linux the app also runs, with sample apps instead of real windows, w
 | Now playing | `src-tauri/src/platform/windows.rs` (end) | `GlobalSystemMediaTransportControlsSessionManager`, the API behind the Windows volume flyout |
 | Dock UI | `src/lib/Dock.svelte`, `src/lib/base.css` | Svelte 5. Fits the native window to the dock size and reports the dock's rectangle for click-through |
 | Settings window | `src/hub/` | Opened as a second window (`index.html?view=hub`). Theme previews are limited with CSS `@scope`, so no theme can restyle the window |
-| Bar builder (MyStyle) | `src/hub/MyStyle.svelte`, `src/hub/mystyle/` | The hub's MyStyle tab. `Settings.elements` is a flat list (zone + order give the flow; `null` = the classic dock), `Dock.svelte` draws it as three zones of fields. The editor keeps one draft and an undo stack; nothing reaches the dock until "Usar na minha dock" |
+| Bar builder (Forja) | `src/hub/MyStyle.svelte`, `src/hub/mystyle/` | The hub's Forja tab (MyStyle in the code). `Settings.elements` is a flat list (zone + order give the flow; `null` = the classic dock), `Dock.svelte` draws it as three zones of fields. The editor keeps one draft and an undo stack; nothing reaches the dock until "Usar na minha dock" |
 | Browser preview | `src/dev-mock.ts` | Development only. With `npm run dev`, open `http://localhost:1420/?view=hub` in a normal browser: the Tauri commands are answered with sample data, and the production bundle does not include it |
 
 **Approach:** the dock is a normal transparent window drawn on top of the desktop. It does not inject code into Explorer, so Windows updates do not break it and antivirus software has nothing to flag.

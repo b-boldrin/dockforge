@@ -11,20 +11,21 @@
 
   type Tab = "store" | "pins" | "bars" | "mystyle" | "settings";
   const tab = $derived(nav.tab);
-  // Minhas barras comes first in the row; the window still opens on the Loja.
-  const tabs: Array<[Exclude<Tab, "settings">, string]> = [
+  // Minhas barras comes first in the row; the window still opens on the Loja. The Forja (the
+  // bar builder) is not in this row: it stands apart, last on the right, in the forge's red.
+  const tabs: Array<[Exclude<Tab, "settings" | "mystyle">, string]> = [
     ["bars", "Minhas barras"],
     ["store", "Loja"],
-    ["mystyle", "MyStyle"],
     ["pins", "Favoritos e grupos"],
   ];
-  // Small marks for the three sections, so each tab is found by its shape as well as its name.
-  const marks: Record<Exclude<Tab, "settings">, string> = {
+  // Small marks for the sections, so each tab is found by its shape as well as its name.
+  const marks: Record<Exclude<Tab, "settings" | "mystyle">, string> = {
     store: "M4 9l1.5-5h13L20 9M4 9h16v10H4zM9 19v-5h6v5",
     pins: "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9-4.3-4.1 5.9-.8z",
     bars: "M4 7h16M4 12h16M4 17h10",
-    mystyle: "M4 4h16v5H4zM4 13h7v7H4zM15 13h5v7h-5z",
   };
+  /** An anvil with its horn to the left. */
+  const ANVIL = "M3 8.5h18v1.2c0 1.8-1.6 3-4 3h-2v2.6l3 2.7v1.5H6v-1.5l3-2.7v-2.6H7.5C4.9 12.7 3 11.1 3 8.5z";
 
   // The "Sua dock" panel slides away to the left when it is not needed. The choice is
   // remembered on this computer; storage can be unavailable, and then it just starts open.
@@ -107,6 +108,11 @@
           </button>
         {/each}
       </nav>
+      <button class="forja" class:on={tab === "mystyle"} aria-current={tab === "mystyle" ? "page" : undefined} title="Forja: monte a sua barra" onclick={() => (nav.tab = "mystyle")}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={ANVIL}></path></svg>
+        Forja
+        <span class="forja-sparks" aria-hidden="true"></span>
+      </button>
       <button
         class="gear"
         class:on={tab === "settings"}
@@ -128,7 +134,7 @@
 
     <div class="body">
       {#if tab === "mystyle"}
-        <!-- MyStyle takes the whole body: no "Sua dock" panel, no page padding. -->
+        <!-- The Forja takes the whole body: no "Sua dock" panel, no page padding. -->
         <MyStyle />
       {:else}
         <Panel open={panelOpen} />
