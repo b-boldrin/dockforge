@@ -4,8 +4,8 @@
 // the real dock until "Usar na minha dock", and nothing is kept until "Salvar".
 
 import { hub, lookOf, showToast } from "../store.svelte.js";
-import type { BarElement, IconsElement, Settings } from "../../lib/types";
-import { MAX_ELEMENTS, clamp, defaultElements, insertElement, moveElement, newId, newIcons, nudgeElement, type Drop } from "./model";
+import type { BarElement, Settings } from "../../lib/types";
+import { MAX_ELEMENTS, clamp, defaultElements, insertElement, moveElement, newElement, newId, nudgeElement, sizeOf, sized, type Drop, type ElementPatch, type Kind } from "./model";
 
 const HISTORY = 100;
 /** Edits with the same key within this time (a slider being dragged) are one undo step. */
@@ -175,11 +175,13 @@ class Editor {
     return { zone: sel.zone, before: peers[peers.indexOf(sel) + 1]?.id ?? null };
   }
 
-  /** Adds a field of icons: where it was dropped, or after the selected element. */
-  addIcons(drop?: Drop) {
+  /** Adds an element of a kind: where it was dropped, or after the selected element (in the
+   *  kind's own zone when nothing is selected). */
+  add(kind: Kind, drop?: Drop) {
     if (this.elements.length >= MAX_ELEMENTS) return showToast(`No máximo ${MAX_ELEMENTS} elementos na barra`);
-    const where = drop ?? this.afterSelected();
-    const el = newIcons({ zone: where.zone, iconSize: this.current?.iconSize ?? this.draft!.iconSize });
+    const where = drop ?? (this.current ? this.afterSelected() : { zone: kind === "icons" ? ("center" as const) : ("end" as const), before: null });
+    const icons = this.elements.find((e) => e.kind === "icons");
+    const el = newElement(kind, where.zone, icons && icons.kind === "icons" ? icons.iconSize : this.draft!.iconSize);
     this.apply((d) => (d.elements = insertElement(d.elements ?? [], el, where)));
     this.selected = el.id;
   }
@@ -210,7 +212,7 @@ class Editor {
   }
 
   /** Changes one element. `key` merges a run of edits (a slider) into one undo step. */
-  update(id: string, changes: Partial<IconsElement>, key?: string) {
+  update(id: string, changes: ElementPatch, key?: string) {
     this.apply((d) => {
       const el = d.elements?.find((e) => e.id === id);
       if (el) Object.assign(el, changes);
@@ -219,6 +221,17 @@ class Editor {
 
   setOffset(id: string, offset: number, key: string) {
     this.update(id, { offset: Math.round(clamp(offset, 0, 4000)) }, key);
+  }
+
+  /** Resizing by hand: one element, or all of them when the bar is selected (each moves by the
+   *  same amount from where it was when the drag began). */
+  resize(id: string, delta: number, from: Record<string, number>, key: string) {
+    this.apply((d) => {
+      for (const el of d.elements ?? []) {
+        if (id !== "bar" && el.id !== id) continue;
+        Object.assign(el, sized(el, (from[el.id] ?? sizeOf(el)) + delta));
+      }
+    }, key);
   }
 }
 

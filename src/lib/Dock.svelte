@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { motionOff } from "./motion";
-  import type { AppEntry, BarElement, Settings, Zone } from "./types";
+  import type { AppEntry, BarElement, ClockElement, IconsElement, PowerElement, Settings, SystemElement, Zone } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
   let {
@@ -39,9 +39,61 @@
   const shownZones = $derived(zoneNames.filter((z) => settings.layout === "bar" || inZone(z).length > 0));
   // The group dots go once, before the first field.
   const dotsZone = $derived(zoneNames.find((z) => inZone(z).length > 0));
-  const appsOf = (el: BarElement) => (el.source === "pinned" ? pinned : el.source === "open" ? others : apps);
+  const appsOf = (el: IconsElement) => (el.source === "pinned" ? pinned : el.source === "open" ? others : apps);
   // Hover room and the window's size follow the biggest icons on the bar.
-  const dockIconSize = $derived(zoned ? Math.max(...elements.map((el) => el.iconSize)) : settings.iconSize);
+  const dockIconSize = $derived(zoned ? Math.max(...elements.map((el) => (el.kind === "icons" ? el.iconSize : el.size))) : settings.iconSize);
+
+  // ---- modules: clock, volume, power, Windows settings --------------------------
+  let now = $state(new Date());
+  const clocks = $derived(elements.filter((el): el is ClockElement => el.kind === "clock"));
+  $effect(() => {
+    if (!zoned || clocks.length === 0) return;
+    now = new Date();
+    const timer = setInterval(() => (now = new Date()), clocks.some((c) => c.seconds) ? 1000 : 10_000);
+    return () => clearInterval(timer);
+  });
+  const locale = $derived(en ? "en-US" : "pt-BR");
+  const timeText = (el: ClockElement) => now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: el.seconds ? "2-digit" : undefined, hour12: el.hour12 });
+  const dateText = (el: ClockElement) =>
+    now.toLocaleDateString(locale, { weekday: el.weekday ? "short" : undefined, day: "2-digit", month: "2-digit", year: "numeric" });
+
+  // The volume is read from Windows every couple of seconds while a volume module is on the bar.
+  let volume = $state({ level: 60, muted: false });
+  const hasAudio = $derived(zoned && elements.some((el) => el.kind === "audio" || el.kind === "system"));
+  const gotVolume = (v: unknown) => {
+    const next = v as { level: number; muted: boolean } | null;
+    if (next && typeof next.level === "number") volume = next;
+  };
+  $effect(() => {
+    if (!hasAudio || !interactive) return;
+    const read = () => invoke("volume_get").then(gotVolume).catch(() => {});
+    read();
+    const timer = setInterval(read, 2000);
+    return () => clearInterval(timer);
+  });
+  const setVolume = (level: number) => {
+    const next = Math.max(0, Math.min(100, Math.round(level)));
+    volume = { ...volume, level: next, muted: next > 0 ? false : volume.muted };
+    invoke("volume_set", { level: next }).then(gotVolume).catch(() => {});
+  };
+  const toggleMute = () => interactive && invoke("volume_toggle_mute").then(gotVolume).catch(() => {});
+  const wheelVolume = (e: WheelEvent) => {
+    if (!interactive) return;
+    e.preventDefault();
+    setVolume(volume.level + (e.deltaY < 0 ? 5 : -5));
+  };
+  const powerMenu = (el: PowerElement) => interactive && invoke("show_power_menu", { actions: el.actions }).catch(() => {});
+  const openSystem = (el: SystemElement) => interactive && invoke("open_system", { target: el.opens }).catch(() => {});
+
+  const GLYPH = {
+    power: "M12 3v8M7 6.5a7 7 0 1 0 10 0",
+    wifi: "M2.5 9a15 15 0 0 1 19 0M5.5 12.5a10 10 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
+    bluetooth: "M7 7l10 10-5 4V3l5 4L7 17",
+    muted: "M4 10v4h4l5 4V6L8 10zM16 9l5 6M21 9l-5 6",
+  };
+  /** The speaker with as many waves as the volume has. */
+  const speaker = (level: number, muted: boolean) =>
+    muted || level === 0 ? GLYPH.muted : "M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6" + (level > 55 ? "M18.5 6.5a8 8 0 0 1 0 11" : "");
 
   $effect(() => {
     for (const app of apps) requestIcon(app.exe);
@@ -308,15 +360,21 @@
 {/snippet}
 
 <!-- One element of a MyStyle bar. A new kind of element is a new branch here. -->
+{#snippet glyph(d: string)}
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path {d} /></svg>
+{/snippet}
+
 {#snippet field(el: BarElement)}
-  {@const list = appsOf(el)}
+  {@const list = el.kind === "icons" ? appsOf(el) : []}
   <div
     class="df-field"
     data-el={el.id}
     data-kind={el.kind}
     data-free={el.free ? "" : undefined}
-    style:--df-icon-size="{el.iconSize}px"
-    style:--df-field-gap="{el.gap}px"
+    style:--df-icon-size="{el.kind === "icons" ? el.iconSize : el.size}px"
+    style:--df-mod-size="{el.kind === "icons" ? 0 : el.size}px"
+    style:--df-field-gap={el.kind === "icons" ? `${el.gap}px` : undefined}
+    style:color={el.kind === "icons" ? undefined : (el.color ?? "var(--df-fg)")}
     style:padding="{el.padding}px"
     style:border-radius="{el.radius}px"
     style:background={el.fill ? `color-mix(in srgb, ${el.fill} ${el.opacity}%, transparent)` : undefined}
@@ -331,6 +389,32 @@
       {#if list.length === 0 && !interactive}
         <span class="df-field-ghost" aria-hidden="true"></span>
       {/if}
+    {:else if el.kind === "clock"}
+      <span class="df-clock" class:df-clock--both={el.show === "both"} style:height="{el.size}px" style:font-size="{el.size * (el.show === "both" ? 0.4 : 0.55)}px">
+        {#if el.show !== "date"}<b>{timeText(el)}</b>{/if}
+        {#if el.show !== "time"}<span>{dateText(el)}</span>{/if}
+      </span>
+    {:else if el.kind === "audio"}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <span class="df-tool-row" onwheel={wheelVolume}>
+        <button class="df-tool" tabindex={interactive ? 0 : -1} title="Volume: {volume.muted ? (en ? "muted" : "sem som") : volume.level + "%"}" aria-label={en ? "Mute" : "Silenciar"} onclick={toggleMute}>
+          {@render glyph(speaker(volume.level, volume.muted))}
+          {#if el.percent}<span class="df-tool-text">{volume.muted ? 0 : volume.level}%</span>{/if}
+        </button>
+        {#if el.slider && !vertical}
+          <input class="df-slider" type="range" min="0" max="100" value={volume.muted ? 0 : volume.level} tabindex={interactive ? 0 : -1} aria-label="Volume" disabled={!interactive} oninput={(e) => setVolume(Number(e.currentTarget.value))} />
+        {/if}
+      </span>
+    {:else if el.kind === "power"}
+      <button class="df-tool" tabindex={interactive ? 0 : -1} title={en ? "Power" : "Energia"} aria-label={en ? "Power" : "Energia"} onclick={() => powerMenu(el)}>
+        {@render glyph(GLYPH.power)}
+      </button>
+    {:else if el.kind === "system"}
+      <button class="df-tool" tabindex={interactive ? 0 : -1} title={en ? "Quick settings" : "Configurações rápidas"} aria-label={en ? "Quick settings" : "Configurações rápidas"} onclick={() => openSystem(el)}>
+        {#each el.items as item (item)}
+          {@render glyph(item === "sound" ? speaker(volume.level, volume.muted) : GLYPH[item])}
+        {/each}
+      </button>
     {/if}
   </div>
 {/snippet}

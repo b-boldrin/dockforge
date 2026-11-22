@@ -25,6 +25,8 @@
   --df-indicator-offset: -7px;
   --df-tooltip-bg: rgba(20, 20, 26, 0.92);
   --df-tooltip-color: #f2f2f5;
+  /* Text and glyphs of the clock, volume, power and settings modules; light themes change it. */
+  --df-fg: #f2f2f5;
   --df-separator-color: rgba(255, 255, 255, 0.18);
   --df-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
 
@@ -462,6 +464,44 @@
 .df-field[data-free] { position: absolute; left: 0; top: 50%; translate: 0 -50%; }
 .df-dock:is([data-position="left"], [data-position="right"]) .df-field[data-free] { top: 0; left: 50%; translate: -50% 0; }
 /* The editor shows an empty field as a slot, so it can still be found and selected. */
+/* Modules: the clock and the small buttons of a MyStyle bar. They take their size from the
+   field (--df-mod-size) and their color from it too (an own color, or --df-fg). */
+.df-clock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8px;
+  box-sizing: border-box;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.df-clock b { font-weight: 600; }
+.df-clock--both span { opacity: 0.75; font-size: 0.8em; }
+.df-tool-row { display: inline-flex; align-items: center; gap: 4px; }
+.df-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--df-mod-size);
+  min-width: var(--df-mod-size);
+  padding: 0 calc(var(--df-mod-size) * 0.18);
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.df-tool:hover { background: color-mix(in srgb, currentColor 14%, transparent); }
+.df-tool:active { background: color-mix(in srgb, currentColor 22%, transparent); }
+.df-tool svg { width: calc(var(--df-mod-size) * 0.62); height: calc(var(--df-mod-size) * 0.62); flex: none; }
+.df-tool-text { font-size: calc(var(--df-mod-size) * 0.4); font-variant-numeric: tabular-nums; min-width: 3ch; text-align: left; }
+.df-slider { width: 84px; accent-color: currentColor; cursor: pointer; }
 .df-field-ghost {
   width: var(--df-icon-size);
   height: var(--df-icon-size);

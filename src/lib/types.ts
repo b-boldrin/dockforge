@@ -74,8 +74,52 @@ export interface IconsElement extends ElementBase {
   gap: number;
 }
 
-/** One thing on a MyStyle bar. A new kind (clock, volume…) adds one variant here and in settings.rs. */
-export type BarElement = IconsElement;
+/** What the small modules share: how big they are and the color of their glyphs and text. */
+interface ModuleBase extends ElementBase {
+  /** px, 16–48: the height of the module. */
+  size: number;
+  /** Glyph and text color; null = the theme's. */
+  color: string | null;
+}
+
+/** Date and time. */
+export interface ClockElement extends ModuleBase {
+  kind: "clock";
+  show: "time" | "date" | "both";
+  hour12: boolean;
+  seconds: boolean;
+  weekday: boolean;
+}
+
+/** The system volume: click to mute, wheel to change it. */
+export interface AudioElement extends ModuleBase {
+  kind: "audio";
+  /** The number next to the speaker. */
+  percent: boolean;
+  /** A slider (horizontal bars only). */
+  slider: boolean;
+}
+
+export type PowerAction = "shutdown" | "restart" | "sleep" | "lock" | "logout";
+
+/** A button that opens the power menu. */
+export interface PowerElement extends ModuleBase {
+  kind: "power";
+  /** The entries of the menu, in order. */
+  actions: PowerAction[];
+}
+
+export type SystemItem = "wifi" | "sound" | "bluetooth";
+
+/** The Windows status icons as one button that opens the quick settings (or the Settings app). */
+export interface SystemElement extends ModuleBase {
+  kind: "system";
+  items: SystemItem[];
+  opens: "quick" | "settings";
+}
+
+/** One thing on a MyStyle bar. A new kind adds one variant here and in settings.rs. */
+export type BarElement = IconsElement | ClockElement | AudioElement | PowerElement | SystemElement;
 
 export interface Settings {
   version: number;

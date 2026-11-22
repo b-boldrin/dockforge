@@ -198,7 +198,11 @@
   border-radius: 2px;
   scale: var(--z, 1);
   translate: -50% -50%;
+  pointer-events: auto;
+  cursor: nwse-resize;
 }
+.ms-sel .tr, .ms-sel .bl { cursor: nesw-resize; }
+.ms-sel .h:hover { background: var(--ms-sel); }
 .ms-sel .tl { left: calc(-3px * var(--z, 1)); top: calc(-3px * var(--z, 1)); }
 .ms-sel .tr { right: calc(-3px * var(--z, 1)); top: calc(-3px * var(--z, 1)); translate: 50% -50%; }
 .ms-sel .bl { left: calc(-3px * var(--z, 1)); bottom: calc(-3px * var(--z, 1)); translate: -50% 50%; }

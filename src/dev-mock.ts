@@ -98,6 +98,10 @@ mockIPC(
       }
       case "get_icon":
         return null;
+      case "volume_get":
+      case "volume_set":
+      case "volume_toggle_mute":
+        return { level: 60, muted: false };
       case "plugin:app|version":
         return "dev";
       default:

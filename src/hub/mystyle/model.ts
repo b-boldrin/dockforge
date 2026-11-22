@@ -1,11 +1,15 @@
 // The MyStyle bar as plain data and the pure functions that change it. No Svelte in here: the
 // editor (editor.svelte.ts) owns the state, this file only says what each change means.
 
-import type { BarElement, IconsElement, Zone } from "../../lib/types";
+import type { AudioElement, BarElement, ClockElement, IconsElement, PowerAction, PowerElement, SystemElement, SystemItem, Zone } from "../../lib/types";
 
 export const ZONES: Zone[] = ["start", "center", "end"];
 export const ZONE_LABEL: Record<Zone, string> = { start: "Início", center: "Meio", end: "Fim" };
 export const SOURCE_LABEL: Record<IconsElement["source"], string> = { all: "Todos", pinned: "Favoritos", open: "Abertos" };
+export const POWER_LABEL: Record<PowerAction, string> = { shutdown: "Desligar", restart: "Reiniciar", sleep: "Suspender", lock: "Bloquear", logout: "Sair da conta" };
+export const POWER_ACTIONS = Object.keys(POWER_LABEL) as PowerAction[];
+export const SYSTEM_LABEL: Record<SystemItem, string> = { wifi: "Wi-Fi", sound: "Som", bluetooth: "Bluetooth" };
+export const SYSTEM_ITEMS = Object.keys(SYSTEM_LABEL) as SystemItem[];
 /** Same cap as the Rust side (MAX_ELEMENTS in settings.rs). */
 export const MAX_ELEMENTS = 16;
 
@@ -21,8 +25,28 @@ export interface KindInfo {
   /** Name shown in the layers list. */
   name: (el: BarElement) => string;
 }
-export const KINDS: Record<BarElement["kind"], KindInfo> = {
-  icons: { label: "Ícones", name: (el) => `Ícones · ${SOURCE_LABEL[el.source]}` },
+export type Kind = BarElement["kind"];
+export const KINDS: Record<Kind, KindInfo> = {
+  icons: { label: "Ícones", name: (el) => (el.kind === "icons" ? `Ícones · ${SOURCE_LABEL[el.source]}` : "Ícones") },
+  clock: { label: "Data e hora", name: () => "Data e hora" },
+  audio: { label: "Áudio", name: () => "Áudio" },
+  power: { label: "Energia", name: () => "Energia" },
+  system: { label: "Configurações", name: () => "Configurações" },
+};
+
+/** Any change to one element: every property of every kind, all optional. */
+export type ElementPatch = Partial<
+  Omit<IconsElement, "kind"> & Omit<ClockElement, "kind"> & Omit<AudioElement, "kind"> & Omit<PowerElement, "kind"> & Omit<SystemElement, "kind">
+>;
+
+/** The number that sets how big an element is, and its limits: the icon size of a field of
+ *  icons, the height of a module. */
+export const sizeOf = (el: BarElement): number => (el.kind === "icons" ? el.iconSize : el.size);
+export const sizeRange = (el: BarElement): [number, number] => (el.kind === "icons" ? [24, 72] : [16, 48]);
+export const sized = (el: BarElement, n: number): ElementPatch => {
+  const [min, max] = sizeRange(el);
+  const value = Math.round(clamp(n, min, max));
+  return el.kind === "icons" ? { iconSize: value } : { size: value };
 };
 
 export const newId = () => "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -44,6 +68,39 @@ export function newIcons(over: Partial<IconsElement> = {}): IconsElement {
     gap: 8,
     ...over,
   };
+}
+
+const base = (zone: Zone) => ({ id: newId(), zone, free: false, offset: 0, fill: null, opacity: 100, radius: 12, padding: 0, border: null });
+
+export const newClock = (over: Partial<ClockElement> = {}): ClockElement => ({
+  ...base("end"),
+  kind: "clock",
+  size: 32,
+  color: null,
+  show: "both",
+  hour12: false,
+  seconds: false,
+  weekday: false,
+  ...over,
+});
+export const newAudio = (over: Partial<AudioElement> = {}): AudioElement => ({ ...base("end"), kind: "audio", size: 28, color: null, percent: false, slider: false, ...over });
+export const newPower = (over: Partial<PowerElement> = {}): PowerElement => ({ ...base("end"), kind: "power", size: 28, color: null, actions: [...POWER_ACTIONS], ...over });
+export const newSystem = (over: Partial<SystemElement> = {}): SystemElement => ({ ...base("end"), kind: "system", size: 28, color: null, items: [...SYSTEM_ITEMS], opens: "quick", ...over });
+
+/** A new element of a kind, with the kind's own defaults; `zone` is where it goes. */
+export function newElement(kind: Kind, zone: Zone, iconSize: number): BarElement {
+  switch (kind) {
+    case "icons":
+      return newIcons({ zone, iconSize });
+    case "clock":
+      return newClock({ zone });
+    case "audio":
+      return newAudio({ zone });
+    case "power":
+      return newPower({ zone });
+    case "system":
+      return newSystem({ zone });
+  }
 }
 
 /** What a new bar starts with: the favorites, then what is open, both at the start. */

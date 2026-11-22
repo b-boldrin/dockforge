@@ -5,7 +5,7 @@
   import { previewApps } from "../store.svelte.js";
   import { editor } from "./editor.svelte";
   import { drag, dropLine, startDrag } from "./dnd.svelte";
-  import { KINDS, clamp } from "./model";
+  import { KINDS, clamp, sizeOf } from "./model";
 
   // The middle: a pan and zoom canvas with the bar on a wallpapered desktop. The bar is the real
   // Dock component rendered from the draft (not interactive), so what is seen here is what the
@@ -79,6 +79,17 @@
     } else {
       startDrag(e, { label, dim: field, onDrop: (drop) => drop && editor.move(el.id, drop) });
     }
+  }
+  // The corner squares: drag to make the selected element (or, on the bar, every element)
+  // bigger or smaller. Outward grows, inward shrinks; the size is the icon size or the module's height.
+  function resizeStart(e: PointerEvent, sx: number, sy: number) {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const id = editor.selected;
+    const from = Object.fromEntries(editor.elements.map((el) => [el.id, sizeOf(el)]));
+    const k = scale();
+    startDrag(e, { label: "Tamanho", onMove: (dx, dy) => editor.resize(id, (sx * dx + sy * dy) / 2 / k, from, `drag:size:${id}`) });
   }
   function move(e: PointerEvent) {
     if (panFrom) editor.pan = { x: panFrom.px + e.clientX - panFrom.x, y: panFrom.py + e.clientY - panFrom.y };
@@ -162,7 +173,16 @@
 
     {#if box}
       <div class="ms-sel" style:left="{box.x}px" style:top="{box.y}px" style:width="{box.w}px" style:height="{box.h}px" style:--z={1 / editor.zoom}>
-        <i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i>
+        {#if editor.elements.length}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <i class="h tl" title="Arraste para redimensionar" onpointerdown={(e) => resizeStart(e, -1, -1)}></i>
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <i class="h tr" title="Arraste para redimensionar" onpointerdown={(e) => resizeStart(e, 1, -1)}></i>
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <i class="h bl" title="Arraste para redimensionar" onpointerdown={(e) => resizeStart(e, -1, 1)}></i>
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <i class="h br" title="Arraste para redimensionar" onpointerdown={(e) => resizeStart(e, 1, 1)}></i>
+        {/if}
         <span class="ms-sel-l">{selectedName}</span>
       </div>
     {/if}

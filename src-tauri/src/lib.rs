@@ -9,6 +9,7 @@
 //! - `taskbar`:  reads the apps pinned to the Windows taskbar
 //! - this file:  Tauri commands, the windows, the tray menu and the background watchers
 
+mod controls;
 mod dock;
 mod model;
 mod platform;
@@ -478,9 +479,70 @@ fn show_dock_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppSta
     state.menu_open.store(false, Ordering::Relaxed);
     result
 }
+// ---------------------------------------------------------------------------
+// Modules of a MyStyle bar: sound, power menu and Windows settings pages
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+fn volume_get() -> Result<controls::Volume, String> {
+    controls::volume()
+}
+
+#[tauri::command]
+fn volume_set(level: u8) -> Result<controls::Volume, String> {
+    controls::set_volume(level)?;
+    controls::volume()
+}
+
+#[tauri::command]
+fn volume_toggle_mute() -> Result<controls::Volume, String> {
+    let now = controls::volume()?;
+    controls::set_mute(!now.muted)?;
+    controls::volume()
+}
+
+/// Opens the quick settings panel or one of the Windows settings pages.
+#[tauri::command]
+fn open_system(target: String) -> Result<(), String> {
+    controls::open_target(&target)
+}
+
+/// The power menu: a native menu at the pointer, so choosing an entry is the confirmation.
+#[tauri::command]
+fn show_power_menu(app: AppHandle, window: tauri::Window, state: State<'_, AppState>, actions: Vec<String>) -> Result<(), String> {
+    let lang = state.settings().language;
+    let label = |action: &str| match action {
+        "shutdown" => tr(&lang, "Desligar", "Shut down"),
+        "restart" => tr(&lang, "Reiniciar", "Restart"),
+        "sleep" => tr(&lang, "Suspender", "Sleep"),
+        "lock" => tr(&lang, "Bloquear", "Lock"),
+        _ => tr(&lang, "Sair da conta", "Sign out"),
+    };
+    let mut items: Vec<MenuItem<Wry>> = Vec::new();
+    for action in actions.iter().filter(|a| controls::POWER_ACTIONS.contains(&a.as_str())) {
+        items.push(MenuItem::with_id(&app, format!("pwr-{action}"), label(action), true, None::<&str>).map_err(|e| e.to_string())?);
+    }
+    if items.is_empty() {
+        return Ok(());
+    }
+    let refs: Vec<&dyn IsMenuItem<Wry>> = items.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();
+    let menu = Menu::with_items(&app, &refs).map_err(|e| e.to_string())?;
+
+    state.menu_open.store(true, Ordering::Relaxed);
+    let result = menu.popup(window).map_err(|e| e.to_string());
+    state.menu_open.store(false, Ordering::Relaxed);
+    result
+}
+
 
 fn on_context_menu(app: &AppHandle, event: MenuEvent) {
     let id = event.id().as_ref().to_string();
+    if let Some(action) = id.strip_prefix("pwr-") {
+        if let Err(err) = controls::power_action(action) {
+            eprintln!("[dockforge] power action {action} failed: {err}");
+        }
+        return;
+    }
     if !id.starts_with("ctx-") {
         return;
     }
@@ -979,6 +1041,11 @@ pub fn run() {
             open_settings,
             show_app_menu,
             show_dock_menu,
+            volume_get,
+            volume_set,
+            volume_toggle_mute,
+            open_system,
+            show_power_menu,
             load_theme,
             open_themes_folder,
             open_link,

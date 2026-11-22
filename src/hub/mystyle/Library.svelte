@@ -2,23 +2,23 @@
   import Ic from "./Ic.svelte";
   import { editor } from "./editor.svelte";
   import { drag, startDrag } from "./dnd.svelte";
-  import { KINDS, ZONE_LABEL, visualOrder, MAX_ELEMENTS } from "./model";
+  import { KINDS, ZONE_LABEL, visualOrder, MAX_ELEMENTS, type Kind } from "./model";
   import type { Zone } from "../../lib/types";
 
   // The left panel: what can be put on the bar, and the layers (the bar and its elements).
 
   interface Tile {
-    id: string;
+    id: Kind;
     label: string;
     hint: string;
     icon: string;
-    ready: boolean;
   }
   const TILES: Tile[] = [
-    { id: "icons", label: KINDS.icons.label, hint: "Favoritos e apps abertos", icon: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z", ready: true },
-    { id: "clock", label: "Data e hora", hint: "Relógio e calendário", icon: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2", ready: false },
-    { id: "audio", label: "Áudio", hint: "Volume e saída de som", icon: "M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6", ready: false },
-    { id: "power", label: "Energia", hint: "Desligar, reiniciar, suspender", icon: "M12 3v8M7 6.5a7 7 0 1 0 10 0", ready: false },
+    { id: "icons", label: KINDS.icons.label, hint: "Favoritos e apps abertos", icon: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
+    { id: "clock", label: KINDS.clock.label, hint: "Hora e dia", icon: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2" },
+    { id: "audio", label: KINDS.audio.label, hint: "Volume do som", icon: "M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6" },
+    { id: "power", label: KINDS.power.label, hint: "Desligar, reiniciar, suspender", icon: "M12 3v8M7 6.5a7 7 0 1 0 10 0" },
+    { id: "system", label: KINDS.system.label, hint: "Wi-Fi, som e Bluetooth", icon: "M5 12.5a10 10 0 0 1 14 0M8 15.5a6 6 0 0 1 8 0M12 19h.01" },
   ];
 
   let query = $state("");
@@ -34,8 +34,8 @@
   const full = $derived(editor.elements.length >= MAX_ELEMENTS);
 
   function press(e: PointerEvent, tile: Tile) {
-    if (!tile.ready || e.button !== 0) return;
-    startDrag(e, { label: tile.label, onDrop: (drop) => drop && editor.addIcons(drop), onClick: () => editor.addIcons() });
+    if (e.button !== 0) return;
+    startDrag(e, { label: tile.label, onDrop: (drop) => drop && editor.add(tile.id, drop), onClick: () => editor.add(tile.id) });
   }
   function layerPress(e: PointerEvent, id: string, label: string) {
     if (e.button !== 0) return;
@@ -65,16 +65,14 @@
           {#each shown as tile (tile.id)}
             <button
               class="ms-tile"
-              class:soon={!tile.ready}
-              disabled={!tile.ready || full}
-              title={tile.ready ? (full ? `No máximo ${MAX_ELEMENTS} elementos` : "Clique ou arraste para a barra") : "Em breve"}
+              disabled={full}
+              title={full ? `No máximo ${MAX_ELEMENTS} elementos` : "Clique ou arraste para a barra"}
               onpointerdown={(e) => press(e, tile)}
-              onkeydown={(e) => (e.key === "Enter" || e.key === " ") && tile.ready && (e.preventDefault(), editor.addIcons())}
+              onkeydown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), editor.add(tile.id))}
             >
               <span class="ms-tile-ic"><Ic d={tile.icon} size={20} /></span>
               <span class="ms-tile-t">{tile.label}</span>
               <span class="ms-tile-s">{tile.hint}</span>
-              {#if !tile.ready}<span class="ms-badge">Em breve</span>{/if}
             </button>
           {/each}
         </div>
@@ -102,13 +100,13 @@
             onpointerdown={(e) => layerPress(e, el.id, KINDS[el.kind].name(el))}
             onkeydown={(e) => e.key === "Enter" && editor.select(el.id)}
           >
-            <Ic d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" size={14} />
+            <Ic d={TILES.find((t) => t.id === el.kind)?.icon ?? ""} size={14} />
             <span class="ms-layer-n">{KINDS[el.kind].name(el)}</span>
             <span class="ms-layer-z">{el.free ? "Livre · " : ""}{ZONE_LABEL[el.zone]}</span>
           </button>
         {/each}
         {#if rows.length === 0}
-          <p class="ms-hint">Sem elementos: a barra usa o modelo clássico. Adicione Ícones para montar a sua.</p>
+          <p class="ms-hint">Sem elementos: a barra usa o modelo clássico. Adicione elementos para montar a sua.</p>
         {/if}
       </div>
     </section>

@@ -14,6 +14,7 @@
   --df-indicator-offset: 2px;
   --df-tooltip-bg: #ffffe1;
   --df-tooltip-color: #000000;
+  --df-fg: #000000;
   --df-separator-color: #808080;
   --df-font: Tahoma, "MS Sans Serif", "Segoe UI", sans-serif;
   --raised: inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf;

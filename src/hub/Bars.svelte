@@ -12,7 +12,7 @@
   function card(bar: SavedBar): Settings {
     const merged = { ...s, elements: null, ...bar.look } as Settings;
     // Half size, elements included: each one carries its own icon size.
-    const elements = merged.elements?.map((el) => ({ ...el, iconSize: Math.round(el.iconSize * 0.5), gap: Math.round(el.gap * 0.5) })) ?? null;
+    const elements = merged.elements?.map((el) => (el.kind === "icons" ? { ...el, iconSize: Math.round(el.iconSize * 0.5), gap: Math.round(el.gap * 0.5) } : { ...el, size: Math.round(el.size * 0.5) })) ?? null;
     return { ...merged, elements, iconSize: Math.round((merged.iconSize ?? 44) * 0.5) };
   }
   const inUse = (bar: SavedBar) => sameLook(bar.look, lookOf(s));

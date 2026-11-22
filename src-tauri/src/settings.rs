@@ -5,6 +5,7 @@
 //! words before anything is saved or applied.
 
 use serde::{Deserialize, Deserializer, Serialize};
+use crate::controls;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -80,12 +81,97 @@ impl Default for IconsElement {
     }
 }
 
-/// One thing on a custom bar. A new kind (clock, volume…) is a new variant here and in
-/// `BarElement` of `src/lib/types.ts`.
+/// Date and time.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ClockElement {
+    #[serde(flatten)]
+    pub base: ElementBase,
+    /// px, 16..=48: the height of the module.
+    pub size: f64,
+    /// Text color; `None` = the theme's.
+    pub color: Option<String>,
+    /// "time" | "date" | "both".
+    pub show: String,
+    pub hour12: bool,
+    pub seconds: bool,
+    pub weekday: bool,
+}
+
+impl Default for ClockElement {
+    fn default() -> Self {
+        Self { base: ElementBase::default(), size: 32.0, color: None, show: "both".into(), hour12: false, seconds: false, weekday: false }
+    }
+}
+
+/// The system volume: a speaker, optionally the number and a slider.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct AudioElement {
+    #[serde(flatten)]
+    pub base: ElementBase,
+    pub size: f64,
+    pub color: Option<String>,
+    pub percent: bool,
+    pub slider: bool,
+}
+
+impl Default for AudioElement {
+    fn default() -> Self {
+        Self { base: ElementBase::default(), size: 28.0, color: None, percent: false, slider: false }
+    }
+}
+
+/// A button that opens the power menu (shut down, restart, sleep...).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct PowerElement {
+    #[serde(flatten)]
+    pub base: ElementBase,
+    pub size: f64,
+    pub color: Option<String>,
+    /// Which entries the menu has, in this order (see `controls::POWER_ACTIONS`).
+    pub actions: Vec<String>,
+}
+
+impl Default for PowerElement {
+    fn default() -> Self {
+        Self { base: ElementBase::default(), size: 28.0, color: None, actions: controls::POWER_ACTIONS.iter().map(|a| a.to_string()).collect() }
+    }
+}
+
+/// The Windows status icons (Wi-Fi, sound, Bluetooth) as one button that opens the panel.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct SystemElement {
+    #[serde(flatten)]
+    pub base: ElementBase,
+    pub size: f64,
+    pub color: Option<String>,
+    /// "wifi" | "sound" | "bluetooth", in this order.
+    pub items: Vec<String>,
+    /// "quick" (the quick settings panel) | "settings" (the Settings app).
+    pub opens: String,
+}
+
+impl Default for SystemElement {
+    fn default() -> Self {
+        Self { base: ElementBase::default(), size: 28.0, color: None, items: SYSTEM_ITEMS.iter().map(|a| a.to_string()).collect(), opens: "quick".into() }
+    }
+}
+
+const SYSTEM_ITEMS: [&str; 3] = ["wifi", "sound", "bluetooth"];
+
+/// One thing on a custom bar. A new kind is a new variant here and in `BarElement` of
+/// `src/lib/types.ts`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum BarElement {
     Icons(IconsElement),
+    Clock(ClockElement),
+    Audio(AudioElement),
+    Power(PowerElement),
+    System(SystemElement),
 }
 
 /// Reads the elements one by one: an entry this version does not know (a newer kind, a broken
@@ -270,34 +356,84 @@ fn clamp_px(value: f64, min: f64, max: f64, fallback: f64) -> f64 {
 fn sanitize_elements(elements: &[BarElement]) -> Vec<BarElement> {
     let mut seen: Vec<String> = Vec::new();
     let mut out: Vec<BarElement> = Vec::new();
-    for BarElement::Icons(el) in elements {
-        let id = el.base.id.trim();
+    for el in elements {
+        let raw = match el {
+            BarElement::Icons(e) => &e.base,
+            BarElement::Clock(e) => &e.base,
+            BarElement::Audio(e) => &e.base,
+            BarElement::Power(e) => &e.base,
+            BarElement::System(e) => &e.base,
+        };
+        let id = raw.id.trim();
         if id.is_empty() || id.len() > 24 || !id.is_ascii() || seen.iter().any(|s| s == id) {
             continue;
         }
         seen.push(id.to_string());
         let base = ElementBase {
             id: id.to_string(),
-            zone: one_of(&el.base.zone, &["start", "center", "end"], "start"),
-            free: el.base.free,
-            offset: clamp_px(el.base.offset, 0.0, 4000.0, 0.0),
-            fill: el.base.fill.clone().filter(|c| is_hex_color(c)),
-            opacity: clamp_px(el.base.opacity, 0.0, 100.0, 100.0),
-            radius: clamp_px(el.base.radius, 0.0, 40.0, 12.0),
-            padding: clamp_px(el.base.padding, 0.0, 24.0, 0.0),
-            border: el.base.border.clone().filter(|c| is_hex_color(c)),
+            zone: one_of(&raw.zone, &["start", "center", "end"], "start"),
+            free: raw.free,
+            offset: clamp_px(raw.offset, 0.0, 4000.0, 0.0),
+            fill: raw.fill.clone().filter(|c| is_hex_color(c)),
+            opacity: clamp_px(raw.opacity, 0.0, 100.0, 100.0),
+            radius: clamp_px(raw.radius, 0.0, 40.0, 12.0),
+            padding: clamp_px(raw.padding, 0.0, 24.0, 0.0),
+            border: raw.border.clone().filter(|c| is_hex_color(c)),
         };
-        out.push(BarElement::Icons(IconsElement {
-            base,
-            source: one_of(&el.source, &["all", "pinned", "open"], "all"),
-            icon_size: clamp_px(el.icon_size, 24.0, 72.0, 48.0),
-            gap: clamp_px(el.gap, 0.0, 24.0, 8.0),
-        }));
+        let size = |v: f64, fallback: f64| clamp_px(v, 16.0, 48.0, fallback);
+        let color = |c: &Option<String>| c.clone().filter(|c| is_hex_color(c));
+        out.push(match el {
+            BarElement::Icons(e) => BarElement::Icons(IconsElement {
+                base,
+                source: one_of(&e.source, &["all", "pinned", "open"], "all"),
+                icon_size: clamp_px(e.icon_size, 24.0, 72.0, 48.0),
+                gap: clamp_px(e.gap, 0.0, 24.0, 8.0),
+            }),
+            BarElement::Clock(e) => BarElement::Clock(ClockElement {
+                base,
+                size: size(e.size, 32.0),
+                color: color(&e.color),
+                show: one_of(&e.show, &["time", "date", "both"], "both"),
+                hour12: e.hour12,
+                seconds: e.seconds,
+                weekday: e.weekday,
+            }),
+            BarElement::Audio(e) => BarElement::Audio(AudioElement { base, size: size(e.size, 28.0), color: color(&e.color), percent: e.percent, slider: e.slider }),
+            BarElement::Power(e) => BarElement::Power(PowerElement {
+                base,
+                size: size(e.size, 28.0),
+                color: color(&e.color),
+                actions: pick_all(&e.actions, &controls::POWER_ACTIONS),
+            }),
+            BarElement::System(e) => BarElement::System(SystemElement {
+                base,
+                size: size(e.size, 28.0),
+                color: color(&e.color),
+                items: pick_all(&e.items, &SYSTEM_ITEMS),
+                opens: one_of(&e.opens, &["quick", "settings"], "quick"),
+            }),
+        });
         if out.len() == MAX_ELEMENTS {
             break;
         }
     }
     out
+}
+
+/// The entries of `wanted` that are allowed, once each and in the order given; all of them
+/// when none is left, because an empty menu or an empty cluster would be a dead button.
+fn pick_all(wanted: &[String], allowed: &[&str]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for w in wanted {
+        if allowed.contains(&w.as_str()) && !out.contains(w) {
+            out.push(w.clone());
+        }
+    }
+    if out.is_empty() {
+        allowed.iter().map(|a| a.to_string()).collect()
+    } else {
+        out
+    }
 }
 
 impl Settings {
@@ -583,20 +719,20 @@ mod tests {
             {"kind":"icons","id":"a","zone":"end"},
             {"kind":"icons","id":"","zone":"end"},
             {"kind":"icons","id":"não-ascii"},
-            {"kind":"clock","id":"future"},
+            {"kind":"weather","id":"future"},
             {"kind":"icons","id":"b","zone":"end","iconSize":40.4,"source":"open"}
         ]}"##;
         let s: Settings = serde_json::from_str(raw).unwrap();
-        // The clock this version does not know is dropped on load; the rest is kept.
+        // The weather this version does not know is dropped on load; the rest is kept.
         assert_eq!(s.elements.as_ref().unwrap().len(), 5);
         let els = s.sanitized().elements.unwrap();
         assert_eq!(els.len(), 2);
-        let BarElement::Icons(a) = &els[0];
+        let BarElement::Icons(a) = &els[0] else { panic!("icons") };
         assert_eq!((a.base.zone.as_str(), a.base.free, a.base.offset), ("start", true, 0.0));
         assert_eq!((a.base.fill.as_deref(), a.base.border.as_deref()), (Some("#112233"), None));
         assert_eq!((a.base.opacity, a.base.radius, a.base.padding), (100.0, 40.0, 24.0));
         assert_eq!((a.source.as_str(), a.icon_size, a.gap), ("all", 72.0, 24.0));
-        let BarElement::Icons(b) = &els[1];
+        let BarElement::Icons(b) = &els[1] else { panic!("icons") };
         assert_eq!((b.base.zone.as_str(), b.source.as_str(), b.icon_size), ("end", "open", 40.0));
 
         // At most 16, and a file without the field is the classic dock.
@@ -610,5 +746,28 @@ mod tests {
         assert!(json.contains(r#""kind":"icons""#) && json.contains(r#""iconSize":48.0"#), "{json}");
         let back: Settings = serde_json::from_str(&json).unwrap();
         assert_eq!(back.elements.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn modules_are_clamped_and_default_to_something_useful() {
+        let raw = r##"{"elements":[
+            {"kind":"clock","id":"c","show":"weird","size":900,"color":"red","seconds":true},
+            {"kind":"audio","id":"a","size":1,"slider":true,"color":"#abcdef"},
+            {"kind":"power","id":"p","actions":["lock","nope","lock","shutdown"]},
+            {"kind":"power","id":"q","actions":["nope"]},
+            {"kind":"system","id":"s","items":["bluetooth","wifi"],"opens":"elsewhere"}
+        ]}"##;
+        let els = serde_json::from_str::<Settings>(raw).unwrap().sanitized().elements.unwrap();
+        assert_eq!(els.len(), 5);
+        let BarElement::Clock(c) = &els[0] else { panic!("clock") };
+        assert_eq!((c.show.as_str(), c.size, c.color.as_deref(), c.seconds), ("both", 48.0, None, true));
+        let BarElement::Audio(a) = &els[1] else { panic!("audio") };
+        assert_eq!((a.size, a.color.as_deref(), a.slider), (16.0, Some("#abcdef"), true));
+        let BarElement::Power(p) = &els[2] else { panic!("power") };
+        assert_eq!(p.actions, ["lock", "shutdown"]);
+        let BarElement::Power(q) = &els[3] else { panic!("power") };
+        assert_eq!(q.actions.len(), controls::POWER_ACTIONS.len());
+        let BarElement::System(s) = &els[4] else { panic!("system") };
+        assert_eq!((s.items.as_slice(), s.opens.as_str()), (&["bluetooth".to_string(), "wifi".to_string()][..], "quick"));
     }
 }
