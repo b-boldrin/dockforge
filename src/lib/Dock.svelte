@@ -3,6 +3,7 @@
   import { motionOff } from "./motion";
   import type { AppEntry, BarElement, AudioElement, ClockElement, IconsElement, PowerElement, Settings, StartElement, SystemElement, Zone } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
+  import { START } from "./glyphs";
 
   let {
     apps,
@@ -97,7 +98,6 @@
     wifi: "M2.5 9a15 15 0 0 1 19 0M5.5 12.5a10 10 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
     bluetooth: "M7 7l10 10-5 4V3l5 4L7 17",
     muted: "M4 10v4h4l5 4V6L8 10zM16 9l5 6M21 9l-5 6",
-    start: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   };
   /** The speaker with as many waves as the volume has. */
   const speaker = (level: number, muted: boolean) =>
@@ -368,8 +368,8 @@
 {/snippet}
 
 <!-- One element of a MyStyle bar. A new kind of element is a new branch here. -->
-{#snippet glyph(d: string)}
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path {d} /></svg>
+{#snippet glyph(d: string, filled = false)}
+  <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke={filled ? "none" : "currentColor"} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path {d} /></svg>
 {/snippet}
 
 {#snippet field(el: BarElement)}
@@ -399,7 +399,7 @@
       {/if}
     {:else if el.kind === "start"}
       <button class="df-tool" tabindex={interactive ? 0 : -1} title={en ? "Start" : "Iniciar"} aria-label={en ? "Start" : "Iniciar"} onclick={() => openStart(el)}>
-        {@render glyph(GLYPH.start)}
+        {@render glyph(START, true)}
       </button>
     {:else if el.kind === "clock"}
       <span class="df-clock" class:df-clock--both={el.show === "both"} style:height="{el.size}px" style:font-size="{el.size * (el.show === "both" ? 0.4 : 0.55)}px">

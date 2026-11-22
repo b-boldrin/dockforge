@@ -1,5 +1,6 @@
 <script lang="ts">
-  import Ic from "./Ic.svelte";
+  import Ic, { type Part } from "./Ic.svelte";
+  import { BLUETOOTH, POWER, SPEAKER, START, WIFI } from "../../lib/glyphs";
   import { editor } from "./editor.svelte";
   import { drag, startDrag } from "./dnd.svelte";
   import { KINDS, ZONE_LABEL, visualOrder, MAX_ELEMENTS, type Kind } from "./model";
@@ -8,18 +9,20 @@
   // The left panel: what can be put on the bar, as blocks of icons (the name is the tooltip),
   // and the layers (the bar and its elements).
 
-  /** One drawing per kind: the tile, and the row in the layers. */
-  const GLYPH: Record<Kind, string> = {
-    icons: "M4 7h4v4H4zM10 7h4v4h-4zM16 7h4v4h-4zM3 16h18",
-    start: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
-    clock: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2",
-    audio: "M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6",
-    power: "M12 3v8M7 6.5a7 7 0 1 0 10 0",
-    system: "M5 12.5a10 10 0 0 1 14 0M8 15.5a6 6 0 0 1 8 0M12 19h.01",
+  /** One drawing per kind: the tile, and the row in the layers. Settings shows the three
+   *  status icons it holds (Wi-Fi, sound, Bluetooth) side by side, as on the bar. */
+  const GLYPH: Record<Kind, Part[]> = {
+    start: [{ d: START, fill: true }],
+    icons: [{ d: "M4 7h4v4H4zM10 7h4v4h-4zM16 7h4v4h-4zM3 16h18" }],
+    clock: [{ d: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2" }],
+    audio: [{ d: SPEAKER }],
+    power: [{ d: POWER }],
+    system: [{ d: WIFI }, { d: SPEAKER }, { d: BLUETOOTH }],
   };
   const BLOCKS: Array<{ name: string; kinds: Kind[] }> = [
     { name: "Apps", kinds: ["start", "icons"] },
-    { name: "Sistema", kinds: ["clock", "audio", "power", "system"] },
+    { name: "Sistema", kinds: ["clock", "audio", "power"] },
+    { name: "Geral", kinds: ["system"] },
   ];
 
   let query = $state("");
@@ -47,6 +50,15 @@
     drag.on && drag.drop?.before === null && drag.drop.zone === zone && rows.map((r) => r.zone).lastIndexOf(zone as Zone) === i;
 </script>
 
+<!-- A kind with several drawings shows them side by side, smaller. -->
+{#snippet glyph(kind: Kind, size: number, small: number)}
+  {#if GLYPH[kind].length > 1}
+    <span class="ms-glyph-row">{#each GLYPH[kind] as part, i (i)}<Ic d={part.d} size={small} />{/each}</span>
+  {:else}
+    <Ic parts={GLYPH[kind]} {size} />
+  {/if}
+{/snippet}
+
 <aside class="ms-left" aria-label="Elementos e camadas">
   <div class="ms-search">
     <Ic d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" size={14} />
@@ -67,7 +79,7 @@
               onpointerdown={(e) => press(e, kind)}
               onkeydown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), editor.add(kind))}
             >
-              <span class="ms-tile-ic"><Ic d={GLYPH[kind]} size={20} /></span>
+              <span class="ms-tile-ic">{@render glyph(kind, 20, 13)}</span>
             </button>
           {/each}
         </div>
@@ -95,7 +107,7 @@
             onpointerdown={(e) => layerPress(e, el.id, KINDS[el.kind].name(el))}
             onkeydown={(e) => e.key === "Enter" && editor.select(el.id)}
           >
-            <Ic d={GLYPH[el.kind]} size={14} />
+            {@render glyph(el.kind, 14, 10)}
             <span class="ms-layer-n">{KINDS[el.kind].name(el)}</span>
             <span class="ms-layer-z">{el.free ? "Livre · " : ""}{ZONE_LABEL[el.zone]}</span>
           </button>

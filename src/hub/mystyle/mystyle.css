@@ -129,6 +129,7 @@
 .ms-tile:disabled { opacity: 0.5; }
 .ms-tile-ic { display: grid; place-items: center; color: var(--text-2); }
 .ms-tile:hover:not(:disabled) .ms-tile-ic { color: var(--ms-sel); }
+.ms-glyph-row { display: inline-flex; align-items: center; gap: 1px; }
 .ms-hint { margin: 6px 2px; font-size: 11.5px; line-height: 1.45; color: var(--text-3); }
 
 .ms-layers { display: flex; flex-direction: column; gap: 1px; }
