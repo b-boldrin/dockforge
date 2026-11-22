@@ -90,8 +90,14 @@
       </button>
       {/if}
       <div class="brand">
-        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" class="brand-bg"></rect><rect x="4" y="12" width="12" height="4" rx="2" class="brand-dock"></rect></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="1" y="1" width="22" height="22" rx="4" class="brand-seal"></rect>
+          <!-- The hammer, tilted over the anvil, and the anvil with its horn to the left. -->
+          <path class="brand-mark" d="M13.2 4.2l3.6-1.4 1 2.6-3.6 1.4zM15.1 6.6l1.2-.5 1.6 4.2-1.2.5z" />
+          <path class="brand-mark" d="M4 11.5h14v1.2c0 1.4-1.2 2.3-3 2.3h-1.6v2.2l2.4 2.1v1.2H8.2v-1.2l2.4-2.1V15H9.2C6.2 15 4 13.6 4 11.5z" />
+        </svg>
         <span>DockForge</span>
+        <span class="brand-kanji" title="Kaji: ferreiro">鍛冶</span>
       </div>
       <nav aria-label="Seções" class="tabs">
         {#each tabs as [id, label] (id)}

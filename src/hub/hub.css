@@ -2,52 +2,54 @@
 @import "@fontsource/instrument-serif/latin-400.css";
 @import "../lib/base.css";
 
-/* Settings window. Near-black neutral surfaces with hairlines, so the docks and their
-   wallpapers carry the color. Christmas lives in the accents: ice for what is selected,
-   holly red for the one festive mark, and the snowy night in the hero. */
-/* The settings window has two looks. Light is the default: white, with Christmas red for
-   what can be acted on. Dark keeps near-black surfaces with the same red. */
+/* The settings window: a swordsmith's forge, samurai white and red. Washi paper for the
+   surfaces, sumi ink for the text and the lines, and one vermilion red (shu, the color of a
+   hanko seal) for what can be acted on and for the forge itself. Ember orange only in the
+   sparks. Dark is the smithy at night: soot-black surfaces, the same red, a warmer ember. */
 :root {
-  --bg: #ffffff;
-  --panel: #fafaf9;
-  --raised: #f3f2f1;
-  --raised-2: #e8e6e4;
-  --text: #1a1a1e;
-  --text-2: #55555c;
-  --text-3: #6b6b72;
-  --accent: #c8102e;
-  --accent-hover: #a50d26;
+  --bg: #fbf9f4;
+  --panel: #f5f1e8;
+  --raised: #eee9de;
+  --raised-2: #e4ddcf;
+  --text: #1c1917;
+  --text-2: #55504a;
+  --text-3: #6f6962;
+  --accent: #c41e3a;
+  --accent-hover: #a3172f;
   --on-accent: #ffffff;
-  --holly: #c8102e;
-  --line: rgba(0, 0, 0, 0.07);
-  --line-2: rgba(0, 0, 0, 0.12);
+  /* The seal red, and the glow of hot steel. */
+  --shu: #c41e3a;
+  --ember: #f26b1d;
+  --line: rgba(28, 25, 23, 0.08);
+  --line-2: rgba(28, 25, 23, 0.14);
   --coral: #b4232f;
-  --error-bg: #fdecee;
-  --hover: rgba(0, 0, 0, 0.04);
-  --hover-2: rgba(0, 0, 0, 0.07);
-  --hover-faint: rgba(0, 0, 0, 0.025);
-  --edge: rgba(0, 0, 0, 0.16);
-  --edge-2: rgba(0, 0, 0, 0.28);
-  --scroll: rgba(0, 0, 0, 0.14);
-  --scroll-2: rgba(0, 0, 0, 0.28);
-  --pri-bg: #c8102e;
+  --error-bg: #fbe9e9;
+  --hover: rgba(28, 25, 23, 0.045);
+  --hover-2: rgba(28, 25, 23, 0.08);
+  --hover-faint: rgba(28, 25, 23, 0.025);
+  --edge: rgba(28, 25, 23, 0.18);
+  --edge-2: rgba(28, 25, 23, 0.3);
+  --scroll: rgba(28, 25, 23, 0.16);
+  --scroll-2: rgba(28, 25, 23, 0.3);
+  --pri-bg: #c41e3a;
   --pri-fg: #ffffff;
-  --grid-dot: #d5d2cf;
+  --grid-dot: #d8d1c4;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: light;
 }
 :root[data-hub="dark"] {
-  --bg: #121215;
-  --panel: #17171b;
-  --raised: #1f1f24;
-  --raised-2: #2a2a31;
-  --text: #f1f1f3;
-  --text-2: #a7a7b0;
-  --text-3: #8a8a94;
-  --accent: #e5484d;
-  --accent-hover: #ff6b70;
+  --bg: #141111;
+  --panel: #1a1615;
+  --raised: #231e1c;
+  --raised-2: #2e2725;
+  --text: #f4efe8;
+  --text-2: #b0a79e;
+  --text-3: #918880;
+  --accent: #e2423f;
+  --accent-hover: #ff6461;
   --on-accent: #ffffff;
-  --holly: #e5484d;
+  --shu: #e2423f;
+  --ember: #ff8a3d;
   --line: rgba(255, 255, 255, 0.07);
   --line-2: rgba(255, 255, 255, 0.12);
   --coral: #ff9c96;
@@ -87,13 +89,18 @@ h1, h2, h3 { margin: 0; }
 
 .hub { height: 100vh; display: flex; flex-direction: column; }
 
+/* A thin red line along the top, like the seal on a woodblock print. */
 .top {
-  height: 48px; flex: none; display: flex; align-items: center; gap: 28px;
+  height: 50px; flex: none; display: flex; align-items: center; gap: 28px;
   padding: 0 20px;
+  border-top: 3px solid var(--shu);
 }
-.brand { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
-.brand-bg { fill: var(--raised-2); }
-.brand-dock { fill: var(--accent); }
+.brand { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
+/* The logo is a hanko seal: a red square, slightly turned, with the anvil and hammer in white. */
+.brand-seal { fill: var(--shu); }
+.brand-mark { fill: #fff; }
+.brand svg { rotate: -4deg; filter: drop-shadow(0 1px 1px rgba(28, 25, 23, 0.2)); }
+.brand-kanji { margin-left: -3px; font-size: 11px; font-weight: 500; color: var(--shu); font-family: "Yu Mincho", "MS Mincho", serif; }
 .tabs { display: flex; gap: 4px; flex: 1; }
 .tab {
   display: inline-flex; align-items: center; gap: 7px;
@@ -287,8 +294,8 @@ select {
   background: linear-gradient(90deg, rgba(8, 9, 10, 0.82), rgba(8, 9, 10, 0.35) 65%, rgba(8, 9, 10, 0));
 }
 .hero-kicker { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d7dadd; }
-/* The one festive mark: a holly berry. */
-.hero-kicker::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--holly); }
+/* A small seal before the kicker. */
+.hero-kicker::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--shu); box-shadow: 0 0 8px var(--ember); }
 .hero-title {
   margin-top: 12px; font-family: "Instrument Serif", Georgia, serif; font-size: 64px; line-height: 1; font-weight: 400;
   letter-spacing: -0.01em;
