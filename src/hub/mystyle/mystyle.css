@@ -3,9 +3,10 @@
 
 .ms {
   --ms-sel: #2f6bff;
-  /* The sides are gray so the canvas, the part that matters, is the lightest thing on screen. */
-  --ms-side: #e6e4e1;
-  --ms-side-2: #dcdad6;
+  --ms-side: var(--bg);
+  --ms-side-2: var(--raised);
+  /* The canvas is a flat gray, so the white panels frame it and the bar stands out on it. */
+  --ms-canvas: #e4e3e0;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -101,7 +102,7 @@
 
 /* ---- left panel -------------------------------------------------------------- */
 .ms-left { width: 240px; flex: none; display: flex; flex-direction: column; min-height: 0; background: var(--ms-side); border-right: 1px solid var(--line-2); }
-.ms-search { display: flex; align-items: center; gap: 6px; margin: 10px 10px 4px; padding: 0 8px; height: 28px; border-radius: 7px; background: var(--bg); color: var(--text-3); box-shadow: inset 0 0 0 1px var(--line); }
+.ms-search { display: flex; align-items: center; gap: 6px; margin: 10px 10px 4px; padding: 0 8px; height: 28px; border-radius: 7px; background: var(--raised); color: var(--text-3); box-shadow: inset 0 0 0 1px var(--line); }
 .ms-search:focus-within { box-shadow: inset 0 0 0 1.5px var(--ms-sel); }
 .ms-search input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font-size: 12.5px; }
 .ms-search input::placeholder { color: var(--text-3); }
@@ -162,8 +163,7 @@
   min-width: 0;
   position: relative;
   overflow: hidden;
-  background-color: var(--bg);
-  background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.2px);
+  background: var(--ms-canvas);
   touch-action: none;
 }
 .ms-canvas.hand { cursor: grab; }
@@ -307,3 +307,5 @@
 :root[data-hub="dark"] .ms-num:focus-within { background: var(--raised); }
 
 :root[data-motion="off"] .ms *, :root[data-motion="off"] .ms *::before, :root[data-motion="off"] .ms *::after { transition: none !important; }
+
+:root[data-hub="dark"] .ms { --ms-canvas: #0b0b0e; }

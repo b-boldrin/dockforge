@@ -154,8 +154,6 @@
   class="ms-canvas"
   class:hand={editor.tool === "hand" || space}
   class:grabbing={panFrom}
-  style:background-size="{22 * editor.zoom}px {22 * editor.zoom}px"
-  style:background-position="{editor.pan.x}px {editor.pan.y}px"
   bind:this={host}
   onpointerdown={down}
   onpointermove={move}
