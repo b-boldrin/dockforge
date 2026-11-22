@@ -18,7 +18,7 @@ mod taskbar;
 mod themes;
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime};
@@ -49,6 +49,8 @@ struct AppState {
     fullscreen: AtomicBool,
     /// True while the dock is slid away because of auto-hide.
     hidden: AtomicBool,
+    /// Counts `fit_dock` calls, so the delayed re-placement of an older one stops when a newer starts.
+    fit_generation: AtomicU64,
     /// The dock's rectangle inside its window (x, y, width, height in CSS pixels).
     hit: Mutex<Option<(f64, f64, f64, f64)>>,
 }
@@ -213,18 +215,6 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
     let scale = monitor.scale_factor();
     let settings = state.settings();
     let edge = settings.position.as_str();
-    let vertical = matches!(edge, "left" | "right");
-    let bar = settings.layout == "bar";
-
-    // The area the dock is placed in: (left, top, right, bottom). It starts as the work
-    // area (the screen minus the Windows taskbar and other toolbars).
-    let work = monitor.work_area();
-    let mut area = (
-        work.position.x,
-        work.position.y,
-        work.position.x + work.size.width as i32,
-        work.position.y + work.size.height as i32,
-    );
 
     let reserve = settings.reserve_space && !settings.auto_hide && settings.layout != "island";
     let strip = match (reserve, thickness, native_handle(&window)) {
@@ -239,6 +229,55 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
             None
         }
     };
+    place_dock(&window, &settings, strip, width, height)?;
+    if !state.fullscreen.load(Ordering::Relaxed) && !window.is_visible().unwrap_or(true) {
+        window.show().map_err(|e| e.to_string())?;
+    }
+
+    // Windows takes a moment to update the work area after the strip is reserved or given
+    // back, and while it does it moves a window that sticks out of the new work area (the
+    // dock's window is taller than its strip, for the hover zoom and the tooltips) back
+    // inside it. Placed once, the dock would end up above its strip with the strip left
+    // empty. So the placement is repeated against the work area as it is by then, until a
+    // newer fit takes over.
+    let generation = state.fit_generation.fetch_add(1, Ordering::SeqCst) + 1;
+    let app = window.app_handle().clone();
+    std::thread::spawn(move || {
+        for pause in [120, 150, 300, 600] {
+            std::thread::sleep(Duration::from_millis(pause));
+            let state = app.state::<AppState>();
+            if state.fit_generation.load(Ordering::SeqCst) != generation {
+                return;
+            }
+            let _ = place_dock(&window, &settings, strip, width, height);
+        }
+    });
+    Ok(())
+}
+
+/// Puts the dock window against its screen edge. `strip` is the strip the dock reserved, if
+/// any. The work area is read every time, so repeating this after Windows has settled gives
+/// the right place even when the first read was out of date.
+fn place_dock(window: &WebviewWindow, settings: &Settings, strip: Option<(i32, i32, i32, i32)>, width: f64, height: f64) -> Result<(), String> {
+    let monitor = window
+        .current_monitor()
+        .map_err(|e| e.to_string())?
+        .or(window.primary_monitor().map_err(|e| e.to_string())?)
+        .ok_or("no monitor found")?;
+    let scale = monitor.scale_factor();
+    let edge = settings.position.as_str();
+    let vertical = matches!(edge, "left" | "right");
+    let bar = settings.layout == "bar";
+
+    // The area the dock is placed in: (left, top, right, bottom). It starts as the work
+    // area (the screen minus the Windows taskbar and other toolbars).
+    let work = monitor.work_area();
+    let mut area = (
+        work.position.x,
+        work.position.y,
+        work.position.x + work.size.width as i32,
+        work.position.y + work.size.height as i32,
+    );
     if let Some((left, top, right, bottom)) = strip {
         // The work area no longer includes the dock's own strip, so the dock's edge is the
         // outer edge of the strip.
@@ -274,10 +313,14 @@ fn fit_dock(window: WebviewWindow, state: State<'_, AppState>, width: f64, heigh
         _ => (area.0 + along(area_w - w), area.3 - h),
     };
 
-    window.set_size(PhysicalSize::new(w as u32, h as u32)).map_err(|e| e.to_string())?;
-    window.set_position(PhysicalPosition::new(x, y)).map_err(|e| e.to_string())?;
-    if !state.fullscreen.load(Ordering::Relaxed) && !window.is_visible().unwrap_or(true) {
-        window.show().map_err(|e| e.to_string())?;
+    // Only what changed is set, so the repeats cost nothing when Windows left the window alone.
+    let size_now = window.outer_size().map_err(|e| e.to_string())?;
+    if (size_now.width as i32, size_now.height as i32) != (w, h) {
+        window.set_size(PhysicalSize::new(w as u32, h as u32)).map_err(|e| e.to_string())?;
+    }
+    let pos_now = window.outer_position().map_err(|e| e.to_string())?;
+    if (pos_now.x, pos_now.y) != (x, y) {
+        window.set_position(PhysicalPosition::new(x, y)).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -909,6 +952,7 @@ pub fn run() {
                 menu_target: Mutex::new(None),
                 fullscreen: AtomicBool::new(false),
                 hidden: AtomicBool::new(false),
+                fit_generation: AtomicU64::new(0),
                 hit: Mutex::new(None),
             });
             build_tray(app.handle())?;

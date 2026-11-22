@@ -90,11 +90,15 @@
     // How far the dock reaches from its screen edge, plus a small gap: the strip of screen an
     // always-visible dock keeps for itself.
     const gap = settings.layout === "bar" ? 0 : 6;
+    // From the layout, not from what is on screen: while the dock slides in after auto-hide
+    // is turned off, its rectangle is still at the hidden position, which would measure a
+    // negative reach and reserve no strip at all.
+    const box = layoutBox();
     const reach = {
-      bottom: window.innerHeight - rect.top,
-      top: rect.bottom,
-      left: rect.right,
-      right: window.innerWidth - rect.left,
+      bottom: window.innerHeight - box.y,
+      top: box.y + box.height,
+      left: box.x + box.width,
+      right: window.innerWidth - box.x,
     }[settings.position];
     const thickness = Math.ceil(reach + gap);
     const key = `${size.width}x${size.height}/${thickness}/${settings.position}/${settings.layout}/${settings.align}/${settings.autoHide}/${settings.reserveSpace}`;
@@ -103,19 +107,24 @@
     invoke("fit_dock", { ...size, thickness }).catch((err) => console.error("fit_dock failed", err));
   }
 
-  /** Tells the app where the dock is in its window, so clicks beside it go through.
-   *  Measured from the layout, not from what is on screen: while the dock is slid away by
-   *  auto-hide, what is on screen is the hidden position, and a dock that came back with
-   *  that position recorded would let every click fall through to the window behind it. */
-  function reportHitRect() {
-    if (!interactive || !dockEl) return;
+  /** Where the dock is in its window, from the layout and not from what is on screen: while
+   *  the dock is slid away by auto-hide, what is on screen is the hidden position, and a dock
+   *  that came back with that position recorded would let every click fall through to the
+   *  window behind it. */
+  function layoutBox() {
     let x = 0;
     let y = 0;
     for (let el: HTMLElement | null = dockEl; el; el = el.offsetParent as HTMLElement | null) {
       x += el.offsetLeft;
       y += el.offsetTop;
     }
-    invoke("set_hit_rect", { x, y, width: dockEl.offsetWidth, height: dockEl.offsetHeight }).catch(() => {});
+    return { x, y, width: dockEl.offsetWidth, height: dockEl.offsetHeight };
+  }
+
+  /** Tells the app where the dock is in its window, so clicks beside it go through. */
+  function reportHitRect() {
+    if (!interactive || !dockEl) return;
+    invoke("set_hit_rect", layoutBox()).catch(() => {});
   }
 
   $effect(() => {
