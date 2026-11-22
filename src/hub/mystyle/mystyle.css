@@ -2,11 +2,12 @@
    and the hub's own colors so the light and the dark hub both fit. Everything is under .ms. */
 
 .ms {
-  --ms-sel: #2f6bff;
+  /* What is selected, in the seal red of the rest of the window. */
+  --ms-sel: var(--shu, #c41e3a);
   --ms-side: var(--bg);
   --ms-side-2: var(--raised);
-  /* The canvas is a flat gray, so the white panels frame it and the bar stands out on it. */
-  --ms-canvas: #e4e3e0;
+  /* The canvas is a flat warm stone gray, so the paper panels frame it and the bar stands out on it. */
+  --ms-canvas: #e3ddd2;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -309,7 +310,7 @@
 
 :root[data-motion="off"] .ms *, :root[data-motion="off"] .ms *::before, :root[data-motion="off"] .ms *::after { transition: none !important; }
 
-:root[data-hub="dark"] .ms { --ms-canvas: #0b0b0e; }
+:root[data-hub="dark"] .ms { --ms-canvas: #0e0c0b; }
 
 /* ---- right-click menu ---------------------------------------------------------- */
 .ms-menu { position: fixed; z-index: 50; min-width: 190px; padding: 4px; border-radius: 9px; background: var(--bg); border: 1px solid var(--line-2); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); }
