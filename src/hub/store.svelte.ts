@@ -93,6 +93,7 @@ export function lookOf(s: Settings): Partial<Settings> {
   delete look.pins;
   delete look.saved;
   delete look.version;
+  delete look.appOrder;
   return look as Partial<Settings>;
 }
 

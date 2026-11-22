@@ -372,6 +372,29 @@ fn move_app_to_group(app: AppHandle, state: State<'_, AppState>, key: String, gr
     Ok(())
 }
 
+/// Dragging an app along the dock: in front of `before` (an app key), or to the end. A favorite
+/// moves among the favorites, an open app among the open apps.
+#[tauri::command]
+fn reorder_app(app: AppHandle, state: State<'_, AppState>, key: String, before: Option<String>) -> Result<(), String> {
+    let apps = state.apps();
+    let Some(entry) = apps.iter().find(|a| a.key == key) else { return Ok(()) };
+    let target = before.as_deref().and_then(|b| apps.iter().find(|a| a.key == b));
+    let mut next = state.settings();
+    let changed = if entry.pinned {
+        let Some(exe) = &entry.exe else { return Ok(()) };
+        let before_path = target.filter(|t| t.pinned).and_then(|t| t.exe.as_deref());
+        next.reorder_pin(exe, before_path)
+    } else {
+        let shown: Vec<String> = apps.iter().filter(|a| !a.pinned).map(|a| a.key.clone()).collect();
+        let before_key = target.filter(|t| !t.pinned).map(|t| t.key.as_str());
+        next.reorder_open(&key, before_key, &shown)
+    };
+    if changed {
+        update_settings(app, state, next)?;
+    }
+    Ok(())
+}
+
 fn move_entry(app: &AppHandle, entry: &AppEntry, group: u8) {
     let Some(exe) = &entry.exe else { return };
     let mut next = app.state::<AppState>().settings();
@@ -1200,7 +1223,8 @@ pub fn run() {
             reset_settings,
             set_hit_rect,
             import_taskbar_pins,
-            move_app_to_group
+            move_app_to_group,
+            reorder_app
         ])
         .build(tauri::generate_context!())
         .expect("error while running DockForge")

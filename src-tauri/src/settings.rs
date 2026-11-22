@@ -275,6 +275,9 @@ pub struct Settings {
     pub groups_enabled: bool,
     pub active_group: u8,
     pub group_names: Vec<String>,
+    /// The order the user dragged the open (not pinned) apps into, by app key. Apps not in the
+    /// list come after, in the order they opened. Favorites keep their order in `pins`.
+    pub app_order: Vec<String>,
     /// The elements of a bar made in MyStyle. `None` = the classic dock.
     #[serde(deserialize_with = "lenient_elements")]
     pub elements: Option<Vec<BarElement>>,
@@ -296,7 +299,7 @@ fn sanitize_saved(saved: &[SavedBar]) -> Vec<SavedBar> {
             continue;
         }
         let mut look = look.clone();
-        for key in ["pins", "saved", "version"] {
+        for key in ["pins", "saved", "version", "appOrder"] {
             look.remove(key);
         }
         seen.push(id.to_string());
@@ -344,6 +347,7 @@ impl Default for Settings {
             groups_enabled: false,
             active_group: 0,
             group_names: default_group_names(),
+            app_order: Vec::new(),
             elements: None,
         }
     }
@@ -531,8 +535,53 @@ impl Settings {
                     if name.is_empty() { default_group_name(i) } else { name }
                 })
                 .collect(),
+            app_order: {
+                let mut seen: Vec<String> = Vec::new();
+                for key in &self.app_order {
+                    if !key.is_empty() && key.len() <= 1024 && !seen.contains(key) && seen.len() < MAX_APP_ORDER {
+                        seen.push(key.clone());
+                    }
+                }
+                seen
+            },
             elements: self.elements.as_deref().map(sanitize_elements),
         }
+    }
+}
+
+/// How many open apps the dragged order remembers.
+pub const MAX_APP_ORDER: usize = 64;
+
+impl Settings {
+    /// Moves a favorite in front of another favorite (`before`), or to the end of its group.
+    /// Returns false if nothing changed.
+    pub fn reorder_pin(&mut self, path: &str, before: Option<&str>) -> bool {
+        let Some(from) = self.pins.iter().position(|p| p.path.eq_ignore_ascii_case(path)) else { return false };
+        let previous = self.pins.clone();
+        let pin = self.pins.remove(from);
+        let at = before
+            .and_then(|b| self.pins.iter().position(|p| p.path.eq_ignore_ascii_case(b) && p.group == pin.group))
+            .or_else(|| self.pins.iter().rposition(|p| p.group == pin.group).map(|i| i + 1))
+            .unwrap_or(self.pins.len());
+        self.pins.insert(at, pin);
+        self.pins != previous
+    }
+
+    /// Moves an open app in front of another (`before`), or to the end. `shown` is the order the
+    /// open apps are in now; keys remembered from apps that are closed keep their place after them.
+    pub fn reorder_open(&mut self, key: &str, before: Option<&str>, shown: &[String]) -> bool {
+        let mut order: Vec<String> = shown.iter().filter(|k| k.as_str() != key).cloned().collect();
+        let at = before.and_then(|b| order.iter().position(|k| k == b)).unwrap_or(order.len());
+        order.insert(at, key.to_string());
+        for old in &self.app_order {
+            if !order.contains(old) {
+                order.push(old.clone());
+            }
+        }
+        order.truncate(MAX_APP_ORDER);
+        let changed = order != self.app_order;
+        self.app_order = order;
+        changed
     }
 }
 

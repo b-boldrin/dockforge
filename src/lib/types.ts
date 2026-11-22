@@ -166,6 +166,8 @@ export interface Settings {
   groupsEnabled: boolean;
   activeGroup: number;
   groupNames: string[];
+  /** The order the open apps were dragged into, by app key. Not part of a saved bar. */
+  appOrder: string[];
   /** The elements of a bar made in MyStyle. null = the classic dock. */
   elements: BarElement[] | null;
 }

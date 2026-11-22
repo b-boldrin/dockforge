@@ -46,6 +46,9 @@ pub fn compose(settings: &Settings, running: Vec<AppEntry>) -> Vec<AppEntry> {
         out.push(entry);
     }
     if active == 0 {
+        // The open apps in the order the user dragged them into; the rest after, as they opened.
+        let place = |a: &AppEntry| settings.app_order.iter().position(|k| k == &a.key).unwrap_or(usize::MAX);
+        rest.sort_by_key(place);
         out.extend(rest);
     }
 
@@ -114,6 +117,28 @@ mod tests {
         // With groups off everything open shows again.
         s.groups_enabled = false;
         assert_eq!(names(&s), ["Chrome", "Notes", "Code", "Game"]);
+    }
+
+    #[test]
+    fn dragged_order_is_kept_for_open_apps_and_favorites() {
+        let run = || vec![running("C:\\code.exe", "Code"), running("C:\\game.exe", "Game"), running("C:\\mail.exe", "Mail")];
+        let mut s = settings("both");
+        let names = |s: &Settings| compose(s, run()).into_iter().map(|a| a.name).collect::<Vec<_>>();
+        assert_eq!(names(&s), ["Chrome", "Notes", "Code", "Game", "Mail"]);
+
+        // Mail dragged in front of Code; an app not in the list stays after the dragged ones.
+        let shown: Vec<String> = ["c:\\code.exe", "c:\\game.exe", "c:\\mail.exe"].map(String::from).to_vec();
+        assert!(s.reorder_open("c:\\mail.exe", Some("c:\\code.exe"), &shown));
+        assert_eq!(names(&s), ["Chrome", "Notes", "Mail", "Code", "Game"]);
+        // The same move again changes nothing.
+        let shown: Vec<String> = ["c:\\mail.exe", "c:\\code.exe", "c:\\game.exe"].map(String::from).to_vec();
+        assert!(!s.reorder_open("c:\\mail.exe", Some("c:\\code.exe"), &shown));
+
+        // Notes dragged in front of Chrome, then Chrome to the end of the favorites.
+        assert!(s.reorder_pin("C:\\notes.exe", Some("C:\\chrome.exe")));
+        assert_eq!(names(&s)[..2], ["Notes", "Chrome"]);
+        assert!(s.reorder_pin("C:\\notes.exe", None));
+        assert_eq!(names(&s)[..2], ["Chrome", "Notes"]);
     }
 
     #[test]

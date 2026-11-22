@@ -55,6 +55,7 @@ let settings: Settings = {
   groupsEnabled: false,
   activeGroup: 0,
   groupNames: ["Principal", "Estudo", "Jogos", "Criação"],
+  appOrder: [],
   elements: null,
 };
 
