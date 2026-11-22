@@ -411,6 +411,31 @@
   pointer-events: none;
   opacity: 0.85;
 }
+/* Where a dragged icon will land: a line in the gap before (or after) this icon. */
+.df-item.is-drop-before::after,
+.df-item.is-drop-after::after {
+  content: "";
+  position: absolute;
+  top: 12%;
+  bottom: 12%;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--df-indicator-active-color, #fff);
+  box-shadow: 0 0 6px var(--df-indicator-active-color, #fff);
+  pointer-events: none;
+}
+.df-item.is-drop-before::after { left: calc(var(--df-app-gap, 8px) / -2 - 1.5px); }
+.df-item.is-drop-after::after { right: calc(var(--df-app-gap, 8px) / -2 - 1.5px); }
+.df-dock:is([data-position="left"], [data-position="right"]) .df-item:is(.is-drop-before, .is-drop-after)::after {
+  top: auto;
+  bottom: auto;
+  left: 12%;
+  right: 12%;
+  width: auto;
+  height: 3px;
+}
+.df-dock:is([data-position="left"], [data-position="right"]) .df-item.is-drop-before::after { top: calc(var(--df-app-gap, 8px) / -2 - 1.5px); }
+.df-dock:is([data-position="left"], [data-position="right"]) .df-item.is-drop-after::after { bottom: calc(var(--df-app-gap, 8px) / -2 - 1.5px); }
 .df-item.is-dragged .df-tooltip,
 .df-dock.is-dragging .df-tooltip { display: none; }
 

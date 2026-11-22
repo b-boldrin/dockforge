@@ -271,13 +271,49 @@
     );
   }
 
-  let pressed: { key: string; x: number; y: number } | null = null;
-  let drag = $state<{ key: string; dx: number; dy: number; over: number | null } | null>(null);
+  // ---- dragging an icon: along the dock to reorder it, or onto a group dot to move it there ----
+  /** Where a dragged app would land: in front of `before` (null = after the last one). `mark` is
+   *  the icon that shows the line, on its `side`. */
+  interface Spot {
+    before: string | null;
+    mark: string;
+    side: "before" | "after";
+  }
+  let pressed: { key: string; x: number; y: number; el: HTMLElement } | null = null;
+  let drag = $state<{ key: string; dx: number; dy: number; over: number | null; spot: Spot | null } | null>(null);
   let justDragged = false;
 
   function press(event: PointerEvent, app: AppEntry) {
-    if (!interactive || !settings.groupsEnabled || event.button !== 0 || !app.exe) return;
-    pressed = { key: app.key, x: event.clientX, y: event.clientY };
+    if (!interactive || event.button !== 0) return;
+    pressed = { key: app.key, x: event.clientX, y: event.clientY, el: event.currentTarget as HTMLElement };
+  }
+
+  /** The spot under the pointer, among the apps of the same kind (favorites or open) in the same
+   *  field as the dragged one. Null away from the dock, or where the app already is. */
+  function spotAt(x: number, y: number): Spot | null {
+    const dragged = pressed?.el;
+    const parent = dragged?.parentElement;
+    if (!dragged || !parent) return null;
+    const box = dockEl.getBoundingClientRect();
+    const room = 40;
+    if (x < box.left - room || x > box.right + room || y < box.top - room || y > box.bottom + room) return null;
+    const pinned = dragged.classList.contains("is-pinned");
+    const same = [...parent.children].filter((el): el is HTMLElement => el instanceof HTMLElement && el.matches(".df-item") && el.classList.contains("is-pinned") === pinned);
+    const peers = same.filter((el) => el !== dragged);
+    if (peers.length === 0) return null;
+    const p = vertical ? y : x;
+    let spot: Spot = { before: null, mark: peers[peers.length - 1].dataset.key!, side: "after" };
+    for (const el of peers) {
+      const r = el.getBoundingClientRect();
+      if (p < (vertical ? r.top + r.height / 2 : r.left + r.width / 2)) {
+        spot = { before: el.dataset.key!, mark: el.dataset.key!, side: "before" };
+        break;
+      }
+    }
+    // Dropped where it already is: nothing to do, and no line.
+    const next = same[same.indexOf(dragged) + 1];
+    if ((spot.before === null && !next) || (next && spot.before === next.dataset.key)) return null;
+    return spot;
   }
 
   function groupUnder(x: number, y: number): number | null {
@@ -291,16 +327,20 @@
     const dx = event.clientX - pressed.x;
     const dy = event.clientY - pressed.y;
     if (!drag && Math.hypot(dx, dy) < 8) return;
-    drag = { key: pressed.key, dx, dy, over: groupUnder(event.clientX, event.clientY) };
+    if (!drag) pressed.el.setPointerCapture?.(event.pointerId);
+    const over = settings.groupsEnabled ? groupUnder(event.clientX, event.clientY) : null;
+    drag = { key: pressed.key, dx, dy, over, spot: over == null ? spotAt(event.clientX, event.clientY) : null };
   }
 
   function pointerEnd(event: PointerEvent | null) {
     if (drag) {
-      const target = event ? groupUnder(event.clientX, event.clientY) : null;
+      const target = event && settings.groupsEnabled ? groupUnder(event.clientX, event.clientY) : null;
       if (target != null && target !== settings.activeGroup) {
         invoke("move_app_to_group", { key: drag.key, group: target }).catch((err) =>
           console.error("move_app_to_group failed", err),
         );
+      } else if (event && drag.spot) {
+        invoke("reorder_app", { key: drag.key, before: drag.spot.before }).catch((err) => console.error("reorder_app failed", err));
       }
       // The click that follows a drag must not open the app.
       justDragged = true;
@@ -320,6 +360,9 @@
     class:is-active={app.active}
     class:is-pinned={app.pinned}
     class:is-dragged={drag?.key === app.key}
+    class:is-drop-before={drag?.spot?.mark === app.key && drag.spot.side === "before"}
+    class:is-drop-after={drag?.spot?.mark === app.key && drag.spot.side === "after"}
+    data-key={app.key}
     class:is-launching={launching === app.key && app.windows.length === 0}
     style:--df-i={index}
     style:translate={drag?.key === app.key ? `${drag.dx}px ${drag.dy}px` : undefined}
