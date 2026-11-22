@@ -5,6 +5,7 @@
   import Canvas from "./mystyle/Canvas.svelte";
   import Inspector from "./mystyle/Inspector.svelte";
   import Ic from "./mystyle/Ic.svelte";
+  import ContextMenu from "./mystyle/ContextMenu.svelte";
   import { hub, nav, patch, addBar, saveBarEdit, showToast } from "./store.svelte.js";
   import { editor } from "./mystyle/editor.svelte";
   import { drag } from "./mystyle/dnd.svelte";
@@ -54,6 +55,9 @@
       if (k === "z") editor[e.shiftKey ? "redo" : "undo"]();
       else if (k === "y") editor.redo();
       else if (k === "d") editor.duplicate();
+      else if (k === "c") editor.copy();
+      else if (k === "x") editor.cut();
+      else if (k === "v") editor.paste();
       else return;
       e.preventDefault();
       return;
@@ -124,6 +128,8 @@
       <Canvas />
       <Inspector />
     </div>
+
+    <ContextMenu />
 
     {#if drag.on}
       <div class="ms-chip" style:left="{drag.x + 14}px" style:top="{drag.y + 14}px">{drag.label}</div>

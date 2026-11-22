@@ -106,6 +106,11 @@
             aria-selected={editor.selected === el.id}
             onpointerdown={(e) => layerPress(e, el.id, KINDS[el.kind].name(el))}
             onkeydown={(e) => e.key === "Enter" && editor.select(el.id)}
+            oncontextmenu={(e) => {
+              e.preventDefault();
+              editor.select(el.id);
+              editor.menu = { x: e.clientX, y: e.clientY };
+            }}
           >
             {@render glyph(el.kind, 14, 10)}
             <span class="ms-layer-n">{KINDS[el.kind].name(el)}</span>

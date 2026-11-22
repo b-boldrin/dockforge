@@ -34,6 +34,10 @@ class Editor {
   pan = $state({ x: 0, y: 0 });
   /** "new" or the id of the saved bar being edited. */
   key = $state<string | null>(null);
+  /** The element copied or cut, kept as plain data until it is pasted. Survives switching bars. */
+  clipboard = $state<BarElement | null>(null);
+  /** The right-click menu, open at this point of the screen. */
+  menu = $state<{ x: number; y: number } | null>(null);
 
   private undoStack = $state.raw<Snap[]>([]);
   private redoStack = $state.raw<Snap[]>([]);
@@ -199,6 +203,27 @@ class Editor {
     const peers = this.elements.filter((e) => e.zone === src.zone);
     const copy: BarElement = { ...src, id: newId(), offset: src.free ? src.offset + 24 : src.offset };
     this.apply((d) => (d.elements = insertElement(d.elements ?? [], copy, { zone: src.zone, before: peers[peers.indexOf(src) + 1]?.id ?? null })));
+    this.selected = copy.id;
+  }
+
+  copy(id = this.selected) {
+    const el = this.elements.find((e) => e.id === id);
+    if (el) this.clipboard = JSON.parse(JSON.stringify($state.snapshot(el))) as BarElement;
+  }
+
+  cut(id = this.selected) {
+    this.copy(id);
+    this.remove(id);
+  }
+
+  /** Puts a copy of the clipboard after the selected element, or at the end of its own zone. */
+  paste() {
+    const src = this.clipboard;
+    if (!src) return;
+    if (this.elements.length >= MAX_ELEMENTS) return showToast(`No máximo ${MAX_ELEMENTS} elementos na barra`);
+    const copy: BarElement = { ...(JSON.parse(JSON.stringify(src)) as BarElement), id: newId() };
+    const where = this.current ? this.afterSelected() : { zone: src.zone, before: null };
+    this.apply((d) => (d.elements = insertElement(d.elements ?? [], copy, where)));
     this.selected = copy.id;
   }
 

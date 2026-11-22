@@ -91,6 +91,15 @@
     const k = scale();
     startDrag(e, { label: "Tamanho", onMove: (dx, dy) => editor.resize(id, (sx * dx + sy * dy) / 2 / k, from, `drag:size:${id}`) });
   }
+  /** Right click: selects what is under the pointer and opens the menu for it. */
+  function contextMenu(e: MouseEvent) {
+    e.preventDefault();
+    if ((e.target as HTMLElement).closest(".ms-dock-tools")) return;
+    const field = (e.target as HTMLElement).closest<HTMLElement>("[data-el]");
+    const el = field && deskEl?.contains(field) ? editor.elements.find((x) => x.id === field.dataset.el) : null;
+    editor.select(el ? el.id : "bar");
+    editor.menu = { x: e.clientX, y: e.clientY };
+  }
   function move(e: PointerEvent) {
     if (panFrom) editor.pan = { x: panFrom.px + e.clientX - panFrom.x, y: panFrom.py + e.clientY - panFrom.y };
   }
@@ -156,6 +165,7 @@
   class:grabbing={panFrom}
   bind:this={host}
   onpointerdown={down}
+  oncontextmenu={contextMenu}
   onpointermove={move}
   onpointerup={release}
   onpointercancel={release}
