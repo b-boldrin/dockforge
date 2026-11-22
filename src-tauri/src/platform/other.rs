@@ -61,6 +61,10 @@ pub fn fullscreen_active() -> bool {
     false
 }
 
+pub fn foreground_window() -> isize {
+    0
+}
+
 pub fn maximized_in_front() -> bool {
     false
 }

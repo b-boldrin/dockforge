@@ -65,6 +65,8 @@ struct VolumePopup {
     bottom_anchored: bool,
     /// When it last closed, so the click that closed it does not open it again.
     closed_at: Option<Instant>,
+    /// Bumped on every open, so the watcher of an older panel stops.
+    generation: u64,
 }
 
 impl AppState {
@@ -551,7 +553,9 @@ fn volume_popup_close(app: AppHandle) {
 /// Opens the volume panel next to the volume button (x, y, width, height in CSS pixels of the
 /// dock window), or closes it when it is already open.
 #[tauri::command]
-fn show_volume_popup(app: AppHandle, window: tauri::Window, state: State<'_, AppState>, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
+// Async on purpose: a synchronous command runs on the main thread, and building a window there
+// deadlocks the event loop on Windows (the dock froze on the first click).
+async fn show_volume_popup(app: AppHandle, window: tauri::Window, state: State<'_, AppState>, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
     if app.get_webview_window("volume").is_some() {
         close_volume_popup(&app);
         return Ok(());
@@ -577,9 +581,14 @@ fn show_volume_popup(app: AppHandle, window: tauri::Window, state: State<'_, App
         px = px.clamp(ax, (ax + f64::from(area.size.width) - pw).max(ax));
         py = py.clamp(ay, (ay + f64::from(area.size.height) - ph).max(ay));
     }
-    if let Ok(mut popup) = state.volume_popup.lock() {
-        popup.bottom_anchored = bottom;
-    }
+    let generation = match state.volume_popup.lock() {
+        Ok(mut popup) => {
+            popup.bottom_anchored = bottom;
+            popup.generation += 1;
+            popup.generation
+        }
+        Err(_) => 0,
+    };
     let popup = WebviewWindowBuilder::new(&app, "volume", WebviewUrl::App("index.html".into()))
         .title("Volume")
         .inner_size(POPUP_WIDTH, POPUP_START_HEIGHT)
@@ -598,16 +607,28 @@ fn show_volume_popup(app: AppHandle, window: tauri::Window, state: State<'_, App
     let _ = popup.set_focus();
     // The dock must not auto-hide under the panel.
     state.menu_open.store(true, Ordering::Relaxed);
-    let handle = app.clone();
-    let opened = Instant::now();
-    popup.on_window_event(move |event| {
-        // Clicking anywhere else closes it. The first moments are ignored: focus is still settling.
-        if let tauri::WindowEvent::Focused(false) = event {
-            if opened.elapsed() > Duration::from_millis(250) {
-                close_volume_popup(&handle);
+    // Clicking anywhere else closes it. Not from the window's focus events: a click inside the
+    // panel moves the focus into its webview, which the window reports as losing focus, and the
+    // panel closed under the pointer. What counts is which window is in front.
+    if let Some(own) = native_handle(&popup) {
+        let handle = app.clone();
+        std::thread::spawn(move || {
+            let opened = Instant::now();
+            loop {
+                std::thread::sleep(Duration::from_millis(100));
+                let state = handle.state::<AppState>();
+                let current = state.volume_popup.lock().map(|p| p.generation).unwrap_or(0);
+                if current != generation || handle.get_webview_window("volume").is_none() {
+                    return;
+                }
+                // The first moments are ignored: the panel is still coming to the front.
+                if opened.elapsed() > Duration::from_millis(400) && platform::foreground_window() != own {
+                    close_volume_popup(&handle);
+                    return;
+                }
             }
-        }
-    });
+        });
+    }
     Ok(())
 }
 

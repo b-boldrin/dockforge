@@ -791,6 +791,11 @@ pub fn fullscreen_active() -> bool {
 }
 
 /// True when the window in front is maximized.
+/// The window in front, as a plain number.
+pub fn foreground_window() -> isize {
+    unsafe { GetForegroundWindow() }.0 as isize
+}
+
 pub fn maximized_in_front() -> bool {
     front_app_window().is_some_and(|w| unsafe { IsZoomed(w) }.as_bool())
 }

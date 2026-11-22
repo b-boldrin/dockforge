@@ -96,10 +96,15 @@ mod win {
                 (level, volume.GetMute().map(|m| m.as_bool()).unwrap_or(false))
             };
             let exe = if system { None } else { crate::platform::process_path(pid) };
+            // A process whose executable cannot be read is a protected system service (an
+            // svchost): the Windows mixer does not list those either.
+            if !system && exe.is_none() {
+                return;
+            }
             let name = if system {
                 "Sons do sistema".to_string()
             } else {
-                exe.as_deref().map(crate::platform::display_name).unwrap_or_else(|| format!("Processo {pid}"))
+                exe.as_deref().map(crate::platform::display_name).unwrap_or_default()
             };
             out.push(super::AppVolume { pid, name, exe, level: (level * 100.0).round().clamp(0.0, 100.0) as u8, muted });
         })?;
