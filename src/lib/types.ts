@@ -82,6 +82,11 @@ interface ModuleBase extends ElementBase {
   color: string | null;
 }
 
+/** The Start button. */
+export interface StartElement extends ModuleBase {
+  kind: "start";
+}
+
 /** Date and time. */
 export interface ClockElement extends ModuleBase {
   kind: "clock";
@@ -119,7 +124,7 @@ export interface SystemElement extends ModuleBase {
 }
 
 /** One thing on a MyStyle bar. A new kind adds one variant here and in settings.rs. */
-export type BarElement = IconsElement | ClockElement | AudioElement | PowerElement | SystemElement;
+export type BarElement = IconsElement | StartElement | ClockElement | AudioElement | PowerElement | SystemElement;
 
 export interface Settings {
   version: number;

@@ -179,7 +179,7 @@ class Editor {
    *  kind's own zone when nothing is selected). */
   add(kind: Kind, drop?: Drop) {
     if (this.elements.length >= MAX_ELEMENTS) return showToast(`No máximo ${MAX_ELEMENTS} elementos na barra`);
-    const where = drop ?? (this.current ? this.afterSelected() : { zone: kind === "icons" ? ("center" as const) : ("end" as const), before: null });
+    const where = drop ?? (this.current ? this.afterSelected() : { zone: kind === "icons" ? ("center" as const) : kind === "start" ? ("start" as const) : ("end" as const), before: null });
     const icons = this.elements.find((e) => e.kind === "icons");
     const el = newElement(kind, where.zone, icons && icons.kind === "icons" ? icons.iconSize : this.draft!.iconSize);
     this.apply((d) => (d.elements = insertElement(d.elements ?? [], el, where)));

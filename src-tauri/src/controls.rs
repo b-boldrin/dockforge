@@ -109,6 +109,14 @@ mod win {
                     keybd_event(VK_LWIN.0 as u8, 0, KEYEVENTF_KEYUP, 0);
                 }
             }
+            // A tap on the Windows key opens the Start menu.
+            "start" => {
+                // SAFETY: synthesizes one key press.
+                unsafe {
+                    keybd_event(VK_LWIN.0 as u8, 0, Default::default(), 0);
+                    keybd_event(VK_LWIN.0 as u8, 0, KEYEVENTF_KEYUP, 0);
+                }
+            }
             "settings" => open_uri(w!("ms-settings:")),
             "wifi" => open_uri(w!("ms-settings:network-wifi")),
             "sound" => open_uri(w!("ms-settings:sound")),

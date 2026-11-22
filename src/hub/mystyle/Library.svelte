@@ -11,13 +11,14 @@
   /** One drawing per kind: the tile, and the row in the layers. */
   const GLYPH: Record<Kind, string> = {
     icons: "M4 7h4v4H4zM10 7h4v4h-4zM16 7h4v4h-4zM3 16h18",
+    start: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
     clock: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2",
     audio: "M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6",
     power: "M12 3v8M7 6.5a7 7 0 1 0 10 0",
     system: "M5 12.5a10 10 0 0 1 14 0M8 15.5a6 6 0 0 1 8 0M12 19h.01",
   };
   const BLOCKS: Array<{ name: string; kinds: Kind[] }> = [
-    { name: "Apps", kinds: ["icons"] },
+    { name: "Apps", kinds: ["start", "icons"] },
     { name: "Sistema", kinds: ["clock", "audio", "power", "system"] },
   ];
 

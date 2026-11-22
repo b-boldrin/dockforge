@@ -104,6 +104,22 @@ impl Default for ClockElement {
     }
 }
 
+/// The Start button: opens the Windows Start menu.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct StartElement {
+    #[serde(flatten)]
+    pub base: ElementBase,
+    pub size: f64,
+    pub color: Option<String>,
+}
+
+impl Default for StartElement {
+    fn default() -> Self {
+        Self { base: ElementBase::default(), size: 28.0, color: None }
+    }
+}
+
 /// The system volume: a speaker, optionally the number and a slider.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -168,6 +184,7 @@ const SYSTEM_ITEMS: [&str; 3] = ["wifi", "sound", "bluetooth"];
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum BarElement {
     Icons(IconsElement),
+    Start(StartElement),
     Clock(ClockElement),
     Audio(AudioElement),
     Power(PowerElement),
@@ -359,6 +376,7 @@ fn sanitize_elements(elements: &[BarElement]) -> Vec<BarElement> {
     for el in elements {
         let raw = match el {
             BarElement::Icons(e) => &e.base,
+            BarElement::Start(e) => &e.base,
             BarElement::Clock(e) => &e.base,
             BarElement::Audio(e) => &e.base,
             BarElement::Power(e) => &e.base,
@@ -389,6 +407,7 @@ fn sanitize_elements(elements: &[BarElement]) -> Vec<BarElement> {
                 icon_size: clamp_px(e.icon_size, 24.0, 72.0, 48.0),
                 gap: clamp_px(e.gap, 0.0, 24.0, 8.0),
             }),
+            BarElement::Start(e) => BarElement::Start(StartElement { base, size: size(e.size, 28.0), color: color(&e.color) }),
             BarElement::Clock(e) => BarElement::Clock(ClockElement {
                 base,
                 size: size(e.size, 32.0),

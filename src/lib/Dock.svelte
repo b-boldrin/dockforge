@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { motionOff } from "./motion";
-  import type { AppEntry, BarElement, ClockElement, IconsElement, PowerElement, Settings, SystemElement, Zone } from "./types";
+  import type { AppEntry, BarElement, ClockElement, IconsElement, PowerElement, Settings, StartElement, SystemElement, Zone } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
   let {
@@ -84,12 +84,14 @@
   };
   const powerMenu = (el: PowerElement) => interactive && invoke("show_power_menu", { actions: el.actions }).catch(() => {});
   const openSystem = (el: SystemElement) => interactive && invoke("open_system", { target: el.opens }).catch(() => {});
+  const openStart = (_el: StartElement) => interactive && invoke("open_system", { target: "start" }).catch(() => {});
 
   const GLYPH = {
     power: "M12 3v8M7 6.5a7 7 0 1 0 10 0",
     wifi: "M2.5 9a15 15 0 0 1 19 0M5.5 12.5a10 10 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
     bluetooth: "M7 7l10 10-5 4V3l5 4L7 17",
     muted: "M4 10v4h4l5 4V6L8 10zM16 9l5 6M21 9l-5 6",
+    start: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   };
   /** The speaker with as many waves as the volume has. */
   const speaker = (level: number, muted: boolean) =>
@@ -389,6 +391,10 @@
       {#if list.length === 0 && !interactive}
         <span class="df-field-ghost" aria-hidden="true"></span>
       {/if}
+    {:else if el.kind === "start"}
+      <button class="df-tool" tabindex={interactive ? 0 : -1} title={en ? "Start" : "Iniciar"} aria-label={en ? "Start" : "Iniciar"} onclick={() => openStart(el)}>
+        {@render glyph(GLYPH.start)}
+      </button>
     {:else if el.kind === "clock"}
       <span class="df-clock" class:df-clock--both={el.show === "both"} style:height="{el.size}px" style:font-size="{el.size * (el.show === "both" ? 0.4 : 0.55)}px">
         {#if el.show !== "date"}<b>{timeText(el)}</b>{/if}

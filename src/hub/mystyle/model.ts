@@ -1,7 +1,7 @@
 // The MyStyle bar as plain data and the pure functions that change it. No Svelte in here: the
 // editor (editor.svelte.ts) owns the state, this file only says what each change means.
 
-import type { AudioElement, BarElement, ClockElement, IconsElement, PowerAction, PowerElement, SystemElement, SystemItem, Zone } from "../../lib/types";
+import type { AudioElement, BarElement, ClockElement, IconsElement, PowerAction, PowerElement, StartElement, SystemElement, SystemItem, Zone } from "../../lib/types";
 
 export const ZONES: Zone[] = ["start", "center", "end"];
 export const ZONE_LABEL: Record<Zone, string> = { start: "Início", center: "Meio", end: "Fim" };
@@ -28,6 +28,7 @@ export interface KindInfo {
 export type Kind = BarElement["kind"];
 export const KINDS: Record<Kind, KindInfo> = {
   icons: { label: "Ícones", name: (el) => (el.kind === "icons" ? `Ícones · ${SOURCE_LABEL[el.source]}` : "Ícones") },
+  start: { label: "Iniciar", name: () => "Iniciar" },
   clock: { label: "Data e hora", name: () => "Data e hora" },
   audio: { label: "Áudio", name: () => "Áudio" },
   power: { label: "Energia", name: () => "Energia" },
@@ -36,7 +37,7 @@ export const KINDS: Record<Kind, KindInfo> = {
 
 /** Any change to one element: every property of every kind, all optional. */
 export type ElementPatch = Partial<
-  Omit<IconsElement, "kind"> & Omit<ClockElement, "kind"> & Omit<AudioElement, "kind"> & Omit<PowerElement, "kind"> & Omit<SystemElement, "kind">
+  Omit<IconsElement, "kind"> & Omit<StartElement, "kind"> & Omit<ClockElement, "kind"> & Omit<AudioElement, "kind"> & Omit<PowerElement, "kind"> & Omit<SystemElement, "kind">
 >;
 
 /** The number that sets how big an element is, and its limits: the icon size of a field of
@@ -72,6 +73,7 @@ export function newIcons(over: Partial<IconsElement> = {}): IconsElement {
 
 const base = (zone: Zone) => ({ id: newId(), zone, free: false, offset: 0, fill: null, opacity: 100, radius: 12, padding: 0, border: null });
 
+export const newStart = (over: Partial<StartElement> = {}): StartElement => ({ ...base("start"), kind: "start", size: 28, color: null, ...over });
 export const newClock = (over: Partial<ClockElement> = {}): ClockElement => ({
   ...base("end"),
   kind: "clock",
@@ -92,6 +94,8 @@ export function newElement(kind: Kind, zone: Zone, iconSize: number): BarElement
   switch (kind) {
     case "icons":
       return newIcons({ zone, iconSize });
+    case "start":
+      return newStart({ zone });
     case "clock":
       return newClock({ zone });
     case "audio":
