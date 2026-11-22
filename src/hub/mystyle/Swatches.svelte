@@ -1,5 +1,5 @@
 <script lang="ts">
-  // A grid of colors, like the style panel of a whiteboard: a few swatches, "none", and any color.
+  // A few colors, "none", and any color: five swatches are enough, the picker does the rest.
   // `live` is true while a color is being dragged around in the picker, so the editor can keep
   // that run as one undo step.
   let {
@@ -11,17 +11,10 @@
 
   const PALETTE: Array<[string, string]> = [
     ["#ffffff", "Branco"],
-    ["#e1e4e8", "Cinza claro"],
-    ["#9fa8b2", "Cinza"],
     ["#26262b", "Grafite"],
-    ["#101014", "Preto"],
-    ["#c8102e", "Vermelho natal"],
-    ["#f76707", "Laranja"],
-    ["#e0a23a", "Dourado"],
-    ["#2f9e44", "Verde"],
-    ["#0c8599", "Turquesa"],
     ["#2f6bff", "Azul"],
-    ["#7048e8", "Violeta"],
+    ["#2f9e44", "Verde"],
+    ["#c8102e", "Vermelho"],
   ];
   const custom = $derived(value != null && !PALETTE.some(([hex]) => hex === value));
 </script>

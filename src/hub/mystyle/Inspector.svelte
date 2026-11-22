@@ -36,7 +36,6 @@
     const next = all.filter((x) => (x === item ? !list.includes(x) : list.includes(x)));
     return next.length ? next : list;
   }
-  const corners: Array<[number, string]> = [[0, "0"], [8, "8"], [16, "16"], [40, "Total"]];
 
   // Bar properties.
   const shapes: Array<[Settings["layout"], string]> = [["float", "Flutuante"], ["bar", "Inteira"]];
@@ -174,7 +173,6 @@
         <section class="ms-sec">
           <h3>Cantos</h3>
           <Field label="Raio" value={el.radius} min={0} max={40} unit="px" onchange={(radius) => edit({ radius }, true)} />
-          <Seg label="Cantos rápidos" options={corners} value={el.radius} onpick={(radius) => edit({ radius })} />
         </section>
 
         <section class="ms-sec">

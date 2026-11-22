@@ -5,37 +5,35 @@
   import { KINDS, ZONE_LABEL, visualOrder, MAX_ELEMENTS, type Kind } from "./model";
   import type { Zone } from "../../lib/types";
 
-  // The left panel: what can be put on the bar, and the layers (the bar and its elements).
+  // The left panel: what can be put on the bar, as blocks of icons (the name is the tooltip),
+  // and the layers (the bar and its elements).
 
-  interface Tile {
-    id: Kind;
-    label: string;
-    hint: string;
-    icon: string;
-  }
-  const TILES: Tile[] = [
-    { id: "icons", label: KINDS.icons.label, hint: "Favoritos e apps abertos", icon: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
-    { id: "clock", label: KINDS.clock.label, hint: "Hora e dia", icon: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2" },
-    { id: "audio", label: KINDS.audio.label, hint: "Volume do som", icon: "M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6" },
-    { id: "power", label: KINDS.power.label, hint: "Desligar, reiniciar, suspender", icon: "M12 3v8M7 6.5a7 7 0 1 0 10 0" },
-    { id: "system", label: KINDS.system.label, hint: "Wi-Fi, som e Bluetooth", icon: "M5 12.5a10 10 0 0 1 14 0M8 15.5a6 6 0 0 1 8 0M12 19h.01" },
+  /** One drawing per kind: the tile, and the row in the layers. */
+  const GLYPH: Record<Kind, string> = {
+    icons: "M4 7h4v4H4zM10 7h4v4h-4zM16 7h4v4h-4zM3 16h18",
+    clock: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4l3 2",
+    audio: "M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6",
+    power: "M12 3v8M7 6.5a7 7 0 1 0 10 0",
+    system: "M5 12.5a10 10 0 0 1 14 0M8 15.5a6 6 0 0 1 8 0M12 19h.01",
+  };
+  const BLOCKS: Array<{ name: string; kinds: Kind[] }> = [
+    { name: "Apps", kinds: ["icons"] },
+    { name: "Sistema", kinds: ["clock", "audio", "power", "system"] },
   ];
 
   let query = $state("");
-  let open = $state(true);
-  const shown = $derived(
-    TILES.filter((t) => {
-      const q = query.trim().toLowerCase();
-      return !q || `${t.label} ${t.hint}`.toLowerCase().includes(q);
-    }),
-  );
+  const matches = (kind: Kind) => {
+    const q = query.trim().toLowerCase();
+    return !q || KINDS[kind].label.toLowerCase().includes(q);
+  };
+  const blocks = $derived(BLOCKS.map((b) => ({ ...b, kinds: b.kinds.filter(matches) })).filter((b) => b.kinds.length));
 
   const rows = $derived(visualOrder(editor.elements));
   const full = $derived(editor.elements.length >= MAX_ELEMENTS);
 
-  function press(e: PointerEvent, tile: Tile) {
+  function press(e: PointerEvent, kind: Kind) {
     if (e.button !== 0) return;
-    startDrag(e, { label: tile.label, onDrop: (drop) => drop && editor.add(tile.id, drop), onClick: () => editor.add(tile.id) });
+    startDrag(e, { label: KINDS[kind].label, onDrop: (drop) => drop && editor.add(kind, drop), onClick: () => editor.add(kind) });
   }
   function layerPress(e: PointerEvent, id: string, label: string) {
     if (e.button !== 0) return;
@@ -55,30 +53,26 @@
   </div>
 
   <div class="ms-scroll">
-    <section>
-      <button class="ms-cat" aria-expanded={open} onclick={() => (open = !open)}>
-        <span class="ms-chev" class:open><Ic d="M9 6l6 6-6 6" size={13} /></span>
-        Barra de tarefas
-      </button>
-      {#if open}
+    {#each blocks as block (block.name)}
+      <section>
+        <h2 class="ms-h">{block.name}</h2>
         <div class="ms-tiles">
-          {#each shown as tile (tile.id)}
+          {#each block.kinds as kind (kind)}
             <button
               class="ms-tile"
               disabled={full}
-              title={full ? `No máximo ${MAX_ELEMENTS} elementos` : "Clique ou arraste para a barra"}
-              onpointerdown={(e) => press(e, tile)}
-              onkeydown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), editor.add(tile.id))}
+              title={full ? `No máximo ${MAX_ELEMENTS} elementos` : `${KINDS[kind].label}: clique ou arraste para a barra`}
+              aria-label={KINDS[kind].label}
+              onpointerdown={(e) => press(e, kind)}
+              onkeydown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), editor.add(kind))}
             >
-              <span class="ms-tile-ic"><Ic d={tile.icon} size={20} /></span>
-              <span class="ms-tile-t">{tile.label}</span>
-              <span class="ms-tile-s">{tile.hint}</span>
+              <span class="ms-tile-ic"><Ic d={GLYPH[kind]} size={20} /></span>
             </button>
           {/each}
         </div>
-        {#if shown.length === 0}<p class="ms-hint">Nada com esse nome.</p>{/if}
-      {/if}
-    </section>
+      </section>
+    {/each}
+    {#if blocks.length === 0}<p class="ms-hint">Nada com esse nome.</p>{/if}
 
     <section>
       <h2 class="ms-h">Camadas</h2>
@@ -100,7 +94,7 @@
             onpointerdown={(e) => layerPress(e, el.id, KINDS[el.kind].name(el))}
             onkeydown={(e) => e.key === "Enter" && editor.select(el.id)}
           >
-            <Ic d={TILES.find((t) => t.id === el.kind)?.icon ?? ""} size={14} />
+            <Ic d={GLYPH[el.kind]} size={14} />
             <span class="ms-layer-n">{KINDS[el.kind].name(el)}</span>
             <span class="ms-layer-z">{el.free ? "Livre · " : ""}{ZONE_LABEL[el.zone]}</span>
           </button>
