@@ -9,6 +9,8 @@
 
   const TAG_LABELS: Record<string, string> = {
     holiday: "Natal",
+    samurai: "Samurai",
+    forge: "Forja",
     dark: "Escuros",
     escuro: "Escuros",
     light: "Claros",
@@ -40,7 +42,7 @@
     }),
   );
 
-  const hero = $derived(hub.themes.find((t) => t.id === "natal-cristal") ?? hub.themes[0]);
+  const hero = $derived(hub.themes.find((t) => t.id === "forja-samurai") ?? hub.themes[0]);
 
   // Previews: the same choices for every theme, so only the theme changes.
   const base = $derived<Settings>({
@@ -63,10 +65,12 @@
       <ThemePreview theme={hero.id} apps={previewApps(7)} settings={heroSettings} />
     </div>
     <div class="hero-text">
-      <p class="hero-kicker">{hero.tags.includes("holiday") ? "Coleção de Natal" : "Em destaque"}</p>
+      <p class="hero-kicker">{hero.id === "forja-samurai" ? "Saído da bigorna" : hero.tags.includes("holiday") ? "Coleção de Natal" : "Em destaque"}</p>
       <h1 class="hero-title">{hero.name}</h1>
       <p class="hero-copy">
-        {#if hero.id === "natal-cristal"}
+        {#if hero.id === "forja-samurai"}
+          Papel washi, borda vermelha de selo e o app em uso brilhando como aço tirado do fogo.
+        {:else if hero.id === "natal-cristal"}
           Vidro verde-pinheiro, borda de gelo ciano e um ponto vermelho em cada app aberto.
         {:else}
           Por {hero.author}.

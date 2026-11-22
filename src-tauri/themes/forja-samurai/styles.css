@@ -1,0 +1,30 @@
+/* Forja Samurai — washi paper white, a vermilion edge along the top like the seal on a print,
+   sumi-ink tooltips, and a seal-red mark under the app in front. */
+
+.df-dock {
+  --df-icon-size: 46px;
+  --df-gap: 8px;
+  --df-padding: 10px 14px 9px;
+  --df-radius: 12px;
+  --df-bg: rgba(250, 247, 240, 0.94);
+  --df-border: 1px solid rgba(28, 25, 23, 0.14);
+  --df-shadow: inset 0 3px 0 #c41e3a, 0 12px 28px rgba(28, 12, 10, 0.35);
+  --df-hover-scale: 1.3;
+  --df-hover-lift: -8px;
+  --df-indicator-color: rgba(28, 25, 23, 0.45);
+  --df-indicator-active-color: #c41e3a;
+  --df-tooltip-bg: #1c1917;
+  --df-tooltip-color: #fbf9f4;
+  --df-separator-color: rgba(28, 25, 23, 0.2);
+  --df-fg: #1c1917;
+}
+
+/* The app in front glows like steel taken out of the fire. */
+.df-item.is-active .df-icon {
+  filter: drop-shadow(0 0 6px rgba(242, 107, 29, 0.55));
+}
+
+.df-empty,
+.df-label {
+  color: #1c1917;
+}

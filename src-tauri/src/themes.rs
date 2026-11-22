@@ -31,6 +31,11 @@ pub const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../themes/midnight-pill/styles.css"),
     ),
     (
+        "forja-samurai",
+        include_str!("../themes/forja-samurai/theme.json"),
+        include_str!("../themes/forja-samurai/styles.css"),
+    ),
+    (
         "natal-cristal",
         include_str!("../themes/natal-cristal/theme.json"),
         include_str!("../themes/natal-cristal/styles.css"),
