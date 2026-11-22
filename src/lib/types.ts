@@ -103,6 +103,8 @@ export interface AudioElement extends ModuleBase {
   percent: boolean;
   /** A slider (horizontal bars only). */
   slider: boolean;
+  /** What a click does: open our volume panel, or the Windows volume mixer. */
+  click: "panel" | "windows";
 }
 
 export type PowerAction = "shutdown" | "restart" | "sleep" | "lock" | "logout";

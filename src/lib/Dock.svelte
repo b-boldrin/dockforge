@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { motionOff } from "./motion";
-  import type { AppEntry, BarElement, ClockElement, IconsElement, PowerElement, Settings, StartElement, SystemElement, Zone } from "./types";
+  import type { AppEntry, BarElement, AudioElement, ClockElement, IconsElement, PowerElement, Settings, StartElement, SystemElement, Zone } from "./types";
   import { hue, icons, initial, requestIcon } from "./icons.svelte.js";
 
   let {
@@ -76,7 +76,13 @@
     volume = { ...volume, level: next, muted: next > 0 ? false : volume.muted };
     invoke("volume_set", { level: next }).then(gotVolume).catch(() => {});
   };
-  const toggleMute = () => interactive && invoke("volume_toggle_mute").then(gotVolume).catch(() => {});
+  /** Click on the volume button: our panel next to it, or the Windows mixer. */
+  function openVolume(el: AudioElement, event: MouseEvent) {
+    if (!interactive) return;
+    if (el.click === "windows") return void invoke("open_system", { target: "mixer" }).catch(() => {});
+    const r = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    invoke("show_volume_popup", { x: r.left, y: r.top, width: r.width, height: r.height }).catch(() => {});
+  }
   const wheelVolume = (e: WheelEvent) => {
     if (!interactive) return;
     e.preventDefault();
@@ -403,7 +409,7 @@
     {:else if el.kind === "audio"}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <span class="df-tool-row" onwheel={wheelVolume}>
-        <button class="df-tool" tabindex={interactive ? 0 : -1} title="Volume: {volume.muted ? (en ? "muted" : "sem som") : volume.level + "%"}" aria-label={en ? "Mute" : "Silenciar"} onclick={toggleMute}>
+        <button class="df-tool" tabindex={interactive ? 0 : -1} title="Volume: {volume.muted ? (en ? "muted" : "sem som") : volume.level + "%"}" aria-label="Volume" onclick={(e) => openVolume(el, e)}>
           {@render glyph(speaker(volume.level, volume.muted))}
           {#if el.percent}<span class="df-tool-text">{volume.muted ? 0 : volume.level}%</span>{/if}
         </button>

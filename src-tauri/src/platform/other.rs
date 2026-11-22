@@ -50,6 +50,13 @@ pub fn reserve_edge(_window: isize, _edge: &str, _thickness: i32, _monitor: (i32
 }
 pub fn release_edge() {}
 
+pub fn process_path(_pid: u32) -> Option<String> {
+    None
+}
+pub fn display_name(exe: &str) -> String {
+    exe.to_string()
+}
+
 pub fn fullscreen_active() -> bool {
     false
 }

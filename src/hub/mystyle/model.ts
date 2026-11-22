@@ -85,7 +85,7 @@ export const newClock = (over: Partial<ClockElement> = {}): ClockElement => ({
   weekday: false,
   ...over,
 });
-export const newAudio = (over: Partial<AudioElement> = {}): AudioElement => ({ ...base("end"), kind: "audio", size: 28, color: null, percent: false, slider: false, ...over });
+export const newAudio = (over: Partial<AudioElement> = {}): AudioElement => ({ ...base("end"), kind: "audio", size: 28, color: null, percent: false, slider: false, click: "panel", ...over });
 export const newPower = (over: Partial<PowerElement> = {}): PowerElement => ({ ...base("end"), kind: "power", size: 28, color: null, actions: [...POWER_ACTIONS], ...over });
 export const newSystem = (over: Partial<SystemElement> = {}): SystemElement => ({ ...base("end"), kind: "system", size: 28, color: null, items: [...SYSTEM_ITEMS], opens: "quick", ...over });
 

@@ -9,6 +9,18 @@ pub struct Volume {
     pub muted: bool,
 }
 
+/// One app that is playing (or recently played) sound, with its own volume.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppVolume {
+    /// 0 = the Windows system sounds.
+    pub pid: u32,
+    pub name: String,
+    pub exe: Option<String>,
+    pub level: u8,
+    pub muted: bool,
+}
+
 /// What the power menu can do. The names are the ones a power element keeps in `Settings`.
 pub const POWER_ACTIONS: [&str; 5] = ["shutdown", "restart", "sleep", "lock", "logout"];
 
@@ -18,7 +30,10 @@ mod win {
     use std::os::windows::process::CommandExt;
     use windows::core::{w, PCWSTR};
     use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
-    use windows::Win32::Media::Audio::{eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator};
+    use windows::core::Interface;
+    use windows::Win32::Media::Audio::{
+        eConsole, eRender, IAudioSessionControl2, IAudioSessionManager2, IMMDeviceEnumerator, ISimpleAudioVolume, MMDeviceEnumerator,
+    };
     use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED};
     use windows::Win32::System::Power::SetSuspendState;
     use windows::Win32::System::Shutdown::LockWorkStation;
@@ -66,6 +81,70 @@ mod win {
         let ep = endpoint()?;
         // SAFETY: as above.
         unsafe { ep.SetMute(muted, std::ptr::null()).map_err(|e| e.to_string()) }
+    }
+
+    /// The apps with an audio session on the default speakers, one entry per process.
+    pub fn app_volumes() -> Result<Vec<super::AppVolume>, String> {
+        let mut out: Vec<super::AppVolume> = Vec::new();
+        for_each_session(|pid, system, volume| {
+            if out.iter().any(|a| a.pid == pid) {
+                return;
+            }
+            // SAFETY: reads from a live interface.
+            let (level, muted) = unsafe {
+                let level = volume.GetMasterVolume().unwrap_or(1.0);
+                (level, volume.GetMute().map(|m| m.as_bool()).unwrap_or(false))
+            };
+            let exe = if system { None } else { crate::platform::process_path(pid) };
+            let name = if system {
+                "Sons do sistema".to_string()
+            } else {
+                exe.as_deref().map(crate::platform::display_name).unwrap_or_else(|| format!("Processo {pid}"))
+            };
+            out.push(super::AppVolume { pid, name, exe, level: (level * 100.0).round().clamp(0.0, 100.0) as u8, muted });
+        })?;
+        Ok(out)
+    }
+
+    /// Sets the volume and/or the mute of every session of one process.
+    pub fn set_app_volume(pid: u32, level: Option<u8>, muted: Option<bool>) -> Result<(), String> {
+        for_each_session(|p, _, volume| {
+            if p != pid {
+                return;
+            }
+            // SAFETY: writes to a live interface.
+            unsafe {
+                if let Some(level) = level {
+                    let _ = volume.SetMasterVolume(f32::from(level.min(100)) / 100.0, std::ptr::null());
+                }
+                if let Some(muted) = muted {
+                    let _ = volume.SetMute(muted, std::ptr::null());
+                }
+            }
+        })
+    }
+
+    /// Calls `each(pid, is_system_sounds, volume)` for every live audio session.
+    fn for_each_session(mut each: impl FnMut(u32, bool, &ISimpleAudioVolume)) -> Result<(), String> {
+        // SAFETY: COM calls on interfaces this function creates and owns.
+        unsafe {
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+            let devices: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(|e| e.to_string())?;
+            let speakers = devices.GetDefaultAudioEndpoint(eRender, eConsole).map_err(|e| e.to_string())?;
+            let manager = speakers.Activate::<IAudioSessionManager2>(CLSCTX_ALL, None).map_err(|e| e.to_string())?;
+            let sessions = manager.GetSessionEnumerator().map_err(|e| e.to_string())?;
+            for i in 0..sessions.GetCount().map_err(|e| e.to_string())? {
+                let Ok(control) = sessions.GetSession(i) else { continue };
+                let Ok(control2) = control.cast::<IAudioSessionControl2>() else { continue };
+                let Ok(volume) = control.cast::<ISimpleAudioVolume>() else { continue };
+                let system = control2.IsSystemSoundsSession().0 == 0;
+                let pid = control2.GetProcessId().unwrap_or(0);
+                if system || pid != 0 {
+                    each(if system { 0 } else { pid }, system, &volume);
+                }
+            }
+        }
+        Ok(())
     }
 
     fn run(program: &str, args: &[&str]) -> Result<(), String> {
@@ -118,6 +197,8 @@ mod win {
                 }
             }
             "settings" => open_uri(w!("ms-settings:")),
+            // The classic volume mixer, with a volume per app.
+            "mixer" => open_uri(w!("sndvol.exe")),
             "wifi" => open_uri(w!("ms-settings:network-wifi")),
             "sound" => open_uri(w!("ms-settings:sound")),
             "bluetooth" => open_uri(w!("ms-settings:bluetooth")),
@@ -128,7 +209,7 @@ mod win {
 }
 
 #[cfg(windows)]
-pub use win::{open as open_target, power as power_action, set_mute, set_volume, volume};
+pub use win::{app_volumes, open as open_target, power as power_action, set_app_volume, set_mute, set_volume, volume};
 
 #[cfg(not(windows))]
 mod other {
@@ -142,6 +223,12 @@ mod other {
     pub fn set_mute(_muted: bool) -> Result<(), String> {
         Ok(())
     }
+    pub fn app_volumes() -> Result<Vec<super::AppVolume>, String> {
+        Ok(Vec::new())
+    }
+    pub fn set_app_volume(_pid: u32, _level: Option<u8>, _muted: Option<bool>) -> Result<(), String> {
+        Ok(())
+    }
     pub fn power(_action: &str) -> Result<(), String> {
         Ok(())
     }
@@ -150,4 +237,4 @@ mod other {
     }
 }
 #[cfg(not(windows))]
-pub use other::{open as open_target, power as power_action, set_mute, set_volume, volume};
+pub use other::{app_volumes, open as open_target, power as power_action, set_app_volume, set_mute, set_volume, volume};

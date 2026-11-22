@@ -54,6 +54,17 @@ struct AppState {
     fit_generation: AtomicU64,
     /// The dock's rectangle inside its window (x, y, width, height in CSS pixels).
     hit: Mutex<Option<(f64, f64, f64, f64)>>,
+    /// The volume panel that opens from the volume module.
+    volume_popup: Mutex<VolumePopup>,
+}
+
+/// What the volume panel needs to remember between its commands.
+#[derive(Default)]
+struct VolumePopup {
+    /// The panel sits above the dock: when it grows, it grows upward.
+    bottom_anchored: bool,
+    /// When it last closed, so the click that closed it does not open it again.
+    closed_at: Option<Instant>,
 }
 
 impl AppState {
@@ -505,6 +516,116 @@ fn volume_toggle_mute() -> Result<controls::Volume, String> {
 #[tauri::command]
 fn open_system(target: String) -> Result<(), String> {
     controls::open_target(&target)
+}
+
+/// The apps that have sound, each with its own volume.
+#[tauri::command]
+fn mixer_list() -> Result<Vec<controls::AppVolume>, String> {
+    controls::app_volumes()
+}
+
+#[tauri::command]
+fn mixer_set(pid: u32, level: Option<u8>, muted: Option<bool>) -> Result<(), String> {
+    controls::set_app_volume(pid, level, muted)
+}
+
+const POPUP_WIDTH: f64 = 300.0;
+const POPUP_START_HEIGHT: f64 = 96.0;
+
+fn close_volume_popup(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    state.menu_open.store(false, Ordering::Relaxed);
+    if let Ok(mut popup) = state.volume_popup.lock() {
+        popup.closed_at = Some(Instant::now());
+    }
+    if let Some(window) = app.get_webview_window("volume") {
+        let _ = window.close();
+    }
+}
+
+#[tauri::command]
+fn volume_popup_close(app: AppHandle) {
+    close_volume_popup(&app);
+}
+
+/// Opens the volume panel next to the volume button (x, y, width, height in CSS pixels of the
+/// dock window), or closes it when it is already open.
+#[tauri::command]
+fn show_volume_popup(app: AppHandle, window: tauri::Window, state: State<'_, AppState>, x: f64, y: f64, width: f64, height: f64) -> Result<(), String> {
+    if app.get_webview_window("volume").is_some() {
+        close_volume_popup(&app);
+        return Ok(());
+    }
+    // Clicking the button took the focus from the panel and closed it; that same click must not open it again.
+    if state.volume_popup.lock().ok().and_then(|p| p.closed_at).is_some_and(|t| t.elapsed() < Duration::from_millis(300)) {
+        return Ok(());
+    }
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let origin = window.inner_position().map_err(|e| e.to_string())?;
+    let (bx, by) = (f64::from(origin.x) + x * scale, f64::from(origin.y) + y * scale);
+    let (bw, bh) = (width * scale, height * scale);
+    let (pw, ph, gap) = (POPUP_WIDTH * scale, POPUP_START_HEIGHT * scale, 10.0 * scale);
+    let (mut px, mut py, bottom) = match state.settings().position.as_str() {
+        "top" => (bx + bw / 2.0 - pw / 2.0, by + bh + gap, false),
+        "left" => (bx + bw + gap, by + bh / 2.0 - ph / 2.0, false),
+        "right" => (bx - pw - gap, by + bh / 2.0 - ph / 2.0, false),
+        _ => (bx + bw / 2.0 - pw / 2.0, by - ph - gap, true),
+    };
+    if let Some(monitor) = window.current_monitor().ok().flatten() {
+        let area = monitor.work_area();
+        let (ax, ay) = (f64::from(area.position.x), f64::from(area.position.y));
+        px = px.clamp(ax, (ax + f64::from(area.size.width) - pw).max(ax));
+        py = py.clamp(ay, (ay + f64::from(area.size.height) - ph).max(ay));
+    }
+    if let Ok(mut popup) = state.volume_popup.lock() {
+        popup.bottom_anchored = bottom;
+    }
+    let popup = WebviewWindowBuilder::new(&app, "volume", WebviewUrl::App("index.html".into()))
+        .title("Volume")
+        .inner_size(POPUP_WIDTH, POPUP_START_HEIGHT)
+        .decorations(false)
+        .transparent(true)
+        .shadow(false)
+        .resizable(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .visible(false)
+        .focused(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+    popup.set_position(PhysicalPosition::new(px.round() as i32, py.round() as i32)).map_err(|e| e.to_string())?;
+    popup.show().map_err(|e| e.to_string())?;
+    let _ = popup.set_focus();
+    // The dock must not auto-hide under the panel.
+    state.menu_open.store(true, Ordering::Relaxed);
+    let handle = app.clone();
+    let opened = Instant::now();
+    popup.on_window_event(move |event| {
+        // Clicking anywhere else closes it. The first moments are ignored: focus is still settling.
+        if let tauri::WindowEvent::Focused(false) = event {
+            if opened.elapsed() > Duration::from_millis(250) {
+                close_volume_popup(&handle);
+            }
+        }
+    });
+    Ok(())
+}
+
+/// Resizes the volume panel to its content, keeping the edge that faces the dock where it is.
+#[tauri::command]
+fn volume_popup_fit(app: AppHandle, state: State<'_, AppState>, height: f64) -> Result<(), String> {
+    let Some(window) = app.get_webview_window("volume") else { return Ok(()) };
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let pos = window.outer_position().map_err(|e| e.to_string())?;
+    let size = window.outer_size().map_err(|e| e.to_string())?;
+    let new_height = (height.clamp(60.0, 560.0) * scale).round() as i32;
+    let bottom = state.volume_popup.lock().map(|p| p.bottom_anchored).unwrap_or(true);
+    let y = if bottom { pos.y + size.height as i32 - new_height } else { pos.y };
+    if new_height != size.height as i32 {
+        window.set_size(PhysicalSize::new(size.width, new_height as u32)).map_err(|e| e.to_string())?;
+        window.set_position(PhysicalPosition::new(pos.x, y)).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// The power menu: a native menu at the pointer, so choosing an entry is the confirmation.
@@ -1016,6 +1137,7 @@ pub fn run() {
                 hidden: AtomicBool::new(false),
                 fit_generation: AtomicU64::new(0),
                 hit: Mutex::new(None),
+                volume_popup: Mutex::new(VolumePopup::default()),
             });
             build_tray(app.handle())?;
             start_window_events(app.handle().clone());
@@ -1046,6 +1168,11 @@ pub fn run() {
             volume_toggle_mute,
             open_system,
             show_power_menu,
+            mixer_list,
+            mixer_set,
+            show_volume_popup,
+            volume_popup_fit,
+            volume_popup_close,
             load_theme,
             open_themes_folder,
             open_link,

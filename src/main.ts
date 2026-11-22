@@ -44,7 +44,11 @@ window.addEventListener("error", (e) => {
 window.addEventListener("unhandledrejection", (e) => showFailure(e.reason));
 
 try {
-  if (view === "hub") {
+  if (view === "volume") {
+    await import("./lib/base.css");
+    const { default: VolumePopup } = await import("./lib/VolumePopup.svelte");
+    mount(VolumePopup, { target });
+  } else if (view === "hub") {
     await import("./hub/hub.css");
     const { default: Hub } = await import("./hub/Hub.svelte");
     mount(Hub, { target });

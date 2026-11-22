@@ -116,7 +116,7 @@ fn window_pid(h: HWND) -> u32 {
     pid
 }
 
-fn process_path(pid: u32) -> Option<String> {
+pub fn process_path(pid: u32) -> Option<String> {
     unsafe {
         let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
         let mut buf = vec![0u16; 1024];
@@ -169,7 +169,7 @@ fn file_description(exe: &str) -> Option<String> {
     }
 }
 
-fn display_name(exe: &str) -> String {
+pub fn display_name(exe: &str) -> String {
     let names = NAMES.get_or_init(|| Mutex::new(HashMap::new()));
     if let Some(name) = names.lock().ok().and_then(|n| n.get(exe).cloned()) {
         return name;

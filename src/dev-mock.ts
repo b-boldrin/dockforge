@@ -98,6 +98,12 @@ mockIPC(
       }
       case "get_icon":
         return null;
+      case "mixer_list":
+        return [
+          { pid: 11, name: "Navegador", exe: null, level: 80, muted: false },
+          { pid: 12, name: "Música", exe: null, level: 45, muted: false },
+          { pid: 0, name: "Sons do sistema", exe: null, level: 100, muted: true },
+        ];
       case "volume_get":
       case "volume_set":
       case "volume_toggle_mute":

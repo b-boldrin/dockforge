@@ -130,11 +130,13 @@ pub struct AudioElement {
     pub color: Option<String>,
     pub percent: bool,
     pub slider: bool,
+    /// "panel" (our volume panel) | "windows" (the Windows volume mixer).
+    pub click: String,
 }
 
 impl Default for AudioElement {
     fn default() -> Self {
-        Self { base: ElementBase::default(), size: 28.0, color: None, percent: false, slider: false }
+        Self { base: ElementBase::default(), size: 28.0, color: None, percent: false, slider: false, click: "panel".into() }
     }
 }
 
@@ -417,7 +419,14 @@ fn sanitize_elements(elements: &[BarElement]) -> Vec<BarElement> {
                 seconds: e.seconds,
                 weekday: e.weekday,
             }),
-            BarElement::Audio(e) => BarElement::Audio(AudioElement { base, size: size(e.size, 28.0), color: color(&e.color), percent: e.percent, slider: e.slider }),
+            BarElement::Audio(e) => BarElement::Audio(AudioElement {
+                base,
+                size: size(e.size, 28.0),
+                color: color(&e.color),
+                percent: e.percent,
+                slider: e.slider,
+                click: one_of(&e.click, &["panel", "windows"], "panel"),
+            }),
             BarElement::Power(e) => BarElement::Power(PowerElement {
                 base,
                 size: size(e.size, 28.0),
@@ -771,7 +780,7 @@ mod tests {
     fn modules_are_clamped_and_default_to_something_useful() {
         let raw = r##"{"elements":[
             {"kind":"clock","id":"c","show":"weird","size":900,"color":"red","seconds":true},
-            {"kind":"audio","id":"a","size":1,"slider":true,"color":"#abcdef"},
+            {"kind":"audio","id":"a","size":1,"slider":true,"color":"#abcdef","click":"nope"},
             {"kind":"power","id":"p","actions":["lock","nope","lock","shutdown"]},
             {"kind":"power","id":"q","actions":["nope"]},
             {"kind":"system","id":"s","items":["bluetooth","wifi"],"opens":"elsewhere"}
@@ -781,7 +790,7 @@ mod tests {
         let BarElement::Clock(c) = &els[0] else { panic!("clock") };
         assert_eq!((c.show.as_str(), c.size, c.color.as_deref(), c.seconds), ("both", 48.0, None, true));
         let BarElement::Audio(a) = &els[1] else { panic!("audio") };
-        assert_eq!((a.size, a.color.as_deref(), a.slider), (16.0, Some("#abcdef"), true));
+        assert_eq!((a.size, a.color.as_deref(), a.slider, a.click.as_str()), (16.0, Some("#abcdef"), true, "panel"));
         let BarElement::Power(p) = &els[2] else { panic!("power") };
         assert_eq!(p.actions, ["lock", "shutdown"]);
         let BarElement::Power(q) = &els[3] else { panic!("power") };

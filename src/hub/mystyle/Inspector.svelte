@@ -30,6 +30,7 @@
   const sources = (Object.keys(SOURCE_LABEL) as IconsElement["source"][]).map((s) => [s, SOURCE_LABEL[s]] as [IconsElement["source"], string]);
   const shows: Array<["time" | "date" | "both", string]> = [["both", "Hora e data"], ["time", "Hora"], ["date", "Data"]];
   const clocks: Array<[boolean, string]> = [[false, "24 horas"], [true, "12 horas"]];
+  const volumeClicks: Array<["panel" | "windows", string]> = [["panel", "Nosso painel"], ["windows", "Mixer do Windows"]];
   const opens: Array<["quick" | "settings", string]> = [["quick", "Painel rápido"], ["settings", "Configurações"]];
   /** Adds or removes one entry of a list, keeping the canonical order and at least one entry. */
   function toggle<T extends string>(list: T[], all: T[], item: T): T[] {
@@ -134,7 +135,8 @@
                 <span><b>Controle deslizante</b><i>Só em barras na horizontal.</i></span>
                 <button class="tg" aria-label="Controle deslizante" aria-pressed={el.slider} onclick={() => edit({ slider: !el.slider })}></button>
               </div>
-              <p class="ms-hint">Clique silencia. A roda do mouse muda o volume.</p>
+              <Seg label="Ao clicar" options={volumeClicks} value={el.click} onpick={(click) => edit({ click })} />
+              <p class="ms-hint">O painel tem o volume, o mudo e o mixer de cada app. A roda do mouse muda o volume.</p>
             </section>
           {:else if el.kind === "power"}
             <section class="ms-sec">
